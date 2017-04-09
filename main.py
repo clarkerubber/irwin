@@ -13,7 +13,7 @@ from pymongo import MongoClient
 from modules.api.api import getPlayerData, getPlayerId, postReport
 from modules.Game import Game, recentGames, GameDB
 from modules.PlayerAssessment import PlayerAssessment, PlayerAssessments, PlayerAssessmentDB
-from modules.AnalysedGame import AnalysedGame
+from modules.GameAnalysis import GameAnalysis
 from modules.fishnet.fishnet import stockfish_command
 
 sys.setrecursionlimit(2000)
@@ -47,9 +47,9 @@ logging.getLogger("requests.packages.urllib3").setLevel(logging.WARNING)
 logging.getLogger("chess.uci").setLevel(logging.WARNING)
 
 engine = chess.uci.popen_engine(stockfish_command())
-engine.setoption({'Threads': settings.threads, 'Hash': settings.memory})
+engine.setoption({'Threads': settings.threads, 'Hash': settings.memory, 'multipv': 5})
 engine.uci()
-info_handler = chess.uci.InfoHandler()
+infoHandler = chess.uci.InfoHandler()
 engine.info_handlers.append(info_handler)
 
 # Set up mongodb
