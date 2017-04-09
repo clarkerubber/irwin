@@ -6,7 +6,7 @@ import time
 import json
 from modules.bcolors.bcolors import bcolors
 
-def post_report(userId, report, token):
+def postReport(userId, report, token):
     logging.info(bcolors.OKBLUE + 'Posting report for ' + userId + bcolors.ENDC)
     success = False
     while not success:
@@ -22,7 +22,7 @@ def post_report(userId, report, token):
             logging.debug("Trying again in 30 sec" + bcolors.ENDC)
             time.sleep(30)
 
-def get_player_data(user_id, token):
+def getPlayerData(user_id, token):
     logging.debug(bcolors.WARNING + 'Getting player data for '+user_id+'...' + bcolors.ENDC)
     success = False
     while not success:
@@ -42,7 +42,7 @@ def get_player_data(user_id, token):
     except ValueError:
         return {}
 
-def get_player_id(token):
+def getPlayerId(token):
     logging.debug(bcolors.WARNING + 'Getting new player ID...' + bcolors.ENDC)
     success = False
     while not success:
