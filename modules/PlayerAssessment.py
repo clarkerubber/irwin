@@ -1,3 +1,5 @@
+from bson.objectid import ObjectId
+
 class PlayerAssessment:
     def __init__(self, jsonin):
         self.json = jsonin
@@ -14,6 +16,9 @@ class PlayerAssessment:
         self.blurs = jsonin['blurs'] # percentage 0-100 blur rate
         self.hold = jsonin['hold'] # boolean hold alert
         self.flags = PlayerFlags(jsonin['flags'])
+
+    def __str__(self):
+      return str(self.json)
 
 class PlayerFlags:
     def __init__(self, jsonin):
@@ -34,6 +39,9 @@ class PlayerAssessments:
     self.pas = pas # Raw JSON input
     self.list = [PlayerAssessment(p) for p in pas] # List[PlayerAssessment]
 
+  def __str__(self):
+    return str([str(pa) for pa in self.list])
+
   def byGameIds(self, gids):
     return [p for p in self.list if p.gameId in gids]
 
@@ -41,10 +49,39 @@ class PlayerAssessments:
     return next(iter([p for p in self.list if p.gameId == gid]), None)
 
   def suspicious(self):
-    return [p for p in self.list if p.assessment > 3]
+    return [p for p in self.list if p.assessment > 2]
 
-  def write(self, assessColl):
-    assessColl.insert_many(self.pas)
+class PlayerAssessmentDB:
+  def __init__(self, assessColl):
+    self.assessColl = assessColl
 
-  def write(self, assessColl, pas):
-    assessColl.insert_many([p.json for p in pas])
+  def byId(self, _id): # string
+    try:
+      return PlayerAssessment(self.assessColl.find_one({'_id': ObjectId(_id)}))
+    except:
+      return None
+
+  def byIds(self, ids): # List[String]
+    return PlayerAssessments(self.assessColl.find({'_id': {'$in': list([ObjectId(i) for i in ids])}}))
+
+  def byUserId(self, userId):
+    return PlayerAssessments(self.assessColl.find({'userId': userId}))
+
+  def byGameId(self, gameId):
+    try:
+      return PlayerAssessment(self.assessColl.find_one({'gameId': gameId}))
+    except:
+      return None
+
+  def byGameIds(self, gameIds):
+    return PlayerAssessments(self.assessColl.find({'gameId': {'$in': gameId}}))
+
+  def write(self, playerAssessment):
+    self.assessColl.update_one({'_id': playerAssessment.json['_id']}, {'$set': playerAssessment.json}, upsert=True)
+
+  def writeMany(self, playerAssessments):
+    if len(playerAssessments.list) > 0:
+      self.assessColl.insert_many(list([pa.json for pa in playerAssessments.list]))
+
+  def lazyWriteMany(self, playerAssessments):
+    [self.write(pa) for pa in playerAssessments.list]
