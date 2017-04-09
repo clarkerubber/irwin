@@ -45,6 +45,9 @@ class Games:
   def json(self):
     return [g.json() for g in self.games]
 
+  def ids(self):
+    return [g.id for g in self.games]
+
 # For everything database related
 class GameDB:
   def __init__(self, gameColl):
