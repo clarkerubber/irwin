@@ -13,7 +13,7 @@ from pymongo import MongoClient
 from modules.api.api import getPlayerData, getPlayerId, postReport
 from modules.Game import Game, recentGames, GameDB
 from modules.PlayerAssessment import PlayerAssessment, PlayerAssessments, PlayerAssessmentDB
-
+from modules.AnalysedGame import AnalysedGame
 from modules.fishnet.fishnet import stockfish_command
 
 sys.setrecursionlimit(2000)
@@ -59,28 +59,35 @@ playerColl = db.player
 gameColl = db.game
 assessColl = db.assessments
 
+# database abstraction
 gameDB = GameDB(gameColl)
 playerAssessmentDB = PlayerAssessmentDB(assessColl)
 
+while True:
+  # Get player data
+  userId = getPlayerId(settings.token)
+  userData = getPlayerData(userId, settings.token)
 
-# Get player data
-userId = getPlayerId(settings.token)
-userData = getPlayerData(userId, settings.token)
+  # Filter games and assessments for relevant info
+  try:
+    playerAssessments = PlayerAssessments(userData['assessment']['playerAssessments'])
+    games = recentGames(playerAssessments.list, userData['games'])
+  except KeyError:
+    continue # if either of these don't gather any useful data, skip them
 
-# Filter games and assessments for relevant info
-try:
-  playerAssessments = PlayerAssessments(userData['assessment']['playerAssessments'])
-except KeyError:
-  playerAssessments = PlayerAssessments([])
+  # Write stuff to mongo
+  playerAssessmentDB.lazyWriteMany(playerAssessments)
+  gameDB.lazyWriteGames(games)
 
-games = recentGames(playerAssessments.list, userData['games'])
+  # Pull everything from mongo that we have on the player
+  games = gameDB.byUserId(userId)
+  playerAssessments = playerAssessmentDB.byUserId(userId)
 
-# Write stuff to mongo
-playerAssessmentDB.lazyWriteMany(playerAssessments)
-gameDB.lazyWriteGames(games)
+  analysedGames = []
+  for g in games.games:
+    pa = playerAssessments.byGameId(g.id)
+    if pa is not None:
+      analysedGames.append(AnalysedGame(g, pa))
 
-games = gameDB.byUserId(userId)
-playerAssessments = playerAssessmentDB.byUserId(userId)
-
-print(games)
-print(playerAssessments)
+  for ag in analysedGames:
+    print ag
