@@ -33,50 +33,47 @@ class GameAnalysis:
       return str(self.game) + "\n" + str(self.playerAssessment)
 
   def json(self):
-    return {'game': game.json(),
-      'playerAssessment': playerAssessment.json,
+    return {'game': self.game.json(),
+      'playerAssessment': self.playerAssessment.json,
       'analysedMoves': list([am.json() for am in self.analysedMoves])}
 
   def ply(self, moveNumber, white):
     return (2*(moveNumber-1)) + (0 if white else 1)
-
-  def analyse(self, engine, infoHandler, override = False):
-    if not self.analysed and not override:
-      node = self.playableGame
-
-      logging.debug(bcolors.WARNING + "Game ID: " + self.gameId() + bcolors.ENDC)
-      logging.debug(bcolors.OKGREEN + "Game Length: " + str(node.end().board().fullmove_number))
-      logging.debug("Analysing Game..." + bcolors.ENDC)
-
-      engine.ucinewgame()
-
-      analysed_positions = []
-
-      logging.debug("Player is white? " + str(self.game.white))
-      while not node.is_end():
-        nextNode = node.variation(0)
-        logging.debug("Analysing move: " + node.variation(0).move.uci())
-        if self.game.white == node.board().turn:
-          engine.position(node.board())
-          engine.go(nodes=5000000)
-
-          analysis = list([{'uci': pv[1][0].uci(), 'score': {'cp': score[1].cp, 'mate': score[1].mate}} for score, pv in zip(infoHandler.info['score'].items(), infoHandler.info['pv'].items())])
-          moveNumber = node.board().fullmove_number
-
-          am = AnalysedMove(node.variation(0).move.uci(), moveNumber, analysis, self.game.getEmt(self.ply(moveNumber, self.game.white)))
-          logging.debug("Analysis: " + str(am.json()))
-          self.analysedMoves.append(am)
-
-        node = nextNode
-
-      self.analysed = True
-    return self.analysedMoves
 
   def userId(self):
     return self.playerAssessment.userId
 
   def gameId(self):
     return self.game.id
+
+def analyse(gameAnalysis, engine, infoHandler, override = False):
+  if not gameAnalysis.analysed and not override:
+    node = gameAnalysis.playableGame
+
+    logging.debug(bcolors.WARNING + "Game ID: " + gameAnalysis.gameId() + bcolors.ENDC)
+    logging.debug(bcolors.OKGREEN + "Game Length: " + str(node.end().board().fullmove_number))
+    logging.debug("Analysing Game..." + bcolors.ENDC)
+
+    engine.ucinewgame()
+
+    analysed_positions = []
+
+    while not node.is_end():
+      nextNode = node.variation(0)
+      if gameAnalysis.game.white == node.board().turn:
+        engine.position(node.board())
+        engine.go(nodes=5000000)
+
+        analysis = list([{'uci': pv[1][0].uci(), 'score': {'cp': score[1].cp, 'mate': score[1].mate}} for score, pv in zip(infoHandler.info['score'].items(), infoHandler.info['pv'].items())])
+        moveNumber = node.board().fullmove_number
+
+        am = AnalysedMove(node.variation(0).move.uci(), moveNumber, analysis, gameAnalysis.game.getEmt(gameAnalysis.ply(moveNumber, gameAnalysis.game.white)))
+        gameAnalysis.analysedMoves.append(am)
+
+      node = nextNode
+
+    gameAnalysis.analysed = True
+  return gameAnalysis
 
 class GameAnalyses:
   def __init__(self, gameAnalyses):
@@ -96,7 +93,10 @@ class GameAnalysisDB:
     self.gameAnalysisColl = gameAnalysisColl
 
   def write(self, gameAnalysis):
-    self.gameAnalysisColl.update_one({'_id': gameAnalysis.gameId()}, {'$set': {gameAnalysis.json()}}, upsert=True)
+    self.gameAnalysisColl.update_one({'_id': gameAnalysis.gameId()}, {'$set': gameAnalysis.json()}, upsert=True)
 
   def byUserId(self, userId):
     return GameAnalyses(list([JSONToGameAnalysis(ga) for ga in self.gameAnalysisColl.find({'userId': userId})]))
+
+  def lazyWriteGames(self, gameAnalyses):
+    [self.write(ga) for ga in gameAnalyses.gameAnalyses]
