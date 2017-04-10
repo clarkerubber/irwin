@@ -29,8 +29,8 @@ def recentGames(assessments, pgns):
     try:
         assessments = sorted(assessments, key = lambda x: (attrgetter('assessment'), attrgetter('date')), reverse=True)
         return Games(list(Game(a.userId, a.white, a.gameId, pgns[a.gameId]) for a in assessments if 
-          pgns[a.gameId].get('variant', False) == False and
-          pgns[a.gameId].get('emts', False) != False and
+          'variant' not in pgns[a.gameId] and
+          'emts' in pgns[a.gameId] and
           gameLength(pgns[a.gameId].get('pgn', '')) > 50)[:5])
     except ValueError:
         return []
