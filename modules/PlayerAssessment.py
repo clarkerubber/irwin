@@ -35,18 +35,18 @@ class PlayerFlags:
         return self.jsonin.get(key, False)
 
 class PlayerAssessments:
-  def __init__(self, pas):
-    self.pas = pas # Raw JSON input
-    self.list = [PlayerAssessment(p) for p in pas] # List[PlayerAssessment]
+  def __init__(self, playerAssessments):
+    self.playerAssessments = playerAssessments # Raw JSON input
+    self.list = [PlayerAssessment(p) for p in playerAssessments] # List[PlayerAssessment]
 
   def __str__(self):
     return str([str(pa) for pa in self.list])
 
-  def byGameIds(self, gids):
-    return [p for p in self.list if p.gameId in gids]
+  def byGameIds(self, gameIds):
+    return [p for p in self.list if p.gameId in gameIds]
 
-  def byGameId(self, gid):
-    return next(iter([p for p in self.list if p.gameId == gid]), None)
+  def byGameId(self, gameId):
+    return next(iter([p for p in self.list if p.gameId == gameId]), None)
 
   def suspicious(self):
     return [p for p in self.list if p.assessment > 2]

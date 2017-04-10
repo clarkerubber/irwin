@@ -9,6 +9,9 @@ class Game:
     self.pgn = jsonin['pgn']
     self.emts = jsonin['emts']
 
+  def getEmt(self, ply):
+    return self.emts[ply]
+
   def __str__(self):
     return str(self.json())
 
@@ -49,12 +52,12 @@ class Games:
     return [g.id for g in self.games]
 
 # For everything database related
+def JSONToGame(json):
+  return Game(json['userId'], json['white'], json['_id'], json)
+
 class GameDB:
   def __init__(self, gameColl):
     self.gameColl = gameColl
-
-  def __JSONToGame(self, jsonin):
-    return Game(jsonin['userId'], jsonin['white'], jsonin['_id'], jsonin)
 
   def byId(self, _id):
     try:
@@ -63,12 +66,12 @@ class GameDB:
       return None # ugly
 
   def byIds(self, ids): # List[Ids]
-    return Games(list([self.__JSONToGame(g) for g in self.gameColl.find({'_id': {'$in': list([ObjectId(i) for i in ids])}})]))
+    return Games(list([JSONToGame(g) for g in self.gameColl.find({'_id': {'$in': list([ObjectId(i) for i in ids])}})]))
 
   def byUserId(self, userId):
-    return Games(list([self.__JSONToGame(g) for g in self.gameColl.find({'userId': userId})]))
+    return Games(list([JSONToGame(g) for g in self.gameColl.find({'userId': userId})]))
 
-  def writeGame(self, game): # Game
+  def write(self, game): # Game
     self.gameColl.update_one({'_id': game.json()['_id']}, {'$set': game.json()}, upsert=True)
 
   def writeGames(self, games): # Games
@@ -76,4 +79,4 @@ class GameDB:
       self.gameColl.insert_many(games.json())
 
   def lazyWriteGames(self, games):
-    [self.writeGame(g) for g in games.games]
+    [self.write(g) for g in games.games]
