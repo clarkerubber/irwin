@@ -96,7 +96,7 @@ class GameAnalysisDB:
     self.gameAnalysisColl.update_one({'_id': gameAnalysis.gameId()}, {'$set': gameAnalysis.json()}, upsert=True)
 
   def byUserId(self, userId):
-    return GameAnalyses(list([JSONToGameAnalysis(ga) for ga in self.gameAnalysisColl.find({'userId': userId})]))
+    return GameAnalyses(list([JSONToGameAnalysis(ga) for ga in self.gameAnalysisColl.find({'game.userId': userId})]))
 
   def lazyWriteGames(self, gameAnalyses):
     [self.write(ga) for ga in gameAnalyses.gameAnalyses]
