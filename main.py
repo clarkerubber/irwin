@@ -12,7 +12,7 @@ from modules.api.api import getPlayerData, getPlayerId, postReport
 
 from modules.Game import Game, recentGames
 from modules.PlayerAssessment import PlayerAssessment, PlayerAssessments
-from modules.GameAnalysis import GameAnalysis
+from modules.GameAnalysis import GameAnalysis, GameAnalyses, analyse
 
 from env import IrwinEnv
 
@@ -75,7 +75,6 @@ while True:
     if pa is not None:
       gameAnalyses.append(GameAnalysis(g, pa, (ga if ga is not None else [])))
 
+  gameAnalyses = GameAnalyses(list([analyse(ga, env.engine, env.infoHandler) for ga in gameAnalyses.gameAnalyses]))
 
-  for ga in gameAnalyses.gameAnalyses:
-    ga.analyse(env.engine, env.infoHandler)
-    print ga
+  env.gameAnalysisDB.lazyWriteGames(gameAnalyses)
