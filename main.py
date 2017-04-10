@@ -6,15 +6,15 @@ import os
 import sys
 import logging
 from pprint import pprint
-
-import pymongo
-from pymongo import MongoClient
+from modules.bcolors.bcolors import bcolors
 
 from modules.api.api import getPlayerData, getPlayerId, postReport
-from modules.Game import Game, recentGames, GameDB
-from modules.PlayerAssessment import PlayerAssessment, PlayerAssessments, PlayerAssessmentDB
+
+from modules.Game import Game, recentGames
+from modules.PlayerAssessment import PlayerAssessment, PlayerAssessments
 from modules.GameAnalysis import GameAnalysis
-from modules.fishnet.fishnet import stockfish_command
+
+from env import IrwinEnv
 
 sys.setrecursionlimit(2000)
 
@@ -46,22 +46,7 @@ logging.basicConfig(format="%(message)s", level=settings.loglevel, stream=sys.st
 logging.getLogger("requests.packages.urllib3").setLevel(logging.WARNING)
 logging.getLogger("chess.uci").setLevel(logging.WARNING)
 
-engine = chess.uci.popen_engine(stockfish_command())
-engine.setoption({'Threads': settings.threads, 'Hash': settings.memory, 'multipv': 5})
-engine.uci()
-infoHandler = chess.uci.InfoHandler()
-engine.info_handlers.append(info_handler)
-
-# Set up mongodb
-client = MongoClient()
-db = client.irwin
-playerColl = db.player
-gameColl = db.game
-assessColl = db.assessments
-
-# database abstraction
-gameDB = GameDB(gameColl)
-playerAssessmentDB = PlayerAssessmentDB(assessColl)
+env = IrwinEnv(settings)
 
 while True:
   # Get player data
@@ -76,18 +61,21 @@ while True:
     continue # if either of these don't gather any useful data, skip them
 
   # Write stuff to mongo
-  playerAssessmentDB.lazyWriteMany(playerAssessments)
-  gameDB.lazyWriteGames(games)
+  env.playerAssessmentDB.lazyWriteMany(playerAssessments)
+  env.gameDB.lazyWriteGames(games)
 
   # Pull everything from mongo that we have on the player
-  games = gameDB.byUserId(userId)
-  playerAssessments = playerAssessmentDB.byUserId(userId)
+  games = env.gameDB.byUserId(userId)
+  playerAssessments = env.playerAssessmentDB.byUserId(userId)
+  gameAnalyses = env.gameAnalysisDB.byUserId(userId)
 
-  analysedGames = []
   for g in games.games:
     pa = playerAssessments.byGameId(g.id)
+    ga = gameAnalyses.byGameId(g.id)
     if pa is not None:
-      analysedGames.append(AnalysedGame(g, pa))
+      gameAnalyses.append(GameAnalysis(g, pa, (ga if ga is not None else [])))
 
-  for ag in analysedGames:
-    print ag
+
+  for ga in gameAnalyses.gameAnalyses:
+    ga.analyse(env.engine, env.infoHandler)
+    print ga

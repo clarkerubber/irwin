@@ -1,56 +1,102 @@
 from modules.AnalysedMove import AnalysedMove
+import chess
+import StringIO
+import logging
+from math import floor
+
+from modules.bcolors.bcolors import bcolors
+from modules.Game import JSONToGame
+from modules.PlayerAssessment import PlayerAssessment
+from modules.AnalysedMove import JSONToAnalysedMove
 
 class GameAnalysis:
-  def __init__(self, game, playerAssessment):
+  def __init__(self, game, playerAssessment, analysedMoves = []):
     try:
       from StringIO import StringIO
     except ImportError:
       from io import StringIO
     self.game = game
     self.playerAssessment = playerAssessment
-    self.analysed = False
+    self.analysedMoves = analysedMoves # List[AnalysedMove]
+    
+    if len(self.analysedMoves) > 0:
+      self.analysed = True
+    else:
+      self.analysed = False
+
     self.playableGame = chess.pgn.read_game(StringIO(game.pgn))
-    self.analysedMoves = [] # List[AnalysedMove]
-
+    
   def __str__(self):
-    return str(self.game) + "\n" + str(self.playerAssessment)
+    if self.analysed:
+      return str(self.game) + "\n" + str(self.playerAssessment) + "\n" + str(list([str(am) for am in self.analysedMoves]))
+    else:
+      return str(self.game) + "\n" + str(self.playerAssessment)
 
-  def analyse(self, engine, infoHandler):
-    node = self.playableGame
+  def json(self):
+    return {'game': game.json(),
+      'playerAssessment': playerAssessment.json,
+      'analysedMoves': list([am.json() for am in self.analysedMoves])}
 
-    logging.debug(bcolors.WARNING + "Game ID: " + self.assessment.gameId + bcolors.ENDC)
-    logging.debug(bcolors.OKGREEN + "Game Length: " + str(node.end().board().fullmove_number))
-    logging.debug("Analysing Game..." + bcolors.ENDC)
+  def ply(self, moveNumber, white):
+    return (2*(moveNumber-1)) + (0 if white else 1)
 
-    engine.ucinewgame()
+  def analyse(self, engine, infoHandler, override = False):
+    if not self.analysed and not override:
+      node = self.playableGame
 
-    analysed_positions = []
+      logging.debug(bcolors.WARNING + "Game ID: " + self.gameId() + bcolors.ENDC)
+      logging.debug(bcolors.OKGREEN + "Game Length: " + str(node.end().board().fullmove_number))
+      logging.debug("Analysing Game..." + bcolors.ENDC)
 
-    while not node.is_end():
-      nextNode = node.variation(0)
-      engine.position(nextNode.board())
+      engine.ucinewgame()
 
-      if self.game.white == node.board().turn:
-        #AnalysedMove(node.board().copy(), )
-        analysed_legals = []
+      analysed_positions = []
 
-        for p in node.board().legal_moves:
-          position_copy = node.board().copy()
-          position_copy.push(p)
-          engine.position(position_copy)
-          engine.go(nodes=800000)
-          analysed_legals.append(AnalysedMove(p, infoHandler.info["score"][1]))
+      logging.debug("Player is white? " + str(self.game.white))
+      while not node.is_end():
+        nextNode = node.variation(0)
+        logging.debug("Analysing move: " + node.variation(0).move.uci())
+        if self.game.white == node.board().turn:
+          engine.position(node.board())
+          engine.go(nodes=5000000)
 
-        analysed_legals = sorted(analysed_legals, key=methodcaller('sort_val'))
-        played_move = next((x for x in analysed_legals if x.move == nextNode.move), None)
-        analysed_positions.append(AnalysedPosition(played_move, analysed_legals))
+          analysis = list([{'uci': pv[1][0].uci(), 'score': {'cp': score[1].cp, 'mate': score[1].mate}} for score, pv in zip(infoHandler.info['score'].items(), infoHandler.info['pv'].items())])
+          moveNumber = node.board().fullmove_number
 
-      node = nextNode
+          am = AnalysedMove(node.variation(0).move.uci(), moveNumber, analysis, self.game.getEmt(self.ply(moveNumber, self.game.white)))
+          logging.debug("Analysis: " + str(am.json()))
+          self.analysedMoves.append(am)
 
-    self.analysed = AnalysedGame(self.assessment, analysed_positions)
+        node = nextNode
+
+      self.analysed = True
+    return self.analysedMoves
 
   def userId(self):
     return self.playerAssessment.userId
 
   def gameId(self):
     return self.game.id
+
+class GameAnalyses:
+  def __init__(self, gameAnalyses):
+    self.gameAnalyses = gameAnalyses # List[GameAnalysis]
+
+  def byGameId(self, gameId):
+    return next(iter([p for p in self.gameAnalyses if p.gameId == gameId]), None)
+
+  def append(self, gameAnalysis):
+    return self.gameAnalyses.append(gameAnalysis)
+
+def JSONToGameAnalysis(json):
+  return GameAnalysis(JSONToGame(json['game']), PlayerAssessment(json['playerAssessment']), list([JSONToAnalysedMove(am) for am in json['analysedMoves']]))
+
+class GameAnalysisDB:
+  def __init__(self, gameAnalysisColl):
+    self.gameAnalysisColl = gameAnalysisColl
+
+  def write(self, gameAnalysis):
+    self.gameAnalysisColl.update_one({'_id': gameAnalysis.gameId()}, {'$set': {gameAnalysis.json()}}, upsert=True)
+
+  def byUserId(self, userId):
+    return GameAnalyses(list([JSONToGameAnalysis(ga) for ga in self.gameAnalysisColl.find({'userId': userId})]))
