@@ -16,7 +16,7 @@ class PlayerAssessments(collections.namedtuple('PlayerAssessments', ['playerAsse
     return [p for p in self.playerAssessments if p.gameId in gameIds]
 
   def byGameId(self, gameId):
-    return next(iter([p for p in self.playerAssessments if p.gameId == gameId]), None)
+    return next((p for p in self.playerAssessments if p.gameId == gameId), None)
 
   def suspicious(self):
     return [p for p in self.list if p.assessment > 2]
