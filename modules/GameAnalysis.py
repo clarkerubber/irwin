@@ -77,9 +77,7 @@ class GameAnalyses:
 
   def append(self, gameAnalysis):
     if not self.hasId(gameAnalysis.id):
-      return self.gameAnalyses.append(gameAnalysis)
-    else:
-      return self.gameAnalyses
+      self.gameAnalyses.append(gameAnalysis)
 
   def analyse(self, engine, infoHandler):
     self.gameAnalyses = [analyse(ga, engine, infoHandler) for ga in self.gameAnalyses]
