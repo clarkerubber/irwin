@@ -33,7 +33,7 @@ class GameAnalysis:
     
   def __str__(self):
     if self.analysed:
-      return str(self.game) + "\n" + str(self.playerAssessment) + "\n" + str(list([str(am) for am in self.analysedMoves]))
+      return str(self.game) + "\n" + str(self.playerAssessment) + "\n" + str([str(am) for am in self.analysedMoves])
     else:
       return str(self.game) + "\n" + str(self.playerAssessment)
 
@@ -86,7 +86,7 @@ class GameAnalyses:
       return self.gameAnalyses
 
   def analyse(self, engine, infoHandler):
-    self.gameAnalyses = list([analyse(ga, engine, infoHandler) for ga in self.gameAnalyses])
+    self.gameAnalyses = [analyse(ga, engine, infoHandler) for ga in self.gameAnalyses]
 
   def ids(self):
     return list([ga.id for ga in self.gameAnalyses])
@@ -97,7 +97,7 @@ class GameAnalyses:
 class GameAnalysisBSONHandler:
   @staticmethod
   def reads(game, playerAssessment, analysedMovesBSON):
-    return GameAnalysis(game, playerAssessment, list([AnalysedMoveBSONHandler.reads(am) for am in analysedMovesBSON]))
+    return GameAnalysis(game, playerAssessment, [AnalysedMoveBSONHandler.reads(am) for am in analysedMovesBSON])
 
   @staticmethod
   def writes(gameAnalysis):
