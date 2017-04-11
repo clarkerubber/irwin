@@ -2,12 +2,10 @@ from operator import attrgetter
 from bson.objectid import ObjectId
 
 class Game:
-  def __init__(self, userId, white, _id, jsonin):
+  def __init__(self, _id, pgn, emts):
     self.id = _id
-    self.userId = userId
-    self.white = white
-    self.pgn = jsonin['pgn']
-    self.emts = jsonin['emts']
+    self.pgn = pgn
+    self.emts = emts
 
   def getEmt(self, ply):
     return self.emts[ply]
@@ -17,30 +15,28 @@ class Game:
 
   def json(self):
     return {'_id': self.id,
-      'userId': self.userId,
-      'white': self.white,
       'pgn': self.pgn,
       'emts': self.emts}
 
 def gameLength(pgn):
     return len(pgn.split(' '))
 
-def recentGames(assessments, pgns):
-    try:
-        assessments = sorted(assessments, key = lambda x: (attrgetter('assessment'), attrgetter('date')), reverse=True)
-        return Games(list(Game(a.userId, a.white, a.gameId, pgns[a.gameId]) for a in assessments if 
-          'variant' not in pgns[a.gameId] and
-          'emts' in pgns[a.gameId] and
-          gameLength(pgns[a.gameId].get('pgn', '')) > 50)[:5])
-    except ValueError:
-        return []
-    except IndexError:
-        return []
+def recentGames(playerAssessments, gameJSONs):
+  try:
+    playerAssessments.playerAssessments = sorted(playerAssessments.playerAssessments, key = lambda x: (attrgetter('assessment'), attrgetter('date')), reverse=True)
+    return Games(list(Game(pa.gameId, gameJSONs[pa.gameId]['pgn'], gameJSONs[pa.gameId]['emts']) for pa in playerAssessments.playerAssessments if 
+      'variant' not in gameJSONs[pa.gameId] and
+      'emts' in gameJSONs[pa.gameId] and
+      gameLength(gameJSONs[pa.gameId].get('pgn', '')) > 50)[:5])
+  except ValueError:
+    return []
+  except IndexError:
+    return []
 
 # thin wrapper class for multiple games
 class Games:
-  def __init__(self, gs):
-    self.games = gs # List[Game]
+  def __init__(self, games):
+    self.games = games # List[Game]
 
   def __str__(self):
     return str([str(g) for g in self.games])
@@ -48,12 +44,18 @@ class Games:
   def json(self):
     return [g.json() for g in self.games]
 
+  def byId(self, gameId):
+    return next(iter([g for g in self.games if g.id == gameId]), None)
+
   def ids(self):
     return [g.id for g in self.games]
 
+  def hasId(self, gameId):
+    return (gameId in self.ids())
+
 # For everything database related
 def JSONToGame(json):
-  return Game(json['userId'], json['white'], json['_id'], json)
+  return Game(json['_id'], json['pgn'], json['emts'])
 
 class GameDB:
   def __init__(self, gameColl):
@@ -66,10 +68,7 @@ class GameDB:
       return None # ugly
 
   def byIds(self, ids): # List[Ids]
-    return Games(list([JSONToGame(g) for g in self.gameColl.find({'_id': {'$in': list([ObjectId(i) for i in ids])}})]))
-
-  def byUserId(self, userId):
-    return Games(list([JSONToGame(g) for g in self.gameColl.find({'userId': userId})]))
+    return Games(list([JSONToGame(g) for g in self.gameColl.find({'_id': {'$in': list([i for i in ids])}})]))
 
   def write(self, game): # Game
     self.gameColl.update_one({'_id': game.json()['_id']}, {'$set': game.json()}, upsert=True)

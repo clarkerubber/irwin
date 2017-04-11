@@ -24,9 +24,9 @@ class IrwinEnv:
     self.playerColl = self.db.player
     self.GameAnalysisColl = self.db.gameAnalysis
     self.gameColl = self.db.game
-    self.assessColl = self.db.assessments
+    self.playerAssessmentColl = self.db.playerAssessment
 
     # database abstraction
     self.gameDB = GameDB(self.gameColl)
-    self.playerAssessmentDB = PlayerAssessmentDB(self.assessColl)
-    self.gameAnalysisDB = GameAnalysisDB(self.GameAnalysisColl)
+    self.playerAssessmentDB = PlayerAssessmentDB(self.playerAssessmentColl)
+    self.gameAnalysisDB = GameAnalysisDB(self.GameAnalysisColl, self.gameDB, self.playerAssessmentDB)
