@@ -47,7 +47,7 @@ class GameAnalysis:
     return self.game.id
 
 def analyse(gameAnalysis, engine, infoHandler, override = False):
-  if not gameAnalysis.analysed and not override:
+  if not gameAnalysis.analysed or override:
     node = gameAnalysis.playableGame
 
     logging.debug(bcolors.WARNING + "Game ID: " + gameAnalysis.gameId() + bcolors.ENDC)
@@ -84,6 +84,9 @@ class GameAnalyses:
 
   def append(self, gameAnalysis):
     return self.gameAnalyses.append(gameAnalysis)
+
+  def hasId(self, gameId):
+    return (gameId in list([ga.game.id for ga in self.gameAnalyses]))
 
 def JSONToGameAnalysis(json):
   return GameAnalysis(JSONToGame(json['game']), PlayerAssessment(json['playerAssessment']), list([JSONToAnalysedMove(am) for am in json['analysedMoves']]))
