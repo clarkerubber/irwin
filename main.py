@@ -8,15 +8,13 @@ import logging
 from pprint import pprint
 from modules.bcolors.bcolors import bcolors
 
-from modules.api.api import getPlayerData, getPlayerId, postReport
+from modules.api import getPlayerData, getPlayerId, postReport
 
 from modules.Game import Game, recentGames
-from modules.PlayerAssessment import JSONToPlayerAssessment, PlayerAssessment, PlayerAssessments
+from modules.PlayerAssessment import PlayerAssessmentBSONHandler, PlayerAssessment, PlayerAssessments
 from modules.GameAnalysis import GameAnalysis, GameAnalyses, analyse
 
 from env import IrwinEnv
-
-sys.setrecursionlimit(2000)
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("token", metavar="TOKEN",
@@ -55,7 +53,7 @@ while True:
 
   # Filter games and assessments for relevant info
   try:
-    pas = list([JSONToPlayerAssessment(pa) for pa in userData['assessment']['playerAssessments']])
+    pas = list([PlayerAssessmentBSONHandler.reads(pa) for pa in userData['assessment']['playerAssessments']])
     playerAssessments = PlayerAssessments(pas)
     games = recentGames(playerAssessments, userData['games'])
   except KeyError:
@@ -69,6 +67,8 @@ while True:
   playerAssessments = env.playerAssessmentDB.byUserId(userId)
   games = env.gameDB.byIds(playerAssessments.gameIds())
   gameAnalyses = env.gameAnalysisDB.byUserId(userId)
+
+  logging.debug(bcolors.WARNING + "Already Analysed: " + str(len(gameAnalyses.gameAnalyses)) + bcolors.ENDC)
 
   for g in games.games:
     if playerAssessments.hasGameId(g.id):

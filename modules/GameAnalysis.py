@@ -5,12 +5,13 @@ import logging
 from math import floor
 
 from modules.bcolors.bcolors import bcolors
-from modules.Game import JSONToGame
 from modules.PlayerAssessment import PlayerAssessment
-from modules.AnalysedMove import JSONToAnalysedMove
+
+from modules.Game import GameBSONHandler
+from modules.AnalysedMove import AnalysedMoveBSONHandler
 
 class GameAnalysis:
-  def __init__(self, game, playerAssessment, analysedMoves = []):
+  def __init__(self, game, playerAssessment, analysedMoves):
     try:
       from StringIO import StringIO
     except ImportError:
@@ -35,12 +36,6 @@ class GameAnalysis:
       return str(self.game) + "\n" + str(self.playerAssessment) + "\n" + str(list([str(am) for am in self.analysedMoves]))
     else:
       return str(self.game) + "\n" + str(self.playerAssessment)
-
-  def json(self):
-    return {'_id': self.id,
-      'gameId': self.gameId,
-      'userId': self.userId,
-      'analysedMoves': list([am.json() for am in self.analysedMoves])}
 
   def ply(self, moveNumber, white):
     return (2*(moveNumber-1)) + (0 if white else 1)
@@ -99,8 +94,19 @@ class GameAnalyses:
   def hasId(self, _id):
     return (_id in self.ids())
 
-def JSONToGameAnalysis(json):
-  return GameAnalysis(JSONToGame(json['game']), PlayerAssessment(json['playerAssessment']), list([JSONToAnalysedMove(am) for am in json['analysedMoves']]))
+class GameAnalysisBSONHandler:
+  @staticmethod
+  def reads(game, playerAssessment, analysedMovesBSON):
+    return GameAnalysis(game, playerAssessment, list([AnalysedMoveBSONHandler.reads(am) for am in analysedMovesBSON]))
+
+  @staticmethod
+  def writes(gameAnalysis):
+    return {
+      '_id': gameAnalysis.id,
+      'gameId': gameAnalysis.gameId,
+      'userId': gameAnalysis.userId,
+      'analysedMoves': list([AnalysedMoveBSONHandler.writes(am) for am in gameAnalysis.analysedMoves])
+    }
 
 class GameAnalysisDB:
   def __init__(self, gameAnalysisColl, gameDB, playerAssessmentDB):
@@ -109,7 +115,7 @@ class GameAnalysisDB:
     self.playerAssessmentDB = playerAssessmentDB
 
   def write(self, gameAnalysis):
-    self.gameAnalysisColl.update_one({'_id': gameAnalysis.id}, {'$set': gameAnalysis.json()}, upsert=True)
+    self.gameAnalysisColl.update_one({'_id': gameAnalysis.id}, {'$set': GameAnalysisBSONHandler.writes(gameAnalysis)}, upsert=True)
 
   def byUserId(self, userId):
     playerAssessments = self.playerAssessmentDB.byUserId(userId)
@@ -119,10 +125,10 @@ class GameAnalysisDB:
     gameAnalyses = GameAnalyses([])
     for ga in gameAnalysisJSONs:
       if games.hasId(ga['gameId']) and playerAssessments.hasGameId(ga['gameId']):
-        gameAnalyses.append(GameAnalysis(
+        gameAnalyses.append(GameAnalysisBSONHandler.reads(
           games.byId(ga['gameId']),
           playerAssessments.byGameId(ga['gameId']),
-          list([JSONToAnalysedMove(am) for am in ga['analysedMoves']])))
+          ga['analysedMoves']))
     return gameAnalyses
 
   def lazyWriteGames(self, gameAnalyses):
