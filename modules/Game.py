@@ -61,14 +61,14 @@ class GameDB:
       return None
 
   def byIds(self, ids): # List[Ids]
-    return Games(list([GameBSONHandler.reads(g) for g in self.gameColl.find({'_id': {'$in': list([i for i in ids])}})]))
+    return Games(list([GameBSONHandler.reads(g) for g in self.gameColl.find({'_id': {'$in': [i for i in ids]}})]))
 
   def write(self, game): # Game
     self.gameColl.update_one({'_id': game.id}, {'$set': GameBSONHandler.writes(game)}, upsert=True)
 
   def writeGames(self, games): # Games
     if len(games.games) > 0:
-      self.gameColl.insert_many(list([GameBSONHandler.writes(g) for g in games.games]))
+      self.gameColl.insert_many([GameBSONHandler.writes(g) for g in games.games])
 
   def lazyWriteGames(self, games):
     [self.write(g) for g in games.games]

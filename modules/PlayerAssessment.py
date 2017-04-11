@@ -10,7 +10,7 @@ class PlayerAssessments(collections.namedtuple('PlayerAssessments', ['playerAsse
     return list([pa.gameId for pa in self.playerAssessments])
 
   def hasGameId(self, gameId):
-    return (gameId in list([pa.gameId for pa in self.playerAssessments]))
+    return (gameId in [pa.gameId for pa in self.playerAssessments])
 
   def byGameIds(self, gameIds):
     return [p for p in self.playerAssessments if p.gameId in gameIds]
@@ -79,10 +79,10 @@ class PlayerAssessmentDB:
       return None
 
   def byIds(self, ids): # List[String]
-    return PlayerAssessments(list([PlayerAssessmentBSONHandler.reads(pa) for pa in self.playerAssessmentColl.find({'_id': {'$in': list([i for i in ids])}})]))
+    return PlayerAssessments([PlayerAssessmentBSONHandler.reads(pa) for pa in self.playerAssessmentColl.find({'_id': {'$in': list([i for i in ids])}})])
 
   def byUserId(self, userId):
-    return PlayerAssessments(list([PlayerAssessmentBSONHandler.reads(pa) for pa in self.playerAssessmentColl.find({'userId': userId})]))
+    return PlayerAssessments([PlayerAssessmentBSONHandler.reads(pa) for pa in self.playerAssessmentColl.find({'userId': userId})])
 
   def byGameId(self, gameId):
     try:
@@ -98,7 +98,7 @@ class PlayerAssessmentDB:
 
   def writeMany(self, playerAssessments):
     if len(playerAssessments.playerAssessments) > 0:
-      self.playerAssessmentColl.insert_many(list([PlayerAssessmentBSONHandler.writes(pa) for pa in playerAssessments.playerAssessments]))
+      self.playerAssessmentColl.insert_many([PlayerAssessmentBSONHandler.writes(pa) for pa in playerAssessments.playerAssessments])
 
   def lazyWriteMany(self, playerAssessments):
     [self.write(pa) for pa in playerAssessments.playerAssessments]
