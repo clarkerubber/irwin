@@ -23,11 +23,7 @@ class GameAnalysis:
     self.playerAssessment = playerAssessment
     self.analysedMoves = analysedMoves # List[AnalysedMove]
     self.white = self.playerAssessment.white
-    
-    if len(self.analysedMoves) > 0:
-      self.analysed = True
-    else:
-      self.analysed = False
+    self.analysed = len(self.analysedMoves) > 0
 
     self.playableGame = chess.pgn.read_game(StringIO(game.pgn))
     
@@ -77,7 +73,7 @@ class GameAnalyses:
     self.gameAnalyses = gameAnalyses # List[GameAnalysis]
 
   def byGameId(self, gameId):
-    return next(iter([p for p in self.gameAnalyses if p.gameId == gameId]), None)
+    return next([p for p in self.gameAnalyses if p.gameId == gameId], None)
 
   def append(self, gameAnalysis):
     if not self.hasId(gameAnalysis.id):
