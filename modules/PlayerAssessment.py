@@ -1,87 +1,142 @@
 from bson.objectid import ObjectId
 
 class PlayerAssessment:
-    def __init__(self, jsonin):
-        self.json = jsonin
-        self.id = jsonin['_id']
-        self.gameId = jsonin['gameId']
-        self.userId = jsonin['userId']
-        self.white = jsonin['white']
-        self.assessment = jsonin['assessment']
-        self.date = jsonin['date']
-        self.sfAvg = jsonin['sfAvg']
-        self.sfSd = jsonin['sfSd']
-        self.mtAvg = jsonin['mtAvg']
-        self.mtSd = jsonin['mtSd']
-        self.blurs = jsonin['blurs'] # percentage 0-100 blur rate
-        self.hold = jsonin['hold'] # boolean hold alert
-        self.flags = PlayerFlags(jsonin['flags'])
+  def __init__(self, _id, gameId, userId, white, assessment, date, sfAvg, sfSd, mtAvg, mtSd, blurs, hold, flags):
+    self.id = _id
+    self.gameId = gameId
+    self.userId = userId
+    self.white = white
+    self.assessment = assessment
+    self.date = date
+    self.sfAvg = sfAvg
+    self.sfSd = sfSd
+    self.mtAvg = mtAvg
+    self.mtSd = mtSd
+    self.blurs = blurs # percentage 0-100 blur rate
+    self.hold = hold # boolean hold alert
+    self.flags = flags
 
-    def __str__(self):
-      return str(self.json)
+  def __str__(self):
+    return str(self.json())
+
+  def json(self):
+    return {'_id': self.id,
+      'gameId': self.gameId,
+      'userId': self.userId,
+      'white': self.white,
+      'assessment': self.assessment,
+      'date': self.date,
+      'sfAvg': self.sfAvg,
+      'sfSd': self.sfSd,
+      'mtAvg': self.mtAvg,
+      'mtSd': self.mtSd,
+      'blurs': self.blurs,
+      'hold': self.hold,
+      'flags': self.flags.json()}
 
 class PlayerFlags:
-    def __init__(self, jsonin):
-        self.jsonin = jsonin
-        self.ser = self.get_key('ser') # Suspicious Error Rate
-        self.aha = self.get_key('aha') # Always Has Advantage
-        self.hbr = self.get_key('hbr') # High Blur Rate
-        self.mbr = self.get_key('mbr') # Medium Blur Rate
-        self.cmt = self.get_key('cmt') # Consistent Move Times
-        self.nfm = self.get_key('nfm') # No Fast Moves
-        self.sha = self.get_key('sha') # Suspicious Hold Alert
+  def __init__(self, ser, aha, hbr, mbr, cmt, nfm, sha):
+    self.ser = ser # Suspicious Error Rate
+    self.aha = aha # Always Has Advantage
+    self.hbr = hbr # High Blur Rate
+    self.mbr = mbr # Medium Blur Rate
+    self.cmt = cmt # Consistent Move Times
+    self.nfm = nfm # No Fast Moves
+    self.sha = sha # Suspicious Hold Alert
 
-    def get_key(self, key):
-        return self.jsonin.get(key, False)
+  def json(self):
+    return {'ser': self.ser,
+      'aha': self.aha,
+      'hbr': self.hbr,
+      'mbr': self.mbr,
+      'cmt': self.cmt,
+      'nfm': self.nfm,
+      'sha': self.sha}
 
 class PlayerAssessments:
   def __init__(self, playerAssessments):
-    self.playerAssessments = playerAssessments # Raw JSON input
-    self.list = [PlayerAssessment(p) for p in playerAssessments] # List[PlayerAssessment]
+    self.playerAssessments = playerAssessments # List[PlayerAssesment]
 
   def __str__(self):
-    return str([str(pa) for pa in self.list])
+    return str([str(pa) for pa in self.playerAssessments])
+
+  def gameIds(self):
+    return list([pa.gameId for pa in self.playerAssessments])
+
+  def hasGameId(self, gameId):
+    return (gameId in list([pa.gameId for pa in self.playerAssessments]))
 
   def byGameIds(self, gameIds):
-    return [p for p in self.list if p.gameId in gameIds]
+    return [p for p in self.playerAssessments if p.gameId in gameIds]
 
   def byGameId(self, gameId):
-    return next(iter([p for p in self.list if p.gameId == gameId]), None)
+    return next(iter([p for p in self.playerAssessments if p.gameId == gameId]), None)
 
   def suspicious(self):
     return [p for p in self.list if p.assessment > 2]
 
+def getKey(json, key):
+  return json.get(key, False)
+
+def JSONToPlayerFlags(json):
+  return PlayerFlags(getKey(json, 'ser'),
+    getKey(json, 'aha'),
+    getKey(json, 'hbr'),
+    getKey(json, 'mbr'),
+    getKey(json, 'cmt'),
+    getKey(json, 'nfm'),
+    getKey(json, 'sha'))
+
+def JSONToPlayerAssessment(json):
+  try:
+    return PlayerAssessment(
+      json['_id'],
+      json['gameId'],
+      json['userId'],
+      json['white'],
+      json['assessment'],
+      json['date'],
+      json['sfAvg'],
+      json['sfSd'],
+      json['mtAvg'],
+      json['mtSd'],
+      json['blurs'],
+      json['hold'],
+      JSONToPlayerFlags(json['flags']))
+  except KeyError:
+    return None
+
 class PlayerAssessmentDB:
-  def __init__(self, assessColl):
-    self.assessColl = assessColl
+  def __init__(self, playerAssessmentColl):
+    self.playerAssessmentColl = playerAssessmentColl
 
   def byId(self, _id): # string
     try:
-      return PlayerAssessment(self.assessColl.find_one({'_id': ObjectId(_id)}))
+      return JSONToPlayerAssessment(self.playerAssessmentColl.find_one({'_id': _id}))
     except:
       return None
 
   def byIds(self, ids): # List[String]
-    return PlayerAssessments(self.assessColl.find({'_id': {'$in': list([ObjectId(i) for i in ids])}}))
+    return PlayerAssessments(list([JSONToPlayerAssessment(pa) for pa in self.playerAssessmentColl.find({'_id': {'$in': list([i for i in ids])}})]))
 
   def byUserId(self, userId):
-    return PlayerAssessments(self.assessColl.find({'userId': userId}))
+    return PlayerAssessments(list([JSONToPlayerAssessment(pa) for pa in self.playerAssessmentColl.find({'userId': userId})]))
 
   def byGameId(self, gameId):
     try:
-      return PlayerAssessment(self.assessColl.find_one({'gameId': gameId}))
+      return JSONToPlayerAssessment(self.playerAssessmentColl.find_one({'gameId': gameId}))
     except:
       return None
 
   def byGameIds(self, gameIds):
-    return PlayerAssessments(self.assessColl.find({'gameId': {'$in': gameId}}))
+    return PlayerAssessments(JSONToPlayerAssessment(self.playerAssessmentColl.find({'gameId': {'$in': gameId}})))
 
   def write(self, playerAssessment):
-    self.assessColl.update_one({'_id': playerAssessment.json['_id']}, {'$set': playerAssessment.json}, upsert=True)
+    self.playerAssessmentColl.update_one({'_id': playerAssessment.id}, {'$set': playerAssessment.json()}, upsert=True)
 
   def writeMany(self, playerAssessments):
-    if len(playerAssessments.list) > 0:
-      self.assessColl.insert_many(list([pa.json for pa in playerAssessments.list]))
+    if len(playerAssessments.playerAssessments) > 0:
+      self.playerAssessmentColl.insert_many(list([pa.json for pa in playerAssessments.playerAssessments]))
 
   def lazyWriteMany(self, playerAssessments):
-    [self.write(pa) for pa in playerAssessments.list]
+    [self.write(pa) for pa in playerAssessments.playerAssessments]

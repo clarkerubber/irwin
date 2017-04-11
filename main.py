@@ -11,7 +11,7 @@ from modules.bcolors.bcolors import bcolors
 from modules.api.api import getPlayerData, getPlayerId, postReport
 
 from modules.Game import Game, recentGames
-from modules.PlayerAssessment import PlayerAssessment, PlayerAssessments
+from modules.PlayerAssessment import JSONToPlayerAssessment, PlayerAssessment, PlayerAssessments
 from modules.GameAnalysis import GameAnalysis, GameAnalyses, analyse
 
 from env import IrwinEnv
@@ -55,8 +55,9 @@ while True:
 
   # Filter games and assessments for relevant info
   try:
-    playerAssessments = PlayerAssessments(userData['assessment']['playerAssessments'])
-    games = recentGames(playerAssessments.list, userData['games'])
+    pas = list([JSONToPlayerAssessment(pa) for pa in userData['assessment']['playerAssessments']])
+    playerAssessments = PlayerAssessments(pas)
+    games = recentGames(playerAssessments, userData['games'])
   except KeyError:
     continue # if either of these don't gather any useful data, skip them
 
@@ -65,16 +66,14 @@ while True:
   env.gameDB.lazyWriteGames(games)
 
   # Pull everything from mongo that we have on the player
-  games = env.gameDB.byUserId(userId)
   playerAssessments = env.playerAssessmentDB.byUserId(userId)
+  games = env.gameDB.byIds(playerAssessments.gameIds())
   gameAnalyses = env.gameAnalysisDB.byUserId(userId)
 
   for g in games.games:
-    pa = playerAssessments.byGameId(g.id)
-    ga = gameAnalyses.byGameId(g.id)
-    if pa is not None and not gameAnalyses.hasId(g.id):
-      gameAnalyses.append(GameAnalysis(g, pa, (ga if ga is not None else [])))
+    if playerAssessments.hasGameId(g.id):
+      gameAnalyses.append(GameAnalysis(g, playerAssessments.byGameId(g.id), []))
 
-  gameAnalyses = GameAnalyses(list([analyse(ga, env.engine, env.infoHandler) for ga in gameAnalyses.gameAnalyses]))
+  gameAnalyses.analyse(env.engine, env.infoHandler)
 
   env.gameAnalysisDB.lazyWriteGames(gameAnalyses)
