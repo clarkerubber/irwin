@@ -72,7 +72,7 @@ while True:
   for g in games.games:
     pa = playerAssessments.byGameId(g.id)
     ga = gameAnalyses.byGameId(g.id)
-    if pa is not None:
+    if pa is not None and not gameAnalyses.hasId(g.id):
       gameAnalyses.append(GameAnalysis(g, pa, (ga if ga is not None else [])))
 
   gameAnalyses = GameAnalyses(list([analyse(ga, env.engine, env.infoHandler) for ga in gameAnalyses.gameAnalyses]))
