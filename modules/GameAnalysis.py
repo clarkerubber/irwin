@@ -93,8 +93,11 @@ class GameAnalyses:
   def analyse(self, engine, infoHandler):
     self.gameAnalyses = list([analyse(ga, engine, infoHandler) for ga in self.gameAnalyses])
 
-  def hasId(self, gameId):
-    return (gameId in list([ga.gameId for ga in self.gameAnalyses]))
+  def ids(self):
+    return list([ga.id for ga in self.gameAnalyses])
+
+  def hasId(self, _id):
+    return (_id in self.ids())
 
 def JSONToGameAnalysis(json):
   return GameAnalysis(JSONToGame(json['game']), PlayerAssessment(json['playerAssessment']), list([JSONToAnalysedMove(am) for am in json['analysedMoves']]))
