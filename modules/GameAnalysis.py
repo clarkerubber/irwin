@@ -56,9 +56,9 @@ def analyse(gameAnalysis, engine, infoHandler, override = False):
         engine.position(node.board())
         engine.go(nodes=5000000)
 
-        analysis = list([{
+        analysis = list([
           Analysis(pv[1][0].uci(),
-          Score(score[1].cp, score[1].mate))} for score, pv in zip(
+          Score(score[1].cp, score[1].mate)) for score, pv in zip(
             infoHandler.info['score'].items(),
             infoHandler.info['pv'].items())])
 
