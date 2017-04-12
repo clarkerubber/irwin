@@ -1,4 +1,4 @@
-from modules.AnalysedMove import AnalysedMove
+from modules.AnalysedMove import AnalysedMove, Analysis, Score
 import chess
 import chess.pgn
 import logging
@@ -56,10 +56,18 @@ def analyse(gameAnalysis, engine, infoHandler, override = False):
         engine.position(node.board())
         engine.go(nodes=5000000)
 
-        analysis = list([{'uci': pv[1][0].uci(), 'score': {'cp': score[1].cp, 'mate': score[1].mate}} for score, pv in zip(infoHandler.info['score'].items(), infoHandler.info['pv'].items())])
+        analysis = list([{
+          Analysis(pv[1][0].uci(),
+          Score(score[1].cp, score[1].mate))} for score, pv in zip(
+            infoHandler.info['score'].items(),
+            infoHandler.info['pv'].items())])
+
         moveNumber = node.board().fullmove_number
 
-        am = AnalysedMove(node.variation(0).move.uci(), moveNumber, analysis, gameAnalysis.game.getEmt(gameAnalysis.ply(moveNumber, gameAnalysis.white)))
+        am = AnalysedMove(node.variation(0).move.uci(),
+          moveNumber,
+          analysis,
+          gameAnalysis.game.getEmt(gameAnalysis.ply(moveNumber, gameAnalysis.white)))
         gameAnalysis.analysedMoves.append(am)
 
       node = nextNode
