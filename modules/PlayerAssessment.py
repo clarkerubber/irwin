@@ -1,16 +1,15 @@
-from bson.objectid import ObjectId
-import collections
+from collections import namedtuple
 
-PlayerAssessment = collections.namedtuple('PlayerAssessment', ['id', 'gameId', 'userId', 'white', 'assessment', 'date', 'sfAvg', 'sfSd', 'mtAvg', 'mtSd', 'blurs', 'hold', 'flags'])
+PlayerAssessment = namedtuple('PlayerAssessment', ['id', 'gameId', 'userId', 'white', 'assessment', 'date', 'sfAvg', 'sfSd', 'mtAvg', 'mtSd', 'blurs', 'hold', 'flags'])
 
-PlayerFlags = collections.namedtuple('PlayerFlags', ['ser', 'aha', 'hbr', 'mbr', 'cmt', 'nfm', 'sha'])
+PlayerFlags = namedtuple('PlayerFlags', ['ser', 'aha', 'hbr', 'mbr', 'cmt', 'nfm', 'sha'])
 
-class PlayerAssessments(collections.namedtuple('PlayerAssessments', ['playerAssessments'])):
+class PlayerAssessments(namedtuple('PlayerAssessments', ['playerAssessments'])):
   def gameIds(self):
     return list([pa.gameId for pa in self.playerAssessments])
 
   def hasGameId(self, gameId):
-    return (gameId in [pa.gameId for pa in self.playerAssessments])
+    return any(gameId == pa.gameId for pa in self.playerAssessments)
 
   def byGameIds(self, gameIds):
     return [p for p in self.playerAssessments if p.gameId in gameIds]
@@ -73,10 +72,7 @@ class PlayerAssessmentDB:
     self.playerAssessmentColl = playerAssessmentColl
 
   def byId(self, _id): # string
-    try:
-      return PlayerAssessmentBSONHandler.reads(self.playerAssessmentColl.find_one({'_id': _id}))
-    except:
-      return None
+    return PlayerAssessmentBSONHandler.reads(self.playerAssessmentColl.find_one({'_id': _id}))
 
   def byIds(self, ids): # List[String]
     return PlayerAssessments([PlayerAssessmentBSONHandler.reads(pa) for pa in self.playerAssessmentColl.find({'_id': {'$in': list([i for i in ids])}})])
@@ -85,10 +81,7 @@ class PlayerAssessmentDB:
     return PlayerAssessments([PlayerAssessmentBSONHandler.reads(pa) for pa in self.playerAssessmentColl.find({'userId': userId})])
 
   def byGameId(self, gameId):
-    try:
-      return PlayerAssessmentBSONHandler.reads(self.playerAssessmentColl.find_one({'gameId': gameId}))
-    except:
-      return None
+    return PlayerAssessmentBSONHandler.reads(self.playerAssessmentColl.find_one({'gameId': gameId}))
 
   def byGameIds(self, gameIds):
     return PlayerAssessments(PlayerAssessmentBSONHandler.reads(self.playerAssessmentColl.find({'gameId': {'$in': gameId}})))
