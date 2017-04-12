@@ -1,7 +1,6 @@
 import requests
 import chess
 import logging
-import re
 import time
 import json
 from modules.bcolors.bcolors import bcolors

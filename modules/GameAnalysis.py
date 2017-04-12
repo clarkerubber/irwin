@@ -1,8 +1,7 @@
 from modules.AnalysedMove import AnalysedMove
 import chess
-import StringIO
+import chess.pgn
 import logging
-from math import floor
 
 from modules.bcolors.bcolors import bcolors
 from modules.PlayerAssessment import PlayerAssessment

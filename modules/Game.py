@@ -1,5 +1,3 @@
-from operator import attrgetter
-from bson.objectid import ObjectId
 from modules.PlayerAssessment import PlayerAssessments
 from collections import namedtuple
 
@@ -13,11 +11,11 @@ def gameLength(pgn):
 def recentGames(playerAssessments, gameJSONs):
   try:
     playerAssessments = PlayerAssessments(sorted(playerAssessments.playerAssessments,
-      key = lambda x: (attrgetter('assessment'), attrgetter('date')), reverse=True))
-    return Games(list(Game(pa.gameId, gameJSONs[pa.gameId]['pgn'], gameJSONs[pa.gameId]['emts']) for pa in playerAssessments.playerAssessments if 
+      key = lambda x: (x.assessment, x.date), reverse=True))
+    return Games([Game(pa.gameId, gameJSONs[pa.gameId]['pgn'], gameJSONs[pa.gameId]['emts']) for pa in playerAssessments.playerAssessments if 
       'variant' not in gameJSONs[pa.gameId] and
       'emts' in gameJSONs[pa.gameId] and
-      gameLength(gameJSONs[pa.gameId].get('pgn', '')) > 50)[:5])
+      gameLength(gameJSONs[pa.gameId].get('pgn', '')) > 50][:5])
   except ValueError:
     return []
   except IndexError:

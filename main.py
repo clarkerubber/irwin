@@ -1,8 +1,8 @@
 import argparse
-import chess
-import chess.uci
-import chess.pgn
-import os
+#import chess
+#import chess.uci
+#import chess.pgn
+#import os
 import sys
 import logging
 from pprint import pprint
