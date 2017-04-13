@@ -8,6 +8,7 @@ from modules.core.Game import GameDB
 from modules.core.PlayerAssessment import PlayerAssessmentDB
 from modules.core.GameAnalysis import GameAnalysisDB
 from modules.core.PlayerAnalysis import PlayerAnalysisDB
+from modules.Api import Api
 
 class IrwinEnv:
   def __init__(self, settings):
@@ -16,6 +17,8 @@ class IrwinEnv:
     self.engine.uci()
     self.infoHandler = chess.uci.InfoHandler()
     self.engine.info_handlers.append(self.infoHandler)
+
+    self.api = Api(settings.token)
 
     # Set up mongodb
     self.client = MongoClient()

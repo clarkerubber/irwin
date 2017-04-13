@@ -4,10 +4,10 @@ import logging
 from pprint import pprint
 from modules.bcolors.bcolors import bcolors
 
-from modules.api import getPlayerData, getPlayerId, postReport
-
-from modules.core.Game import Game, recentGames
-from modules.core.PlayerAssessment import PlayerAssessmentBSONHandler, PlayerAssessment, PlayerAssessments
+from modules.core.Game import Game
+from modules.core.recentGames import recentGames
+from modules.core.PlayerAssessment import PlayerAssessmentBSONHandler, PlayerAssessment
+from modules.core.PlayerAssessments import PlayerAssessments
 from modules.core.GameAnalysis import GameAnalysis
 from modules.core.PlayerAnalysis import PlayerAnalysis
 
@@ -45,8 +45,8 @@ env = IrwinEnv(settings)
 
 while True:
   # Get player data
-  userId = getPlayerId(settings.token)
-  userData = getPlayerData(userId, settings.token)
+  userId = env.api.getPlayerId()
+  userData = env.api.getPlayerData(userId)
 
   # Filter games and assessments for relevant info
   try:

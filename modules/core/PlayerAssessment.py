@@ -1,26 +1,9 @@
 from collections import namedtuple
 
+from modules.core.PlayerAssessments import PlayerAssessments
+
 PlayerAssessment = namedtuple('PlayerAssessment', ['id', 'gameId', 'userId', 'white', 'assessment', 'date', 'sfAvg', 'sfSd', 'mtAvg', 'mtSd', 'blurs', 'hold', 'flags'])
 PlayerFlags = namedtuple('PlayerFlags', ['ser', 'aha', 'hbr', 'mbr', 'cmt', 'nfm', 'sha'])
-
-class PlayerAssessments(namedtuple('PlayerAssessments', ['playerAssessments'])):
-  def gameIds(self):
-    return list([pa.gameId for pa in self.playerAssessments])
-
-  def hasGameId(self, gameId):
-    return any(gameId == pa.gameId for pa in self.playerAssessments)
-
-  def byGameIds(self, gameIds):
-    return [p for p in self.playerAssessments if p.gameId in gameIds]
-
-  def byGameId(self, gameId):
-    return next((p for p in self.playerAssessments if p.gameId == gameId), None)
-
-  def suspicious(self):
-    return [p for p in self.list if p.assessment > 2]
-
-def getKey(json, key):
-  return json.get(key, False)
 
 class PlayerAssessmentBSONHandler:
   @staticmethod
@@ -65,6 +48,9 @@ class PlayerAssessmentBSONHandler:
       'hold': playerAssessment.hold,
       'flags': playerAssessment.flags._asdict()
     }
+
+def getKey(bson, key):
+  return bson.get(key, False)
 
 class PlayerAssessmentDB(namedtuple('PlayerAssessmentDB', ['playerAssessmentColl'])):
   def byId(self, _id): # string
