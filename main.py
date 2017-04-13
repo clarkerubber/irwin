@@ -1,8 +1,4 @@
 import argparse
-#import chess
-#import chess.uci
-#import chess.pgn
-#import os
 import sys
 import logging
 from pprint import pprint
@@ -12,7 +8,7 @@ from modules.api import getPlayerData, getPlayerId, postReport
 
 from modules.core.Game import Game, recentGames
 from modules.core.PlayerAssessment import PlayerAssessmentBSONHandler, PlayerAssessment, PlayerAssessments
-from modules.core.GameAnalysis import GameAnalysis, GameAnalyses, analyse
+from modules.core.GameAnalysis import GameAnalysis
 from modules.core.PlayerAnalysis import PlayerAnalysis
 
 from env import IrwinEnv
