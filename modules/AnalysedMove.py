@@ -1,34 +1,27 @@
 from collections import namedtuple
 from math import exp
 
-class AnalysedMove(namedtuple('AnalysedMove', ['uci', 'move', 'analysis', 'emt'])):
+Analysis = namedtuple('Analysis', ['uci', 'score'])
+Score = namedtuple('Score', ['cp', 'mate'])
+
+class AnalysedMove(namedtuple('AnalysedMove', ['uci', 'move', 'emt', 'score', 'analyses'])):
   def inTopFive(self):
-    return any(self.uci == am.uci for am in self.analysis)
+    return any(self.uci == am.uci for am in self.analyses)
 
   def isTop(self):
     return self.uci == self.top().uci
 
   def top(self):
-    return next(iter(self.analysis or []), None)
+    return next(iter(self.analyses or []), None)
 
   def bottom(self):
-    return self.analysis[-1]
-
-  def playedScore(self):
-    return next((am.score for am in self.analysis if am.uci == self.uci), None)
+    return self.analyses[-1]
 
   def winningChancesLoss(self):
-    score = self.playedScore()
-    if score is not None:
-      return winningChances(self.top().score) - winningChances(score)
-    else:
-      return None
+    return winningChances(self.top().score) - winningChances(self.score)
 
   def allAmbiguous(self):
     return similarChances(winningChances(self.top().score), winningChances(self.bottom().score))
-
-Analysis = namedtuple('Analysis', ['uci', 'score'])
-Score = namedtuple('Score', ['cp', 'mate'])
 
 def winningChances(score):
   if score.mate is not None:
@@ -39,20 +32,43 @@ def winningChances(score):
 def similarChances(c1, c2):
   return abs(c1 - c2) < 0.1
 
+class AnalysisBSONHandler:
+  @staticmethod
+  def reads(bson):
+    return Analysis(bson['uci'], ScoreBSONHandler.reads(bson['score']))
+
+  @staticmethod
+  def writes(analysis):
+    return {
+      'uci': analysis.uci,
+      'score': ScoreBSONHandler.writes(analysis.score)
+    }
+
+class ScoreBSONHandler:
+  @staticmethod
+  def reads(bson):
+    return Score(**bson)
+
+  def writes(score):
+    return score._asdict()
+
 class AnalysedMoveBSONHandler:
   @staticmethod
   def reads(bson):
     return AnalysedMove(
       uci = bson['uci'],
       move = bson['move'],
-      analysis = [Analysis(a['uci'], Score(a['score']['cp'], a['score']['mate'])) for a in bson['analysis']],
-      emt = bson['emt'])
+      emt = bson['emt'],
+      score = ScoreBSONHandler.reads(bson['score']),
+      analyses = [AnalysisBSONHandler.reads(a) for a in bson['analyses']]
+      )
 
   @staticmethod
   def writes(analysedMove):
     return {
       'uci': analysedMove.uci,
       'move': analysedMove.move,
-      'analysis': [{'uci': a.uci, 'score': {'cp': a.score.cp, 'mate': a.score.mate}} for a in analysedMove.analysis],
-      'emt': analysedMove.emt
+      'emt': analysedMove.emt,
+      'score': ScoreBSONHandler.writes(analysedMove.score),
+      'analyses': [AnalysisBSONHandler.writes(a) for a in analysedMove.analyses]
     }

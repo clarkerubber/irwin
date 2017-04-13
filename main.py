@@ -77,7 +77,7 @@ while True:
   gameAnalyses.analyse(env.engine, env.infoHandler)
 
   for ga in gameAnalyses.gameAnalyses:
-    print [am.winningChancesLoss() for am in ga.analysedMoves]
+    print([am.winningChancesLoss() for am in ga.analysedMoves])
 
 
   env.gameAnalysisDB.lazyWriteGames(gameAnalyses)

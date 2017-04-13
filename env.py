@@ -7,6 +7,7 @@ from modules.fishnet.fishnet import stockfish_command
 from modules.Game import GameDB
 from modules.PlayerAssessment import PlayerAssessmentDB
 from modules.GameAnalysis import GameAnalysisDB
+from modules.PlayerAnalysis import PlayerAnalysisDB
 
 class IrwinEnv:
   def __init__(self, settings):
@@ -25,8 +26,10 @@ class IrwinEnv:
     self.GameAnalysisColl = self.db.gameAnalysis
     self.gameColl = self.db.game
     self.playerAssessmentColl = self.db.playerAssessment
+    self.playerAnalysisColl = self.db.playerAnalysis
 
     # database abstraction
     self.gameDB = GameDB(self.gameColl)
     self.playerAssessmentDB = PlayerAssessmentDB(self.playerAssessmentColl)
     self.gameAnalysisDB = GameAnalysisDB(self.GameAnalysisColl, self.gameDB, self.playerAssessmentDB)
+    self.playerAnalysisDB = PlayerAnalysisDB(self.playerAnalysisColl, self.gameAnalysisDB)

@@ -53,21 +53,30 @@ def analyse(gameAnalysis, engine, infoHandler, override = False):
     while not node.is_end():
       nextNode = node.variation(0)
       if gameAnalysis.white == node.board().turn:
+        engine.setoption({'multipv': 5})
         engine.position(node.board())
         engine.go(nodes=5000000)
 
-        analysis = list([
+        analyses = list([
           Analysis(pv[1][0].uci(),
-          Score(score[1].cp, score[1].mate)) for score, pv in zip(
-            infoHandler.info['score'].items(),
-            infoHandler.info['pv'].items())])
+            Score(score[1].cp, score[1].mate)) for score, pv in zip(
+              infoHandler.info['score'].items(),
+              infoHandler.info['pv'].items())])
+
+        engine.setoption({'multipv': 1})
+        engine.position(nextNode.board())
+        engine.go(nodes=4000000)
+
+        score = Score(infoHandler.info['score'][1].cp, infoHandler.info['score'][1].mate)
 
         moveNumber = node.board().fullmove_number
 
-        am = AnalysedMove(node.variation(0).move.uci(),
-          moveNumber,
-          analysis,
-          gameAnalysis.game.getEmt(gameAnalysis.ply(moveNumber, gameAnalysis.white)))
+        am = AnalysedMove(
+          uci = node.variation(0).move.uci(),
+          move = moveNumber,
+          emt = gameAnalysis.game.getEmt(gameAnalysis.ply(moveNumber, gameAnalysis.white)),
+          score = score,
+          analyses = analyses)
         gameAnalysis.analysedMoves.append(am)
 
       node = nextNode
