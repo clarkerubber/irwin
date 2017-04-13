@@ -1,7 +1,6 @@
 from collections import namedtuple
 
 PlayerAssessment = namedtuple('PlayerAssessment', ['id', 'gameId', 'userId', 'white', 'assessment', 'date', 'sfAvg', 'sfSd', 'mtAvg', 'mtSd', 'blurs', 'hold', 'flags'])
-
 PlayerFlags = namedtuple('PlayerFlags', ['ser', 'aha', 'hbr', 'mbr', 'cmt', 'nfm', 'sha'])
 
 class PlayerAssessments(namedtuple('PlayerAssessments', ['playerAssessments'])):
