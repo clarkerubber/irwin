@@ -54,7 +54,7 @@ class GameDB:
 
   def byId(self, _id):
     try:
-      return GameBSONHandler(self.gameColl.find_one({'_id': _id}))
+      return GameBSONHandler.reads(self.gameColl.find_one({'_id': _id}))
     except:
       return None
 

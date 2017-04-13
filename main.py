@@ -13,6 +13,8 @@ from modules.api import getPlayerData, getPlayerId, postReport
 from modules.Game import Game, recentGames
 from modules.PlayerAssessment import PlayerAssessmentBSONHandler, PlayerAssessment, PlayerAssessments
 from modules.GameAnalysis import GameAnalysis, GameAnalyses, analyse
+from modules.PlayerAnalysis import PlayerAnalysis
+from modules.IrwinReport import IrwinReport
 
 from env import IrwinEnv
 
@@ -72,12 +74,14 @@ while True:
 
   for g in games.games:
     if playerAssessments.hasGameId(g.id):
-      gameAnalyses.append(GameAnalysis(g, playerAssessments.byGameId(g.id), []))
+      gameAnalyses.append(GameAnalysis(g, playerAssessments.byGameId(g.id), [], []))
 
   gameAnalyses.analyse(env.engine, env.infoHandler)
 
   for ga in gameAnalyses.gameAnalyses:
     print([am.winningChancesLoss() for am in ga.analysedMoves])
 
+  playerAnalysis = PlayerAnalysis(userId, None, gameAnalyses, IrwinReport(None, None))
 
+  env.playerAnalysisDB.write(playerAnalysis)
   env.gameAnalysisDB.lazyWriteGames(gameAnalyses)

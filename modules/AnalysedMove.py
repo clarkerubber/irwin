@@ -1,6 +1,8 @@
 from collections import namedtuple
 from math import exp
 
+# For moves that have been analysed by stockfish
+
 Analysis = namedtuple('Analysis', ['uci', 'score'])
 Score = namedtuple('Score', ['cp', 'mate'])
 
