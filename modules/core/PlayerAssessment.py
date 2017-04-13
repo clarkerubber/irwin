@@ -67,10 +67,7 @@ class PlayerAssessmentBSONHandler:
       'flags': playerAssessment.flags._asdict()
     }
 
-class PlayerAssessmentDB:
-  def __init__(self, playerAssessmentColl):
-    self.playerAssessmentColl = playerAssessmentColl
-
+class PlayerAssessmentDB(namedtuple('PlayerAssessmentDB', ['playerAssessmentColl'])):
   def byId(self, _id): # string
     return PlayerAssessmentBSONHandler.reads(self.playerAssessmentColl.find_one({'_id': _id}))
 

@@ -1,4 +1,4 @@
-from modules.PlayerAssessment import PlayerAssessments
+from modules.core.PlayerAssessment import PlayerAssessments
 from collections import namedtuple
 
 class Game(namedtuple('Game', ['id', 'pgn', 'emts'])):
@@ -48,10 +48,7 @@ class GameBSONHandler:
       'emts': game.emts
     }
 
-class GameDB:
-  def __init__(self, gameColl):
-    self.gameColl = gameColl
-
+class GameDB(namedtuple('GameDB', ['gameColl'])):
   def byId(self, _id):
     try:
       return GameBSONHandler.reads(self.gameColl.find_one({'_id': _id}))

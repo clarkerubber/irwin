@@ -25,6 +25,9 @@ class AnalysedMove(namedtuple('AnalysedMove', ['uci', 'move', 'emt', 'score', 'a
   def allAmbiguous(self):
     return similarChances(winningChances(self.top().score), winningChances(self.bottom().score))
 
+  def rank(self):
+    return next((x for x, am in enumerate(self.analyses) if am.uci == self.uci), None)
+
 def winningChances(score):
   if score.mate is not None:
     return 1 if score.mate > 0 else -1

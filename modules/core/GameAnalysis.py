@@ -1,14 +1,16 @@
-from modules.AnalysedMove import AnalysedMove, Analysis, Score
 import chess
 import chess.pgn
 import logging
 
 from modules.bcolors.bcolors import bcolors
-from modules.PlayerAssessment import PlayerAssessment
 
-from modules.Game import GameBSONHandler
-from modules.AnalysedMove import AnalysedMoveBSONHandler
-from modules.AssessedMove import AssessedMoveBSONHandler
+from modules.core.PlayerAssessment import PlayerAssessment
+from modules.core.AnalysedMove import AnalysedMove, Analysis, Score
+from modules.core.Game import GameBSONHandler
+from modules.core.AnalysedMove import AnalysedMoveBSONHandler
+from modules.core.AssessedMove import AssessedMoveBSONHandler
+
+from collections import namedtuple
 
 class GameAnalysis:
   def __init__(self, game, playerAssessment, analysedMoves, assessedMoves):
@@ -124,15 +126,10 @@ class GameAnalysisBSONHandler:
       'gameId': gameAnalysis.gameId,
       'userId': gameAnalysis.userId,
       'analysedMoves': [AnalysedMoveBSONHandler.writes(am) for am in gameAnalysis.analysedMoves],
-      'assessedMoves': [AssessedMoveBSONHandler.writes(am) for am in GameAnalysis.assessedMoves]
+      'assessedMoves': [AssessedMoveBSONHandler.writes(am) for am in gameAnalysis.assessedMoves]
     }
 
-class GameAnalysisDB:
-  def __init__(self, gameAnalysisColl, gameDB, playerAssessmentDB):
-    self.gameAnalysisColl = gameAnalysisColl
-    self.gameDB = gameDB
-    self.playerAssessmentDB = playerAssessmentDB
-
+class GameAnalysisDB(namedtuple('GameAnalysisDB', ['gameAnalysisColl', 'gameDB', 'playerAssessmentDB'])):
   def write(self, gameAnalysis):
     self.gameAnalysisColl.update_one({'_id': gameAnalysis.id}, {'$set': GameAnalysisBSONHandler.writes(gameAnalysis)}, upsert=True)
 
