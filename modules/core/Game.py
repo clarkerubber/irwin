@@ -1,36 +1,11 @@
-from modules.core.PlayerAssessment import PlayerAssessments
 from collections import namedtuple
+
+from modules.core.PlayerAssessment import PlayerAssessments
+from modules.core.Games import Games
 
 class Game(namedtuple('Game', ['id', 'pgn', 'emts'])):
   def getEmt(self, ply):
     return self.emts[ply]
-
-def gameLength(pgn):
-    return len(pgn.split(' '))
-
-def recentGames(playerAssessments, gameJSONs):
-  try:
-    playerAssessments = PlayerAssessments(sorted(playerAssessments.playerAssessments,
-      key = lambda x: (x.assessment, x.date), reverse=True))
-    return Games([Game(pa.gameId, gameJSONs[pa.gameId]['pgn'], gameJSONs[pa.gameId]['emts']) for pa in playerAssessments.playerAssessments if 
-      'variant' not in gameJSONs[pa.gameId] and
-      'emts' in gameJSONs[pa.gameId] and
-      gameLength(gameJSONs[pa.gameId].get('pgn', '')) > 50][:5])
-  except ValueError:
-    return []
-  except IndexError:
-    return []
-
-# thin wrapper class for multiple games
-class Games(namedtuple('Games', ['games'])):
-  def byId(self, gameId):
-    return next((g for g in self.games if g.id == gameId), None)
-
-  def ids(self):
-    return [g.id for g in self.games]
-
-  def hasId(self, gameId):
-    return (gameId in self.ids())
 
 class GameBSONHandler:
   @staticmethod
