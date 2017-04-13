@@ -4,10 +4,10 @@ import chess
 import chess.uci
 from modules.fishnet.fishnet import stockfish_command
 
-from modules.Game import GameDB
-from modules.PlayerAssessment import PlayerAssessmentDB
-from modules.GameAnalysis import GameAnalysisDB
-from modules.PlayerAnalysis import PlayerAnalysisDB
+from modules.core.Game import GameDB
+from modules.core.PlayerAssessment import PlayerAssessmentDB
+from modules.core.GameAnalysis import GameAnalysisDB
+from modules.core.PlayerAnalysis import PlayerAnalysisDB
 
 class IrwinEnv:
   def __init__(self, settings):

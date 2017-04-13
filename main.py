@@ -10,11 +10,10 @@ from modules.bcolors.bcolors import bcolors
 
 from modules.api import getPlayerData, getPlayerId, postReport
 
-from modules.Game import Game, recentGames
-from modules.PlayerAssessment import PlayerAssessmentBSONHandler, PlayerAssessment, PlayerAssessments
-from modules.GameAnalysis import GameAnalysis, GameAnalyses, analyse
-from modules.PlayerAnalysis import PlayerAnalysis
-from modules.IrwinReport import IrwinReport
+from modules.core.Game import Game, recentGames
+from modules.core.PlayerAssessment import PlayerAssessmentBSONHandler, PlayerAssessment, PlayerAssessments
+from modules.core.GameAnalysis import GameAnalysis, GameAnalyses, analyse
+from modules.core.PlayerAnalysis import PlayerAnalysis
 
 from env import IrwinEnv
 
@@ -79,9 +78,9 @@ while True:
   gameAnalyses.analyse(env.engine, env.infoHandler)
 
   for ga in gameAnalyses.gameAnalyses:
-    print([am.winningChancesLoss() for am in ga.analysedMoves])
+    print([am.rank() for am in ga.analysedMoves])
 
-  playerAnalysis = PlayerAnalysis(userId, None, gameAnalyses, IrwinReport(None, None))
+  playerAnalysis = PlayerAnalysis(userId, None, gameAnalyses)
 
   env.playerAnalysisDB.write(playerAnalysis)
   env.gameAnalysisDB.lazyWriteGames(gameAnalyses)
