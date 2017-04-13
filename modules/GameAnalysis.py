@@ -8,9 +8,10 @@ from modules.PlayerAssessment import PlayerAssessment
 
 from modules.Game import GameBSONHandler
 from modules.AnalysedMove import AnalysedMoveBSONHandler
+from modules.AssessedMove import AssessedMoveBSONHandler
 
 class GameAnalysis:
-  def __init__(self, game, playerAssessment, analysedMoves):
+  def __init__(self, game, playerAssessment, analysedMoves, assessedMoves):
     try:
       from StringIO import StringIO
     except ImportError:
@@ -20,17 +21,16 @@ class GameAnalysis:
     self.userId = playerAssessment.userId
     self.game = game
     self.playerAssessment = playerAssessment
-    self.analysedMoves = analysedMoves # List[AnalysedMove]
+    self.analysedMoves = analysedMoves # List[AnalysedMove] (Analysed by Stockfish)
+    self.assessedMoves = assessedMoves # List[AssessedMove] (Assessed by Irwin/TensorFlow)
     self.white = self.playerAssessment.white
     self.analysed = len(self.analysedMoves) > 0
+    self.assessed = len(self.assessedMoves) > 0
 
     self.playableGame = chess.pgn.read_game(StringIO(game.pgn))
     
   def __str__(self):
-    if self.analysed:
-      return str(self.game) + "\n" + str(self.playerAssessment) + "\n" + str([str(am) for am in self.analysedMoves])
-    else:
-      return str(self.game) + "\n" + str(self.playerAssessment)
+    return str(self.game) + "\n" + str(self.playerAssessment) + "\n" + str([str(am) for am in self.analysedMoves])
 
   def ply(self, moveNumber, white):
     return (2*(moveNumber-1)) + (0 if white else 1)
@@ -67,7 +67,11 @@ def analyse(gameAnalysis, engine, infoHandler, override = False):
         engine.position(nextNode.board())
         engine.go(nodes=4000000)
 
-        score = Score(infoHandler.info['score'][1].cp, infoHandler.info['score'][1].mate)
+        cp = infoHandler.info['score'][1].cp
+        mate = infoHandler.info['score'][1].mate
+
+        score = Score(-cp if cp is not None else None,
+          -mate if mate is not None else None) # flipped because analysing from other player side
 
         moveNumber = node.board().fullmove_number
 
@@ -106,8 +110,12 @@ class GameAnalyses:
 
 class GameAnalysisBSONHandler:
   @staticmethod
-  def reads(game, playerAssessment, analysedMovesBSON):
-    return GameAnalysis(game, playerAssessment, [AnalysedMoveBSONHandler.reads(am) for am in analysedMovesBSON])
+  def reads(game, playerAssessment, analysedMovesBSON, assessedMovesBSON):
+    return GameAnalysis(
+      game,
+      playerAssessment,
+      [AnalysedMoveBSONHandler.reads(am) for am in analysedMovesBSON],
+      [AssessedMoveBSONHandler.reads(am) for am in assessedMovesBSON])
 
   @staticmethod
   def writes(gameAnalysis):
@@ -115,7 +123,8 @@ class GameAnalysisBSONHandler:
       '_id': gameAnalysis.id,
       'gameId': gameAnalysis.gameId,
       'userId': gameAnalysis.userId,
-      'analysedMoves': list([AnalysedMoveBSONHandler.writes(am) for am in gameAnalysis.analysedMoves])
+      'analysedMoves': [AnalysedMoveBSONHandler.writes(am) for am in gameAnalysis.analysedMoves],
+      'assessedMoves': [AssessedMoveBSONHandler.writes(am) for am in GameAnalysis.assessedMoves]
     }
 
 class GameAnalysisDB:
@@ -130,15 +139,16 @@ class GameAnalysisDB:
   def byUserId(self, userId):
     playerAssessments = self.playerAssessmentDB.byUserId(userId)
     games = self.gameDB.byIds(playerAssessments.gameIds())
-    gameAnalysisJSONs = self.gameAnalysisColl.find({'userId': userId})
+    gameAnalysisBSONs = self.gameAnalysisColl.find({'userId': userId})
 
     gameAnalyses = GameAnalyses([])
-    for ga in gameAnalysisJSONs:
+    for ga in gameAnalysisBSONs:
       if games.hasId(ga['gameId']) and playerAssessments.hasGameId(ga['gameId']):
         gameAnalyses.append(GameAnalysisBSONHandler.reads(
           games.byId(ga['gameId']),
           playerAssessments.byGameId(ga['gameId']),
-          ga['analysedMoves']))
+          ga['analysedMoves'],
+          ga['assessedMoves']))
     return gameAnalyses
 
   def lazyWriteGames(self, gameAnalyses):

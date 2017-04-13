@@ -1,9 +1,8 @@
 from collections import namedtuple
-from modules.IrwinReport import IrwinReportBSONHandler
 
 import datetime
 
-PlayerAnalysis = namedtuple('PlayerAnalysis', ['userId', 'engine', 'gameAnalyses', 'irwinReport'])
+PlayerAnalysis = namedtuple('PlayerAnalysis', ['id', 'engine', 'gameAnalyses']) # id = userId
 
 class PlayerAnalysisBSONHandler:
   @staticmethod
@@ -11,14 +10,12 @@ class PlayerAnalysisBSONHandler:
     return PlayerAnalysis(
       id = bson['_id'],
       engine = bson['engine'],
-      gameAnalyses = gameAnalyses,
-      irwinReport = IrwinReportBSONHandler.reads(bson['irwinReport']))
+      gameAnalyses = gameAnalyses)
 
   def writes(playerAnalysis):
     return {
       '_id': playerAnalysis.id,
       'engine': playerAnalysis.engine,
-      'irwinReport': IrwinReportBSONHandler.writes(playerAnalysis.irwinReport),
       'date': datetime.datetime.utcnow()
     }
 
@@ -26,3 +23,17 @@ class PlayerAnalysisDB:
   def __init__(self, playerAnalysisColl, gameAnalysisDB):
     self.playerAnalysisColl = playerAnalysisColl
     self.gameAnalysisDB = gameAnalysisDB
+
+  def byId(self, userId):
+    try:
+      return PlayerAnalysisBSONHandler.reads(
+        self.playerAnalysisColl.find_one({'_id': userId}),
+        self.gameAnalysisDB.byUserId(userId))
+    except:
+      return None
+
+  def write(self, playerAnalysis):
+    self.playerAnalysisColl.update(
+      {'_id': playerAnalysis.id},
+      {'$set': PlayerAnalysisBSONHandler.writes(playerAnalysis)},
+      upsert=True)
