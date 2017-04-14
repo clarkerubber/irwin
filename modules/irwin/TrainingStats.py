@@ -1,6 +1,7 @@
 from collections import namedtuple
 
 import datetime
+import pymongo
 
 Accuracy = namedtuple('Accuracy', ['truePositive', 'falsePositive', 'trueNegative', 'falseNegative'])
 Sample = namedtuple('Sample', ['cheaters', 'legits'])
@@ -26,7 +27,7 @@ class TrainingStatsBSONHandler:
 
 class TrainingStatsDB(namedtuple('TrainingStatsDB', ['trainingStatsColl'])):
   def latest(self):
-    return TrainingStatsBSONHandler.reads(next(self.trainingStatsColl.find().sort('datetime'), None))
+    return TrainingStatsBSONHandler.reads(next(self.trainingStatsColl.find().sort('date', pymongo.DESCENDING), None))
 
   def write(self, trainingStats):
     self.trainingStatsColl.insert_one(TrainingStatsBSONHandler.writes(trainingStats))

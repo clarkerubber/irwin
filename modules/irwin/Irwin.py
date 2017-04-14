@@ -17,18 +17,18 @@ class Irwin(namedtuple('Irwin', ['api', 'trainingStatsDB', 'playerAnalysisDB']))
 
   def updateDataset(self):
     if self.outOfDate():
-      updatePlayerAnalysisResults(self.api, self.playerAnalysisDB)
+      sample = updatePlayerAnalysisResults(self.api, self.playerAnalysisDB)
       self.trainingStatsDB.write(
         TrainingStats(
           date = datetime.datetime.utcnow(),
           accuracy = Accuracy(0, 0, 0, 0),
-          sample = Sample(0, 0)))
+          sample = sample))
 
-  def assessMove(self, analysedMove): # Pass move to neural network and assess it.
+  def assessMove(self, gameAnalysis, analysedMove): # Pass move to neural network and assess it.
     pass
 
   def assessGame(self, gameAnalysis):
-    [self.assessMove(analysedMove) for analysedMove in gameAnalysis.analysedMoves]
+    [self.assessMove(gameAnalysis, analysedMove) for analysedMove in gameAnalysis.analysedMoves]
 
   def assessPlayer(self, playerAnalysis):
     [self.assessGame(gameAnalysis) for gameAnalysis in playerAnalysis.gameAnalyses]

@@ -12,7 +12,7 @@ from modules.core.PlayerAnalysis import PlayerAnalysis
 
 from modules.core.recentGames import recentGames
 
-from env import IrwinEnv
+from Env import Env
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("token", metavar="TOKEN",
@@ -42,9 +42,10 @@ logging.basicConfig(format="%(message)s", level=settings.loglevel, stream=sys.st
 logging.getLogger("requests.packages.urllib3").setLevel(logging.WARNING)
 logging.getLogger("chess.uci").setLevel(logging.WARNING)
 
-env = IrwinEnv(settings)
+env = Env(settings)
 
 while True:
+  env.irwin.updateDataset()
   # Get player data
   userId = env.api.getPlayerId()
   userData = env.api.getPlayerData(userId)
@@ -81,4 +82,3 @@ while True:
 
   env.playerAnalysisDB.write(playerAnalysis)
   env.gameAnalysisDB.lazyWriteGames(gameAnalyses)
-  env.irwin.updateDataset()
