@@ -14,6 +14,7 @@ class AssessedMoveBSONHandler:
       irwinReport = IrwinReportBSONHandler.reads(bson['irwinReport'])
     )
 
+  @staticmethod
   def writes(assessedMove):
     return {
       'analysedMove': AnalysedMoveBSONHandler.writes(assessedMove.analysedMove),

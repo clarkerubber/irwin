@@ -5,11 +5,14 @@ from pprint import pprint
 from modules.bcolors.bcolors import bcolors
 
 from modules.core.Game import Game
-from modules.core.recentGames import recentGames
 from modules.core.PlayerAssessment import PlayerAssessmentBSONHandler, PlayerAssessment
 from modules.core.PlayerAssessments import PlayerAssessments
 from modules.core.GameAnalysis import GameAnalysis
 from modules.core.PlayerAnalysis import PlayerAnalysis
+
+from modules.core.recentGames import recentGames
+
+from modules.irwin.Irwin import Irwin
 
 from env import IrwinEnv
 
@@ -42,6 +45,7 @@ logging.getLogger("requests.packages.urllib3").setLevel(logging.WARNING)
 logging.getLogger("chess.uci").setLevel(logging.WARNING)
 
 env = IrwinEnv(settings)
+irwin = Irwin(env)
 
 while True:
   # Get player data
@@ -80,3 +84,4 @@ while True:
 
   env.playerAnalysisDB.write(playerAnalysis)
   env.gameAnalysisDB.lazyWriteGames(gameAnalyses)
+  irwin.updateDataset()

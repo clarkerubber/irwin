@@ -2,7 +2,9 @@ from collections import namedtuple
 
 import datetime
 
-PlayerAnalysis = namedtuple('PlayerAnalysis', ['id', 'engine', 'gameAnalyses']) # id = userId
+class PlayerAnalysis(namedtuple('PlayerAnalysis', ['id', 'engine', 'gameAnalyses'])): # id = userId, engine = (True | False | None)
+  def setEngine(self, engine):
+    return PlayerAnalysis(self.id, engine, self.gameAnalyses)
 
 class PlayerAnalysisBSONHandler:
   @staticmethod
@@ -32,8 +34,14 @@ class PlayerAnalysisDB:
     except:
       return None
 
+  def unsorted(self): # Players who have not been marked as Engine or Legit
+    return [self.byId(p['_id']) for p in self.playerAnalysisColl.find({'engine': None})]
+
   def write(self, playerAnalysis):
     self.playerAnalysisColl.update(
       {'_id': playerAnalysis.id},
       {'$set': PlayerAnalysisBSONHandler.writes(playerAnalysis)},
       upsert=True)
+
+  def lazyWriteMany(self, playerAnalyses):
+    [self.write(playerAnalysis) for playerAnalysis in playerAnalyses]
