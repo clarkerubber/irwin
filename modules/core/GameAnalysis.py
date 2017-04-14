@@ -38,6 +38,12 @@ class GameAnalysis:
   def __str__(self):
     return str(self.game) + "\n" + str(self.playerAssessment) + "\n" + str([str(am) for am in self.analysedMoves])
 
+  def movesForAssessment(self): # Moves where the played move is not in top 5
+    return [am for am in self.analysedMoves if am.inTopFive()]
+  
+  def completeMovesForAssessment(self): # Moves where the played move is in top 5 (has complete information)
+    pass
+
   def ply(self, moveNumber, white):
     return (2*(moveNumber-1)) + (0 if white else 1)
 
@@ -81,6 +87,9 @@ class GameAnalysisDB(namedtuple('GameAnalysisDB', ['gameAnalysisColl', 'gameDB',
           ga['analysedMoves'],
           ga['assessedMoves']))
     return gameAnalyses
+
+  def byUserIds(self, userIds):
+    return [self.byUserId(userId) for userId in userIds]
 
   def lazyWriteGames(self, gameAnalyses):
     [self.write(ga) for ga in gameAnalyses.gameAnalyses]
