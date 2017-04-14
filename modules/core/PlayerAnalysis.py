@@ -34,8 +34,20 @@ class PlayerAnalysisDB:
     except:
       return None
 
+  def byBSONs(self, bsons):
+    return [PlayerAnalysisBSONHandler.reads(bson, self.gameAnalysisDB.byUserId(bson['_id'])) for bson in bsons]
+
+  def byEngineStatus(self, status):
+    return self.byBSONs(self.playerAnalysisColl.find({'engine': status}))
+
   def unsorted(self): # Players who have not been marked as Engine or Legit
-    return [self.byId(p['_id']) for p in self.playerAnalysisColl.find({'engine': None})]
+    return self.byEngineStatus(None)
+
+  def engines(self):
+    return self.byEngineStatus(True)
+
+  def legits(self):
+    return self.byEngineStatus(False)
 
   def write(self, playerAnalysis):
     self.playerAnalysisColl.update(

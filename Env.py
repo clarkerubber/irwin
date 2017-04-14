@@ -14,7 +14,7 @@ from modules.Api import Api
 from modules.irwin.Irwin import Irwin
 from modules.irwin.TrainingStats import TrainingStatsDB
 
-class IrwinEnv:
+class Env:
   def __init__(self, settings):
     self.settings = settings
 
