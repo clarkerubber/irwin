@@ -20,12 +20,15 @@ class AnalysedMove(namedtuple('AnalysedMove', ['uci', 'move', 'emt', 'score', 'a
     return self.analyses[-1]
 
   def winningChancesLoss(self):
-    return winningChances(self.top().score) - winningChances(self.score)
+    return max(0, winningChances(self.top().score) - self.advantage())
+
+  def advantage(self):
+    return winningChances(self.score)
 
   def ambiguous(self): # if the top and second moves both have similar winning chances, the position is ambiguous
     try:
       return similarChances(winningChances(self.top().score), winningChances(self.analyses[1].score))
-    except KeyError:
+    except IndexError:
       return False
 
   def rank(self):

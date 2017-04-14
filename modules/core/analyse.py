@@ -42,7 +42,7 @@ def analyse(gameAnalysis, engine, infoHandler, override = False):
         am = AnalysedMove(
           uci = node.variation(0).move.uci(),
           move = moveNumber,
-          emt = gameAnalysis.game.getEmt(gameAnalysis.ply(moveNumber, gameAnalysis.white)),
+          emt = gameAnalysis.game.getEmt(gameAnalysis.ply(moveNumber)),
           score = score,
           analyses = analyses)
         gameAnalysis.analysedMoves.append(am)
