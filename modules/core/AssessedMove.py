@@ -1,6 +1,6 @@
 from collections import namedtuple
 from modules.core.AnalysedMove import AnalysedMoveBSONHandler
-from modules.core.IrwinReport import IrwinReportBSONHandler
+from modules.irwin.IrwinReport import IrwinReportBSONHandler
 
 # For moves that have been assessed by Irwin/Tensorflow
 
