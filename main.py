@@ -12,8 +12,6 @@ from modules.core.PlayerAnalysis import PlayerAnalysis
 
 from modules.core.recentGames import recentGames
 
-from modules.irwin.Irwin import Irwin
-
 from env import IrwinEnv
 
 parser = argparse.ArgumentParser(description=__doc__)
@@ -45,7 +43,6 @@ logging.getLogger("requests.packages.urllib3").setLevel(logging.WARNING)
 logging.getLogger("chess.uci").setLevel(logging.WARNING)
 
 env = IrwinEnv(settings)
-irwin = Irwin(env)
 
 while True:
   # Get player data
@@ -84,4 +81,4 @@ while True:
 
   env.playerAnalysisDB.write(playerAnalysis)
   env.gameAnalysisDB.lazyWriteGames(gameAnalyses)
-  irwin.updateDataset()
+  env.irwin.updateDataset()

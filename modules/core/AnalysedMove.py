@@ -22,8 +22,11 @@ class AnalysedMove(namedtuple('AnalysedMove', ['uci', 'move', 'emt', 'score', 'a
   def winningChancesLoss(self):
     return winningChances(self.top().score) - winningChances(self.score)
 
-  def allAmbiguous(self):
-    return similarChances(winningChances(self.top().score), winningChances(self.bottom().score))
+  def ambiguous(self): # if the top and second moves both have similar winning chances, the position is ambiguous
+    try:
+      return similarChances(winningChances(self.top().score), winningChances(self.analyses[1].score))
+    except KeyError:
+      return False
 
   def rank(self):
     return next((x for x, am in enumerate(self.analyses) if am.uci == self.uci), None)
@@ -35,7 +38,7 @@ def winningChances(score):
     return 2 / (1 + exp(-0.004 * score.cp)) - 1
 
 def similarChances(c1, c2):
-  return abs(c1 - c2) < 0.1
+  return abs(c1 - c2) < 0.05
 
 class AnalysisBSONHandler:
   @staticmethod

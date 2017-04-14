@@ -8,9 +8,11 @@ from modules.core.Game import GameDB
 from modules.core.PlayerAssessment import PlayerAssessmentDB
 from modules.core.GameAnalysis import GameAnalysisDB
 from modules.core.PlayerAnalysis import PlayerAnalysisDB
-from modules.irwin.TrainingStats import TrainingStatsDB
 
 from modules.Api import Api
+
+from modules.irwin.Irwin import Irwin
+from modules.irwin.TrainingStats import TrainingStatsDB
 
 class IrwinEnv:
   def __init__(self, settings):
@@ -42,3 +44,10 @@ class IrwinEnv:
     self.gameAnalysisDB = GameAnalysisDB(self.GameAnalysisColl, self.gameDB, self.playerAssessmentDB)
     self.playerAnalysisDB = PlayerAnalysisDB(self.playerAnalysisColl, self.gameAnalysisDB)
     self.trainingStatsDB = TrainingStatsDB(self.trainingStatsColl)
+
+    # Irwin
+    self.irwin = Irwin(
+      api = self.api,
+      trainingStatsDB = self.trainingStatsDB,
+      playerAnalysisDB = self.playerAnalysisDB
+    )
