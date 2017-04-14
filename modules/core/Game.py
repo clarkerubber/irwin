@@ -10,10 +10,10 @@ class Game(namedtuple('Game', ['id', 'pgn', 'emts'])):
     return self.emts[ply]
 
   def emtsNoOutliers(self):
-    m = 2
+    m = 0.5
     u = np.mean(self.emts)
     s = np.std(self.emts)
-    filtered = [e for e in self.data if (u - 2 * s < e < u + 2 * s)]
+    filtered = [e for e in self.emts if (u - m * s < e < u + m * s)]
     return filtered
 
   def emtStd(self):

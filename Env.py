@@ -18,7 +18,7 @@ class Env:
   def __init__(self, settings):
     self.settings = settings
 
-    self.engine = chess.uci.popen_engine(stockfish_command(False))
+    self.engine = chess.uci.popen_engine(stockfish_command())
     self.engine.setoption({'Threads': settings.threads, 'Hash': settings.memory})
     self.engine.uci()
     self.infoHandler = chess.uci.InfoHandler()

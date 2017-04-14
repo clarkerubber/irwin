@@ -75,10 +75,13 @@ while True:
 
   gameAnalyses.analyse(env.engine, env.infoHandler)
 
-  for ga in gameAnalyses.gameAnalyses:
-    print([am.rank() for am in ga.analysedMoves])
-
-  playerAnalysis = PlayerAnalysis(userId, None, gameAnalyses)
+  playerAnalysis = PlayerAnalysis(
+    id = userId,
+    titled = 'titled' in userData['assessment']['user'].keys(),
+    engine = None,
+    gamesPlayed = userData['assessment']['user']['games'],
+    closedReports = sum(1 if r.get('processedBy', None) is not None else 0 for r in userData['history'] if r['type'] == 'report' and r['data']['reason'] == 'cheat'),
+    gameAnalyses = gameAnalyses)
 
   env.playerAnalysisDB.write(playerAnalysis)
   env.gameAnalysisDB.lazyWriteGames(gameAnalyses)

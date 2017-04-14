@@ -2,7 +2,7 @@ from collections import namedtuple
 
 import datetime
 
-class PlayerAnalysis(namedtuple('PlayerAnalysis', ['id', 'engine', 'gameAnalyses'])): # id = userId, engine = (True | False | None)
+class PlayerAnalysis(namedtuple('PlayerAnalysis', ['id', 'titled', 'engine', 'gamesPlayed', 'closedReports', 'gameAnalyses'])): # id = userId, engine = (True | False | None)
   def setEngine(self, engine):
     return PlayerAnalysis(self.id, engine, self.gameAnalyses)
 
@@ -11,13 +11,19 @@ class PlayerAnalysisBSONHandler:
   def reads(bson, gameAnalyses):
     return PlayerAnalysis(
       id = bson['_id'],
+      titled = bson['titled'],
       engine = bson['engine'],
+      gamesPlayed = bson['gamesPlayed'],
+      closedReports = bson['closedReports'],
       gameAnalyses = gameAnalyses)
 
   def writes(playerAnalysis):
     return {
       '_id': playerAnalysis.id,
+      'titled': playerAnalysis.titled,
       'engine': playerAnalysis.engine,
+      'gamesPlayed': playerAnalysis.gamesPlayed,
+      'closedReports': playerAnalysis.closedReports,
       'date': datetime.datetime.utcnow()
     }
 
@@ -40,8 +46,11 @@ class PlayerAnalysisDB:
   def byEngineStatus(self, status):
     return self.byBSONs(self.playerAnalysisColl.find({'engine': status}))
 
-  def unsorted(self): # Players who have not been marked as Engine or Legit
+  def allUnsorted(self): # Players who have not been marked as Engine or Legit
     return self.byEngineStatus(None)
+
+  def allSorted(self):
+    return self.byBSONs(self.playerAnalysisColl.find({'engine': {'$in': [True, False]}}))
 
   def engines(self):
     return self.byEngineStatus(True)

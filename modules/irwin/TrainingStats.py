@@ -4,7 +4,7 @@ import datetime
 import pymongo
 
 Accuracy = namedtuple('Accuracy', ['truePositive', 'falsePositive', 'trueNegative', 'falseNegative'])
-Sample = namedtuple('Sample', ['cheaters', 'legits'])
+Sample = namedtuple('Sample', ['engines', 'legits'])
 
 TrainingStats = namedtuple('TrainingStats', ['date', 'accuracy', 'sample'])
 
@@ -27,7 +27,11 @@ class TrainingStatsBSONHandler:
 
 class TrainingStatsDB(namedtuple('TrainingStatsDB', ['trainingStatsColl'])):
   def latest(self):
-    return TrainingStatsBSONHandler.reads(next(self.trainingStatsColl.find().sort('date', pymongo.DESCENDING), None))
+    trainingStatsBSON = next(self.trainingStatsColl.find().sort('date', pymongo.DESCENDING), None)
+    if trainingStatsBSON is not None:
+      return TrainingStatsBSONHandler.reads(trainingStatsBSON)
+    else:
+      return None
 
   def write(self, trainingStats):
     self.trainingStatsColl.insert_one(TrainingStatsBSONHandler.writes(trainingStats))
