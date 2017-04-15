@@ -4,7 +4,7 @@ import datetime
 
 class PlayerAnalysis(namedtuple('PlayerAnalysis', ['id', 'titled', 'engine', 'gamesPlayed', 'closedReports', 'gameAnalyses'])): # id = userId, engine = (True | False | None)
   def setEngine(self, engine):
-    return PlayerAnalysis(self.id, engine, self.gameAnalyses)
+    return PlayerAnalysis(self.id, self.titled, engine, self.gamesPlayed, self.closedReports, self.gameAnalyses)
 
 class PlayerAnalysisBSONHandler:
   @staticmethod
