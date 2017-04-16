@@ -48,6 +48,7 @@ class Env:
     # Irwin
     self.irwin = Irwin(
       api = self.api,
+      learner = settings.learn,
       trainingStatsDB = self.trainingStatsDB,
       playerAnalysisDB = self.playerAnalysisDB
     )
