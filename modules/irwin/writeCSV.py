@@ -18,7 +18,7 @@ def writeClassifiedMovesCSV(entries):
         entry['blurs']])
 
 def writeClassifiedMoveChunksCSV(entries):
-  with open('data/classified-move-chunks.csv') as fh:
+  with open('data/classified-move-chunks.csv', 'w') as fh:
     writer = csv.writer(fh, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
     writer.writerow(['engine', 'titled', 'bot', 'blurs',
       'rank1', 'loss1', 'advantage1', 'ambiguity1', 'timeConsistent1'
