@@ -38,8 +38,8 @@ class GameAnalysis:
   def __str__(self):
     return str(self.game) + "\n" + str(self.playerAssessment) + "\n" + str([str(am) for am in self.analysedMoves])
 
-  def movesForAssessment(self): # Moves where the played move is in top 5
-    return [am for am in self.analysedMoves if am.inTopFive()]
+  def rankedMoves(self): # Moves where the played move is in top 5
+    return [am for am in self.analysedMoves if am.inAnalyses()]
 
   def ply(self, moveNumber):
     return (2*(moveNumber-1)) + (0 if self.white else 1)

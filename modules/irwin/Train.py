@@ -4,7 +4,7 @@ import time
 
 from modules.irwin.updatePlayerEngineStatus import updatePlayerEngineStatus
 from modules.irwin.TrainingStats import TrainingStats, Accuracy, Sample
-from modules.irwin.writeCSV import writeCSV
+from modules.irwin.writeCSV import writeClassifiedMovesCSV, writeClassifiedMoveChunksCSV
 
 class Train(threading.Thread):
   def __init__(self, api, trainingStatsDB, playerAnalysisDB):
@@ -18,7 +18,9 @@ class Train(threading.Thread):
       if self.outOfDate():
         updatePlayerEngineStatus(self.api, self.playerAnalysisDB)
         sortedUsers = self.playerAnalysisDB.allSorted()
-        sample = self.classifyMoves(sortedUsers)
+        sample = Sample(engines = sum(1 for user in sortedUsers if user.engine), legits = sum(1 for user in sortedUsers if not user.engine))
+        self.classifyMoves(sortedUsers)
+        self.classifiyMoveChunks(sortedUsers)
         self.trainingStatsDB.write(
           TrainingStats(
             date = datetime.datetime.utcnow(),
@@ -39,7 +41,7 @@ class Train(threading.Thread):
     entries = []
     for playerAnalysis in playerAnalyses:
       for gameAnalysis in playerAnalysis.gameAnalyses.gameAnalyses:
-        for moveAnalysis in gameAnalysis.movesForAssessment():
+        for moveAnalysis in gameAnalysis.analysedMoves:
           entries.append({
             'engine': playerAnalysis.engine,
             'titled': playerAnalysis.titled,
@@ -47,11 +49,31 @@ class Train(threading.Thread):
             'rank': moveAnalysis.rank(),
             'loss': moveAnalysis.winningChancesLoss(),
             'advantage': moveAnalysis.advantage(),
-            'ambiguous': moveAnalysis.ambiguous(),
+            'ambiguity': moveAnalysis.ambiguity(),
             'timeConsistent': gameAnalysis.consistentMoveTime(moveAnalysis.move),
             'bot': gameAnalysis.playerAssessment.hold,
             'blurs': gameAnalysis.playerAssessment.blurs
           })
-    writeCSV(entries)
-    return Sample(engines = sum(1 if playerAnalysis.engine else 0 for playerAnalysis in playerAnalyses),
-      legits = sum(0 if playerAnalysis.engine else 1 for playerAnalysis in playerAnalyses))
+    writeClassifiedMovesCSV(entries)
+
+  def classifyMoveChunks(self, playerAnalyses):
+    entries = []
+    for playerAnalysis in playerAnalyses:
+      for gameAnalysis in playerAnalysis.gameAnalyses.gameAnalyses:
+        for i in range(len(gameAnalysis.analysedMoves) - 9): # assume the length of the game is > 10
+          entry = [
+            playerAnalysis.engine,
+            playerAnalysis.titled,
+            gameAnalysis.playerAssessment.bot,
+            gameAnalysis.playerAssessment.blurs,
+            i]
+          for analysedMove in gameAnalysis.analysedMoves[i:i+10]:
+            entry.extend([
+              analysedMove.rank(),
+              analysedMove.winningChancesLoss(),
+              analysedMove.advantage(),
+              analysedMove.ambiguity(),
+              analysedMove.timeConsistent()
+            ])
+          entries.append(entry)
+    writeClassifiedMoveChunksCSV(entries)
