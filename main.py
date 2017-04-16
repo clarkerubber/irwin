@@ -12,12 +12,14 @@ from modules.core.PlayerAnalysis import PlayerAnalysis
 
 from modules.core.recentGames import recentGames
 
+from modules.irwin.updatePlayerEngineStatus import isEngine
+
 from Env import Env
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("token", metavar="TOKEN",
                     help="secret token for the lichess api")
-parser.add_argument("train", metavar="TRAIN",
+parser.add_argument("learn", metavar="LEARN",
                     help="does this bot learn", nargs="?", type=int, default=1)
 parser.add_argument("threads", metavar="THREADS", nargs="?", type=int, default=4,
                     help="number of engine threads")
@@ -85,8 +87,9 @@ engines = ['frankenste1n', 'farhan_fc', 'ronperu', 'zubakinp', 'zubakinpavel', '
 #engines.reverse()
 engines = iter(engines)
 
+env.irwin.train()
+
 while True:
-  env.irwin.updateDataset()
   # Get player data
   #userId = env.api.getPlayerId()
   userId = next(engines, None)
@@ -120,7 +123,7 @@ while True:
   playerAnalysis = PlayerAnalysis(
     id = userId,
     titled = 'titled' in userData['assessment']['user'].keys(),
-    engine = None,
+    engine = isEngine(userData),
     gamesPlayed = userData['assessment']['user']['games'],
     closedReports = sum(1 if r.get('processedBy', None) is not None else 0 for r in userData['history'] if r['type'] == 'report' and r['data']['reason'] == 'cheat'),
     gameAnalyses = gameAnalyses)
