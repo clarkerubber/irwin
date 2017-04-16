@@ -31,7 +31,7 @@ class Train(threading.Thread):
   def outOfDate(self):
     latest = self.trainingStatsDB.latest()
     if latest is not None:
-      if datetime.datetime.utcnow() - latest.date > datetime.timedelta(hours=1): # if it has been over a day since the last training
+      if datetime.datetime.utcnow() - latest.date > datetime.timedelta(days=1): # if it has been over a day since the last training
         return True
     else:
       return True
