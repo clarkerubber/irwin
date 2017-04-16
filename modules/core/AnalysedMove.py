@@ -7,7 +7,7 @@ Analysis = namedtuple('Analysis', ['uci', 'score'])
 Score = namedtuple('Score', ['cp', 'mate'])
 
 class AnalysedMove(namedtuple('AnalysedMove', ['uci', 'move', 'emt', 'score', 'analyses'])):
-  def inTopFive(self):
+  def inAnalyses(self):
     return any(self.uci == am.uci for am in self.analyses)
 
   def isTop(self):
@@ -31,8 +31,11 @@ class AnalysedMove(namedtuple('AnalysedMove', ['uci', 'move', 'emt', 'score', 'a
     except IndexError:
       return False
 
+  def ambiguity(self): # 1 = only one top move, 5 = all moves good
+    return sum((1 if similarChances(winningChances(self.top().score, winningChances(analysis.score))) else 0) for analysis in self.analyses)
+
   def rank(self):
-    return next((x for x, am in enumerate(self.analyses) if am.uci == self.uci), None)
+    return next((x for x, am in enumerate(self.analyses) if am.uci == self.uci), 2*len(self.analyses))
 
 def winningChances(score):
   if score.mate is not None:
