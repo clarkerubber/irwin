@@ -92,4 +92,4 @@ ENV/
 *.csv
 
 # Stockfish
-stockfish
+stockfish*
