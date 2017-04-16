@@ -20,7 +20,7 @@ class Train(threading.Thread):
         sortedUsers = self.playerAnalysisDB.allSorted()
         sample = Sample(engines = sum(1 for user in sortedUsers if user.engine), legits = sum(1 for user in sortedUsers if not user.engine))
         self.classifyMoves(sortedUsers)
-        self.classifiyMoveChunks(sortedUsers)
+        self.classifyMoveChunks(sortedUsers)
         self.trainingStatsDB.write(
           TrainingStats(
             date = datetime.datetime.utcnow(),
