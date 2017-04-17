@@ -32,7 +32,7 @@ class AnalysedMove(namedtuple('AnalysedMove', ['uci', 'move', 'emt', 'score', 'a
       return False
 
   def ambiguity(self): # 1 = only one top move, 5 = all moves good
-    return sum((1 if similarChances(winningChances(self.top().score, winningChances(analysis.score))) else 0) for analysis in self.analyses)
+    return sum((1 if similarChances(winningChances(self.top().score), winningChances(analysis.score)) else 0) for analysis in self.analyses)
 
   def rank(self):
     return next((x for x, am in enumerate(self.analyses) if am.uci == self.uci), 2*len(self.analyses))
