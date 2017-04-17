@@ -12,7 +12,7 @@ def writeClassifiedMovesCSV(entries):
         entry['rank'] + 1,
         int(100 * entry['loss']),
         int(100 * entry['advantage']),
-        int(entry['ambiguity']),
+        entry['ambiguity'],
         int(entry['timeConsistent']),
         int(entry['bot']),
         entry['blurs']])

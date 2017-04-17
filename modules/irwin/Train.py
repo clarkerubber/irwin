@@ -44,16 +44,16 @@ class Train(threading.Thread):
     entries = []
     for playerAnalysis in playerAnalyses:
       for gameAnalysis in playerAnalysis.gameAnalyses.gameAnalyses:
-        for moveAnalysis in gameAnalysis.analysedMoves:
+        for analysedMove in gameAnalysis.analysedMoves:
           entries.append({
             'engine': playerAnalysis.engine,
             'titled': playerAnalysis.titled,
-            'moveNumber': moveAnalysis.move,
-            'rank': moveAnalysis.rank(),
-            'loss': moveAnalysis.winningChancesLoss(),
-            'advantage': moveAnalysis.advantage(),
-            'ambiguity': moveAnalysis.ambiguity(),
-            'timeConsistent': gameAnalysis.consistentMoveTime(moveAnalysis.move),
+            'moveNumber': analysedMove.move,
+            'rank': analysedMove.rank(),
+            'loss': analysedMove.winningChancesLoss(),
+            'advantage': analysedMove.advantage(),
+            'ambiguity': analysedMove.ambiguity(),
+            'timeConsistent': gameAnalysis.consistentMoveTime(analysedMove.move),
             'bot': gameAnalysis.playerAssessment.hold,
             'blurs': gameAnalysis.playerAssessment.blurs
           })
@@ -65,18 +65,18 @@ class Train(threading.Thread):
       for gameAnalysis in playerAnalysis.gameAnalyses.gameAnalyses:
         for i in range(len(gameAnalysis.analysedMoves) - 9): # assume the length of the game is > 10
           entry = [
-            playerAnalysis.engine,
-            playerAnalysis.titled,
-            gameAnalysis.playerAssessment.bot,
-            gameAnalysis.playerAssessment.blurs,
+            int(playerAnalysis.engine),
+            int(playerAnalysis.titled),
+            int(gameAnalysis.playerAssessment.hold),
+            int(gameAnalysis.playerAssessment.blurs),
             i]
           for analysedMove in gameAnalysis.analysedMoves[i:i+10]:
             entry.extend([
               analysedMove.rank(),
-              analysedMove.winningChancesLoss(),
-              analysedMove.advantage(),
+              int(100*analysedMove.winningChancesLoss()),
+              int(100*analysedMove.advantage()),
               analysedMove.ambiguity(),
-              analysedMove.timeConsistent()
+              int(gameAnalysis.consistentMoveTime(analysedMove.move))
             ])
           entries.append(entry)
     writeClassifiedMoveChunksCSV(entries)
