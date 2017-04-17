@@ -4,7 +4,7 @@ import datetime
 import pymongo
 
 Accuracy = namedtuple('Accuracy', ['truePositive', 'falsePositive', 'trueNegative', 'falseNegative'])
-Sample = namedtuple('Sample', ['engines', 'legits'])
+Sample = namedtuple('Sample', ['engines', 'legits', 'unprocessed'])
 
 TrainingStats = namedtuple('TrainingStats', ['date', 'accuracy', 'sample'])
 
