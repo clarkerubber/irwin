@@ -18,7 +18,10 @@ class Train(threading.Thread):
       if self.outOfDate():
         updatePlayerEngineStatus(self.api, self.playerAnalysisDB)
         sortedUsers = self.playerAnalysisDB.allSorted()
-        sample = Sample(engines = sum(1 for user in sortedUsers if user.engine), legits = sum(1 for user in sortedUsers if not user.engine))
+        sample = Sample(
+          engines = sum(1 for user in sortedUsers if user.engine),
+          legits = sum(1 for user in sortedUsers if not user.engine),
+          unprocessed = self.playerAnalysisDB.countUnsorted())
         self.classifyMoves(sortedUsers)
         self.classifyMoveChunks(sortedUsers)
         self.trainingStatsDB.write(

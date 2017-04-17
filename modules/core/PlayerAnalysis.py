@@ -52,6 +52,9 @@ class PlayerAnalysisDB:
   def allSorted(self):
     return self.byBSONs(self.playerAnalysisColl.find({'engine': {'$in': [True, False]}}))
 
+  def countUnsorted(self):
+    return self.playerAnalysisColl.count({'engine': None})
+
   def engines(self):
     return self.byEngineStatus(True)
 
