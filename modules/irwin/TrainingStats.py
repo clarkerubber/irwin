@@ -30,8 +30,7 @@ class TrainingStatsDB(namedtuple('TrainingStatsDB', ['trainingStatsColl'])):
     trainingStatsBSON = next(self.trainingStatsColl.find().sort('date', pymongo.DESCENDING), None)
     if trainingStatsBSON is not None:
       return TrainingStatsBSONHandler.reads(trainingStatsBSON)
-    else:
-      return None
+    return None
 
   def write(self, trainingStats):
     self.trainingStatsColl.insert_one(TrainingStatsBSONHandler.writes(trainingStats))

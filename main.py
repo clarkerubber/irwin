@@ -16,6 +16,8 @@ from modules.irwin.updatePlayerEngineStatus import isEngine
 
 from Env import Env
 
+from legits import legits
+
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("token", metavar="TOKEN",
                     help="secret token for the lichess api")
@@ -47,10 +49,21 @@ logging.getLogger("chess.uci").setLevel(logging.WARNING)
 env = Env(settings)
 env.irwin.train()
 
+def nextPlayerId():
+  userId = None
+  while userId is None:
+    userId = env.api.getPlayerId()
+    if userId is None:
+      userId = env.playerAnalysisDB.oldestUnsortedUserId()
+  return userId
+
+legitsiter = iter(legits)
+
 while True:
   # Get player data
-  userId = env.api.getPlayerId()
+  userId = next(legitsiter, None)
   playerData = env.api.getPlayerData(userId)
+
 
   # Filter games and assessments for relevant info
   try:
