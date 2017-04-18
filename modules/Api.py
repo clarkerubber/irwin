@@ -46,22 +46,26 @@ class Api(namedtuple('Api', ['token'])):
   def getPlayerId(self):
     logging.debug(bcolors.WARNING + 'Getting new player ID...' + bcolors.ENDC)
     success = False
-    while not success:
+    failures = 0
+    while not success and failures < 3:
       try:
         response = requests.get('https://en.lichess.org/report/irwin-bot-next?api_key='+self.token)
         if response.status_code == 200:
           success = True
         else:
-          logging.warning(bcolors.WARNING + '404: Failed get to new player name' + bcolors.ENDC)
+          logging.warning(bcolors.WARNING + str(response.status_code) + ': Failed get to new player name' + bcolors.ENDC)
           logging.debug(bcolors.WARNING + 'Trying again in 60 sec' + bcolors.ENDC)
+          failures += 1
           time.sleep(60)
       except requests.ConnectionError:
         logging.warning(bcolors.WARNING + 'CONNECTION ERROR: Failed to get new player name' + bcolors.ENDC)
         logging.debug(bcolors.WARNING + 'Trying again in 30 sec' + bcolors.ENDC)
+        failures += 1
         time.sleep(30)
       except requests.exceptions.SSLError:
         logging.warning(bcolors.WARNING + 'SSL ERROR: Failed to get new player name' + bcolors.ENDC)
         logging.debug(bcolors.WARNING + 'Trying again in 30 sec' + bcolors.ENDC)
+        failures += 1
         time.sleep(30)
     try:
       return response.text

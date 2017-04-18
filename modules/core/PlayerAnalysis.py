@@ -1,6 +1,7 @@
 from collections import namedtuple
 
 import datetime
+import pymongo
 
 class PlayerAnalysis(namedtuple('PlayerAnalysis', ['id', 'titled', 'engine', 'gamesPlayed', 'closedReports', 'gameAnalyses'])): # id = userId, engine = (True | False | None)
   def setEngine(self, engine):
@@ -65,6 +66,18 @@ class PlayerAnalysisDB:
 
   def byEngineStatus(self, status):
     return self.byBSONs(self.playerAnalysisColl.find({'engine': status}))
+
+  def oldestUnsorted(self):
+    playerAnalysisBSON = next(self.playerAnalysisColl.find({'engine': None}).sort('date', pymongo.ASCENDING), None)
+    if playerAnalysisBSON is not None:
+      return PlayerAnalysisBSONHandler.reads(playerAnalysisBSON, self.gameAnalysisDB.byUserId(playerAnalysisBSON['_id']))
+    return None
+
+  def oldestUnsortedUserId(self):
+    playerAnalysisBSON = next(self.playerAnalysisColl.find({'engine': None}).sort('date', pymongo.ASCENDING), None)
+    if playerAnalysisBSON is not None:
+      return playerAnalysisBSON['_id']
+    return None
 
   def allUnsorted(self): # Players who have not been marked as Engine or Legit
     return self.byEngineStatus(None)
