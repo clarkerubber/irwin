@@ -24,11 +24,10 @@ class Train(threading.Thread):
           unprocessed = self.playerAnalysisDB.countUnsorted())
         self.classifyMoves(sortedUsers)
         self.classifyMoveChunks(sortedUsers)
-        self.trainingStatsDB.write(
-          TrainingStats(
-            date = datetime.datetime.utcnow(),
-            accuracy = Accuracy(0, 0, 0, 0),
-            sample = sample))
+        self.trainingStatsDB.write(TrainingStats(
+          date = datetime.datetime.utcnow(),
+          accuracy = Accuracy(0, 0, 0, 0),
+          sample = sample))
       time.sleep(10)
 
   def outOfDate(self):
@@ -42,41 +41,10 @@ class Train(threading.Thread):
 
   def classifyMoves(self, playerAnalyses):
     entries = []
-    for playerAnalysis in playerAnalyses:
-      for gameAnalysis in playerAnalysis.gameAnalyses.gameAnalyses:
-        for analysedMove in gameAnalysis.analysedMoves:
-          entries.append({
-            'engine': playerAnalysis.engine,
-            'titled': playerAnalysis.titled,
-            'moveNumber': analysedMove.move,
-            'rank': analysedMove.rank(),
-            'loss': analysedMove.winningChancesLoss(),
-            'advantage': analysedMove.advantage(),
-            'ambiguity': analysedMove.ambiguity(),
-            'timeConsistent': gameAnalysis.consistentMoveTime(analysedMove.move),
-            'bot': gameAnalysis.playerAssessment.hold,
-            'blurs': gameAnalysis.playerAssessment.blurs
-          })
+    [entries.extend(playerAnalysis.CSVMoves()) for playerAnalysis in playerAnalyses]
     writeClassifiedMovesCSV(entries)
 
   def classifyMoveChunks(self, playerAnalyses):
     entries = []
-    for playerAnalysis in playerAnalyses:
-      for gameAnalysis in playerAnalysis.gameAnalyses.gameAnalyses:
-        for i in range(len(gameAnalysis.analysedMoves) - 9): # assume the length of the game is > 10
-          entry = [
-            int(playerAnalysis.engine),
-            int(playerAnalysis.titled),
-            int(gameAnalysis.playerAssessment.hold),
-            int(gameAnalysis.playerAssessment.blurs),
-            i]
-          for analysedMove in gameAnalysis.analysedMoves[i:i+10]:
-            entry.extend([
-              analysedMove.rank(),
-              int(100*analysedMove.winningChancesLoss()),
-              int(100*analysedMove.advantage()),
-              analysedMove.ambiguity(),
-              int(gameAnalysis.consistentMoveTime(analysedMove.move))
-            ])
-          entries.append(entry)
+    [entries.extend(playerAnalysis.CSVChunks()) for playerAnalysis in playerAnalyses]
     writeClassifiedMoveChunksCSV(entries)

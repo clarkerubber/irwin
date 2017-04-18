@@ -6,6 +6,26 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', ['id', 'titled', 'engine', 'ga
   def setEngine(self, engine):
     return PlayerAnalysis(self.id, self.titled, engine, self.gamesPlayed, self.closedReports, self.gameAnalyses)
 
+  def tensorInputMoves(self):
+    moves = []
+    [moves.extend(gameAnalysis.tensorInputMoves(self.titled)) for gameAnalysis in self.gameAnalyses.gameAnalyses]
+    return moves
+
+  def tensorInputChunks(self):
+    chunks = []
+    [chunks.extend(gameAnalysis.tensorInputChunks(self.titled)) for gameAnalysis in self.gameAnalyses.gameAnalyses]
+    return chunks
+
+  def CSVMoves(self):
+    moves = []
+    [moves.append([int(self.engine)] + move) for move in self.tensorInputMoves()]
+    return moves
+
+  def CSVChunks(self):
+    chunks = []
+    [chunks.append([int(self.engine)] + chunk) for chunk in self.tensorInputChunks()]
+    return chunks
+
 class PlayerAnalysisBSONHandler:
   @staticmethod
   def reads(bson, gameAnalyses):

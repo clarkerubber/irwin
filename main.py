@@ -73,7 +73,7 @@ while True:
 
   for g in games.games:
     if playerAssessments.hasGameId(g.id):
-      gameAnalyses.append(GameAnalysis(g, playerAssessments.byGameId(g.id), [], []))
+      gameAnalyses.append(GameAnalysis(g, playerAssessments.byGameId(g.id), [], [], []))
 
   gameAnalyses.analyse(env.engine, env.infoHandler)
 
