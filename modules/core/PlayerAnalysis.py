@@ -2,6 +2,7 @@ from collections import namedtuple
 
 import datetime
 import pymongo
+import random
 
 class PlayerAnalysis(namedtuple('PlayerAnalysis', ['id', 'titled', 'engine', 'gamesPlayed', 'closedReports', 'gameAnalyses'])): # id = userId, engine = (True | False | None)
   def setEngine(self, engine):
@@ -84,6 +85,14 @@ class PlayerAnalysisDB:
 
   def allSorted(self):
     return self.byBSONs(self.playerAnalysisColl.find({'engine': {'$in': [True, False]}}))
+
+  def balancedSorted(self):
+    enginePlayerAnalyses = self.engines()
+    legitPlayerAnalyses = self.legits()
+    amount = min(len(enginePlayerAnalyses), len(legitPlayerAnalyses))
+    randomEngines = [ enginePlayerAnalyses[i] for i in sorted(random.sample(range(len(enginePlayerAnalyses)), amount)) ]
+    randomLegits =  [ legitPlayerAnalyses[i] for i in sorted(random.sample(range(len(legitPlayerAnalyses)), amount)) ]
+    return randomLegits + randomEngines
 
   def countUnsorted(self):
     return self.playerAnalysisColl.count({'engine': None})

@@ -64,7 +64,6 @@ while True:
   userId = next(legitsiter, None)
   playerData = env.api.getPlayerData(userId)
 
-
   # Filter games and assessments for relevant info
   try:
     pas = list([PlayerAssessmentBSONHandler.reads(pa) for pa in playerData['assessment']['playerAssessments']])
