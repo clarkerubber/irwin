@@ -2,10 +2,10 @@ import tensorflow as tf
 
 from modules.irwin.TrainingStats import Accuracy
 
-class MoveAnalysis:
+class ChunkAnalysis:
   @staticmethod
   def combineInputs(X):
-    playerandgamesfnn = tf.contrib.layers.stack(X, tf.contrib.layers.fully_connected, [40, 10, 10, 2])
+    playerandgamesfnn = tf.contrib.layers.stack(X, tf.contrib.layers.fully_connected, [100, 100, 80, 10, 10, 2])
     return tf.reshape(playerandgamesfnn, [-1, 2])
 
   @staticmethod
@@ -42,7 +42,7 @@ class MoveAnalysis:
 
   @staticmethod
   def readCSV(batchSize, recordDefaults):
-    filename_queue = tf.train.string_input_producer(['data/classified-moves.csv'])
+    filename_queue = tf.train.string_input_producer(['data/classified-chunks.csv'])
     reader = tf.TextLineReader(skip_header_lines=1)
     key, value = reader.read(filename_queue)
     decoded = tf.decode_csv(value, record_defaults=recordDefaults)
@@ -69,7 +69,7 @@ class MoveAnalysis:
 
         initialStep = 0
 
-        ckpt = tf.train.get_checkpoint_state('./modules/irwin/models/moves/model')
+        ckpt = tf.train.get_checkpoint_state('./modules/irwin/models/chunks/model')
         if ckpt and ckpt.model_checkpoint_path:
           saver.restore(sess, ckpt.model_checkpoint_path)
           initialStep = int(ckpt.model_checkpoint_path.rsplit('-', 1)[1])
@@ -114,11 +114,11 @@ class MoveAnalysis:
             print("Indecise: " + str(100*indecise/800) + "% (" + str(indecise) + ")")
             print("loss: " + str(tloss))
             print("eval: " + str(eva) + "\n")
-            saver.save(sess, './modules/irwin/models/moves/model', global_step=step)
+            saver.save(sess, './modules/irwin/models/chunks/model', global_step=step)
 
         coord.request_stop()
         coord.join(threads)
-        saver.save(sess, './modules/irwin/models/moves/model', global_step=trainingSteps)
+        saver.save(sess, './modules/irwin/models/chunks/model', global_step=trainingSteps)
         saver = tf.train.Saver(sharded=True)
         sess.close()
         return Accuracy(
@@ -142,7 +142,7 @@ class MoveAnalysis:
           coord = tf.train.Coordinator()
           threads = tf.train.start_queue_runners(sess=sess, coord=coord)
 
-        ckpt = tf.train.get_checkpoint_state('modules/irwin/models/moves/model')
+        ckpt = tf.train.get_checkpoint_state('modules/irwin/models/chunks/model')
         if ckpt and ckpt.model_checkpoint_path:
           saver.restore(sess, ckpt.model_checkpoint_path)
 

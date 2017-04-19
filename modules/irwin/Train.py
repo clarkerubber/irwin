@@ -5,6 +5,7 @@ import time
 from modules.irwin.updatePlayerEngineStatus import updatePlayerEngineStatus
 from modules.irwin.TrainingStats import TrainingStats, Accuracy, Sample
 from modules.irwin.writeCSV import writeClassifiedMovesCSV, writeClassifiedMoveChunksCSV
+from modules.irwin.MoveAnalysis import MoveAnalysis
 
 class Train(threading.Thread):
   def __init__(self, api, trainingStatsDB, playerAnalysisDB):
@@ -16,14 +17,15 @@ class Train(threading.Thread):
   def run(self):
     while True:
       if self.outOfDate():
-        updatePlayerEngineStatus(self.api, self.playerAnalysisDB)
+        #updatePlayerEngineStatus(self.api, self.playerAnalysisDB)
         sortedUsers = self.playerAnalysisDB.balancedSorted()
         sample = Sample(
           engines = sum(1 for user in sortedUsers if user.engine),
           legits = sum(1 for user in sortedUsers if not user.engine),
           unprocessed = self.playerAnalysisDB.countUnsorted())
-        self.classifyMoves(sortedUsers)
-        self.classifyMoveChunks(sortedUsers)
+        #self.classifyMoves(sortedUsers)
+        #self.classifyMoveChunks(sortedUsers)
+        MoveAnalysis.learn()
         self.trainingStatsDB.write(TrainingStats(
           date = datetime.datetime.utcnow(),
           accuracy = Accuracy(0, 0, 0, 0),
