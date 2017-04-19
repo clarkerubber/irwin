@@ -17,7 +17,7 @@ class Train(threading.Thread):
     while True:
       if self.outOfDate():
         updatePlayerEngineStatus(self.api, self.playerAnalysisDB)
-        sortedUsers = self.playerAnalysisDB.allSorted()
+        sortedUsers = self.playerAnalysisDB.balancedSorted()
         sample = Sample(
           engines = sum(1 for user in sortedUsers if user.engine),
           legits = sum(1 for user in sortedUsers if not user.engine),
