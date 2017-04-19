@@ -91,5 +91,9 @@ ENV/
 # Data Files
 *.csv
 
+# TensorFlow Files
+checkpoint
+model-
+
 # Stockfish
 stockfish*
