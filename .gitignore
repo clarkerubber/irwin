@@ -93,7 +93,7 @@ ENV/
 
 # TensorFlow Files
 checkpoint
-model-
+model*
 
 # Stockfish
 stockfish*
