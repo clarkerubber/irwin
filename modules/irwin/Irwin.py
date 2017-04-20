@@ -19,6 +19,7 @@ class Irwin(namedtuple('Irwin', ['api', 'learner', 'trainingStatsDB', 'playerAna
   def assessGame(gameAnalysis, titled):
     gameAnalysis.assessedMoves = [AssessedMove(analysedMove, irwinReport) for analysedMove, irwinReport in zip(gameAnalysis.analysedMoves, MoveAssessment.applyNet(gameAnalysis.tensorInputMoves(titled)))]
     gameAnalysis.assessedChunks = [AssessedChunk(move, irwinReport) for move, irwinReport in enumerate(ChunkAssessment.applyNet(gameAnalysis.tensorInputChunks(titled)))]
+    gameAnalysis.assessed = True
     return gameAnalysis
 
   @staticmethod
@@ -44,9 +45,9 @@ class TrainAndEvaluate(threading.Thread):
     while True:
       time.sleep(10)
       if self.outOfDate():
-        trainer = TrainNetworks(self.api, self.playerAnalysisDB)
-        trainer.start()
-        trainer.join()
+        #trainer = TrainNetworks(self.api, self.playerAnalysisDB)
+        #trainer.start()
+        #trainer.join()
         engines = self.playerAnalysisDB.engines()
         legits = self.playerAnalysisDB.legits()
         engines = [Irwin.assessPlayer(engine) for engine in engines]
