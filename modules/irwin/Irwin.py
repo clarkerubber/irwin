@@ -2,6 +2,7 @@ from collections import namedtuple
 import threading
 import datetime
 import time
+import logging
 
 from modules.irwin.TrainNetworks import TrainNetworks
 from modules.irwin.MoveAssessment import MoveAssessment
@@ -45,6 +46,7 @@ class TrainAndEvaluate(threading.Thread):
     while True:
       time.sleep(10)
       if self.outOfDate():
+        logging.debug("OUT OF DATE: UPDATING!")
         trainer = TrainNetworks(self.api, self.playerAnalysisDB)
         trainer.start()
         trainer.join()
@@ -52,6 +54,7 @@ class TrainAndEvaluate(threading.Thread):
         legits = self.playerAnalysisDB.legits()
         unsorted = self.playerAnalysisDB.countUnsorted()
 
+        logging.debug("Assessing new networks")
         engines = [Irwin.assessPlayer(engine) for engine in engines]
         legits = [Irwin.assessPlayer(legit) for legit in legits]
 
@@ -60,6 +63,7 @@ class TrainAndEvaluate(threading.Thread):
         falsePositive = sum([1 for p in legits if p.result()])
         falseNegative = sum([1 for p in engines if not p.result()])
 
+        logging.debug("Writing training stats")
         self.trainingStatsDB.write(TrainingStats(
           date = datetime.datetime.utcnow(),
           sample = Sample(engines = len(engines), legits = len(legits), unprocessed = unsorted),

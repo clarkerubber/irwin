@@ -1,4 +1,5 @@
 import tensorflow as tf
+import logging
 
 from modules.irwin.TrainingStats import Accuracy
 from modules.irwin.IrwinReport import IrwinReport
@@ -76,10 +77,12 @@ class MoveAssessment():
         else:
           sess.run(initOp)
           
-        if initialStep >= 50000:
+        if initialStep >= 45000:
           trainingSteps = initialStep + 10000
         else: 
           trainingSteps = 50000
+
+        logging.debug("training to: "+str(trainingSteps))
 
         for step in range(initialStep, trainingSteps):
           sess.run(trainOp)
@@ -107,15 +110,15 @@ class MoveAssessment():
                   positive += 1
                 else:
                   indecise += 1
-            print(compar)
-            print("Step: " + str(step))
-            print("True P:   " + str(100*truePositive/positive) + "% (" + str(truePositive) + ")")
-            print("True N:   " + str(100*trueNegative/negative) + "% (" + str(trueNegative) + ")")
-            print("False P:  " + str(100*falsePositive/positive) + "% (" + str(falsePositive) + ")")
-            print("False N:  " + str(100*falseNegative/negative) + "% (" + str(falseNegative) + ")")
-            print("Indecise: " + str(100*indecise/800) + "% (" + str(indecise) + ")")
-            print("loss: " + str(tloss))
-            print("eval: " + str(eva) + "\n")
+            logging.debug(compar)
+            logging.debug("Step: " + str(step))
+            logging.debug("True P:   " + str(100*truePositive/positive) + "% (" + str(truePositive) + ")")
+            logging.debug("True N:   " + str(100*trueNegative/negative) + "% (" + str(trueNegative) + ")")
+            logging.debug("False P:  " + str(100*falsePositive/positive) + "% (" + str(falsePositive) + ")")
+            logging.debug("False N:  " + str(100*falseNegative/negative) + "% (" + str(falseNegative) + ")")
+            logging.debug("Indecise: " + str(100*indecise/800) + "% (" + str(indecise) + ")")
+            logging.debug("loss: " + str(tloss))
+            logging.debug("eval: " + str(eva) + "\n")
             saver.save(sess, 'modules/irwin/models/moves/model', global_step=step)
 
         coord.request_stop()
