@@ -12,7 +12,7 @@ class Api(namedtuple('Api', ['token'])):
     success = False
     while not success:
       try:
-        r = requests.post('https://en.lichess.org/mod/' + userId + '/irwin?api_key=' + self.token, json={'result': bool(report[0]), 'reason': report[1]})
+        r = requests.post('https://en.lichess.org/mod/' + userId + '/irwin?api_key=' + self.token, json=report)
         success = True
       except requests.ConnectionError:
         logging.warning(bcolors.WARNING + "CONNECTION ERROR: Failed to post puzzle.")

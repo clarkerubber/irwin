@@ -28,6 +28,13 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', ['id', 'titled', 'engine', 'ga
     [chunks.append([int(self.engine)] + chunk) for chunk in self.tensorInputChunks()]
     return chunks
 
+  def reason(self):
+    "\n".join(['lichess.org/'+gameAnalysis.id+' avg: '+str(int(100*gameAnalysis.assessmentAverage()))+'% outlier avg: '+str(int(100*gameAnalysis.assessmentOutlierAverage()))+'%' for gameAnalysis in self.gameAnalyses])
+
+  def report(self):
+    {'result': False,
+    'reason': self.reason()}
+
 class PlayerAnalysisBSONHandler:
   @staticmethod
   def reads(bson, gameAnalyses):

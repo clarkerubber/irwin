@@ -1,6 +1,7 @@
 import chess
 import chess.pgn
 import logging
+import numpy
 
 from modules.bcolors.bcolors import bcolors
 
@@ -36,9 +37,6 @@ class GameAnalysis:
 
     self.playableGame = chess.pgn.read_game(StringIO(game.pgn))
     self.white = self.playerAssessment.white
-    
-  def __str__(self):
-    return str(self.game) + "\n" + str(self.playerAssessment) + "\n" + str([str(am) for am in self.analysedMoves])
 
   def rankedMoves(self): # Moves where the played move is in top 5
     return [am for am in self.analysedMoves if am.inAnalyses()]
@@ -77,6 +75,26 @@ class GameAnalysis:
       int(self.consistentMoveTime(analysedMove.move)),
       int(self.playerAssessment.hold),
       self.playerAssessment.blurs] for analysedMove in self.analysedMoves]
+
+  @staticmethod
+  def averageChunks(assessedChunks):
+    return numpy.mean([chunk.irwinReport.activation for chunk in assessedChunks])
+
+  def normalisedAssessedMoves(self):
+    if self.assessed: # bear with me here. Average of the move (50%) and all the chunks that cover it (50%).
+      return [numpy.mean([
+          assessedMove.irwinReport.activation,
+          GameAnalysis.averageChunks(self.assessedChunks[max(0,assessedMove.analysedMove.move-10):min(len(self.assessedChunks),assessedMove.analysedMove.move)])
+        ]) for assessedMove in self.assessedMoves]
+    return []
+
+  def assessmentOutlierAverage(self):
+    norm = sorted(self.normalisedAssessedMoves())
+    return numpy.mean(norm[-int(0.2*len(norm)):])
+
+  def assessmentAverage(self):
+    return numpy.mean(self.normalisedAssessedMoves())
+
 
 def gameAnalysisId(gameId, white):
   return gameId + '/' + ('white' if white else 'black')
