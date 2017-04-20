@@ -1,7 +1,6 @@
 import threading
 
 from modules.irwin.updatePlayerEngineStatus import updatePlayerEngineStatus
-from modules.irwin.TrainingStats import TrainingStats, Accuracy, Sample
 from modules.irwin.writeCSV import writeClassifiedMovesCSV, writeClassifiedMoveChunksCSV
 from modules.irwin.MoveAssessment import MoveAssessment
 from modules.irwin.ChunkAssessment import ChunkAssessment
