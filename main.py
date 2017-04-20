@@ -16,8 +16,6 @@ from modules.irwin.updatePlayerEngineStatus import isEngine
 
 from Env import Env
 
-from legits import legits
-
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("token", metavar="TOKEN",
                     help="secret token for the lichess api")
