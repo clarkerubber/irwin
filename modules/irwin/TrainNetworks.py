@@ -14,10 +14,6 @@ class TrainNetworks(threading.Thread):
   def run(self):
     updatePlayerEngineStatus(self.api, self.playerAnalysisDB)
     sortedUsers = self.playerAnalysisDB.balancedSorted()
-    sample = Sample(
-      engines = sum(1 for user in sortedUsers if user.engine),
-      legits = sum(1 for user in sortedUsers if not user.engine),
-      unprocessed = self.playerAnalysisDB.countUnsorted())
     self.classifyMoves(sortedUsers)
     self.classifyMoveChunks(sortedUsers)
     MoveAssessment.learn()
