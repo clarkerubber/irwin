@@ -1,32 +1,33 @@
 import tensorflow as tf
 
 from modules.irwin.TrainingStats import Accuracy
+from modules.irwin.IrwinReport import IrwinReport
 
-class ChunkAnalysis:
+class MoveAssessment():
   @staticmethod
   def combineInputs(X):
-    playerandgamesfnn = tf.contrib.layers.stack(X, tf.contrib.layers.fully_connected, [100, 100, 80, 10, 10, 2])
+    playerandgamesfnn = tf.contrib.layers.stack(X, tf.contrib.layers.fully_connected, [40, 10, 10, 2], scope="mainnetwork")
     return tf.reshape(playerandgamesfnn, [-1, 2])
 
   @staticmethod
   def inference(X):
-    return tf.nn.softmax(MoveAnalysis.combineInputs(X))
+    return tf.nn.softmax(MoveAssessment.combineInputs(X))
 
   @staticmethod
   def loss(X, Y):
-    comb = MoveAnalysis.combineInputs(X)
-    entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(comb, Y))
+    comb = MoveAssessment.combineInputs(X)
+    entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=comb, labels=Y))
     predicted = tf.round(tf.nn.softmax(comb))
     evaluation = tf.reduce_mean(tf.cast(tf.equal(predicted, Y), tf.float32))
-    return entropy, evaluation, tf.concat(1, [comb, predicted, Y])
+    return entropy, evaluation, tf.concat([comb, predicted, Y], 1)
 
   @staticmethod
   def inputs():
-    inputList = MoveAnalysis.readCSV(800, [[0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0]])
-    features = tf.transpose(tf.pack(inputList[1:]))
+    inputList = MoveAssessment.readCSV(800, [[0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0]])
+    features = tf.transpose(tf.stack(inputList[1:]))
     cheat = tf.to_float(tf.equal(inputList[0], [1]))
     legit = tf.to_float(tf.equal(inputList[0], [0]))
-    cheating = tf.transpose(tf.pack([legit, cheat]))
+    cheating = tf.transpose(tf.stack([legit, cheat]))
     return features, cheating
 
   @staticmethod
@@ -37,12 +38,12 @@ class ChunkAnalysis:
   @staticmethod
   def evaluate(X, Y):
     with tf.name_scope("evaluate"):
-      predicted = tf.cast(MoveAnalysis.inference(X) > 0.5, tf.float32)
+      predicted = tf.cast(inference(X) > 0.5, tf.float32)
       return tf.reduce_mean(tf.cast(tf.equal(predicted, Y), tf.float32))
 
   @staticmethod
   def readCSV(batchSize, recordDefaults):
-    filename_queue = tf.train.string_input_producer(['data/classified-chunks.csv'])
+    filename_queue = tf.train.string_input_producer(['data/classified-moves.csv'])
     reader = tf.TextLineReader(skip_header_lines=1)
     key, value = reader.read(filename_queue)
     decoded = tf.decode_csv(value, record_defaults=recordDefaults)
@@ -57,30 +58,31 @@ class ChunkAnalysis:
     graph = tf.Graph()
     with graph.as_default():
       with tf.Session(graph=graph) as sess:
-        X, Y = MoveAnalysis.inputs()
+        X, Y = MoveAssessment.inputs()
         ## initliase graph for running
-        with tf.name_scope("global_ops"):
-          totalLoss, evaluation, comp = MoveAnalysis.loss(X, Y)
-          trainOp = MoveAnalysis.train(totalLoss)
-          saver = tf.train.Saver()
-          tf.initialize_all_variables().run()
-          coord = tf.train.Coordinator()
-          threads = tf.train.start_queue_runners(sess=sess, coord=coord)
+        totalLoss, evaluation, comp = MoveAssessment.loss(X, Y)
+        trainOp = MoveAssessment.train(totalLoss)
+        initOp = tf.global_variables_initializer()
+        saver = tf.train.Saver()
+        coord = tf.train.Coordinator()
+        threads = tf.train.start_queue_runners(sess=sess, coord=coord)
 
         initialStep = 0
 
-        ckpt = tf.train.get_checkpoint_state('./modules/irwin/models/chunks/model')
+        ckpt = tf.train.get_checkpoint_state('modules/irwin/models/moves')
         if ckpt and ckpt.model_checkpoint_path:
           saver.restore(sess, ckpt.model_checkpoint_path)
           initialStep = int(ckpt.model_checkpoint_path.rsplit('-', 1)[1])
+        else:
+          sess.run(initOp)
           
-        if initialStep >= 500000:
-          trainingSteps = initialStep + 5000
+        if initialStep >= 50000:
+          trainingSteps = initialStep + 10000
         else: 
-          trainingSteps = 500000
+          trainingSteps = 50000
 
         for step in range(initialStep, trainingSteps):
-          sess.run([trainOp])
+          sess.run(trainOp)
           if step % 1000 == 0:
             tloss, eva, compar = sess.run([totalLoss, evaluation, comp])
             positive, negative, truePositive, trueNegative, falsePositive, falseNegative, indecise = 1, 1, 0, 0, 0, 0, 0
@@ -114,12 +116,10 @@ class ChunkAnalysis:
             print("Indecise: " + str(100*indecise/800) + "% (" + str(indecise) + ")")
             print("loss: " + str(tloss))
             print("eval: " + str(eva) + "\n")
-            saver.save(sess, './modules/irwin/models/chunks/model', global_step=step)
+            saver.save(sess, 'modules/irwin/models/moves/model', global_step=step)
 
         coord.request_stop()
         coord.join(threads)
-        saver.save(sess, './modules/irwin/models/chunks/model', global_step=trainingSteps)
-        saver = tf.train.Saver(sharded=True)
         sess.close()
         return Accuracy(
           truePositive = truePositive,
@@ -133,7 +133,7 @@ class ChunkAnalysis:
     with graph.as_default():
       with tf.Session(graph=graph) as sess:
         a = tf.placeholder(tf.float32, shape=[None, 9])
-        infer = MoveAnalysis.inference(a)
+        infer = MoveAssessment.inference(a)
         feedDict = {a: batch}
         ## initliase graph for running
         with tf.name_scope("global_ops"):
@@ -142,7 +142,7 @@ class ChunkAnalysis:
           coord = tf.train.Coordinator()
           threads = tf.train.start_queue_runners(sess=sess, coord=coord)
 
-        ckpt = tf.train.get_checkpoint_state('modules/irwin/models/chunks/model')
+        ckpt = tf.train.get_checkpoint_state('modules/irwin/models/moves')
         if ckpt and ckpt.model_checkpoint_path:
           saver.restore(sess, ckpt.model_checkpoint_path)
 
@@ -150,4 +150,4 @@ class ChunkAnalysis:
         coord.request_stop()
         coord.join(threads)
         sess.close()
-        return result
+        return [IrwinReport(a[1], a[1]>0.5) for a in result[0]]

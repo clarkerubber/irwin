@@ -1,9 +1,11 @@
 import csv
+from random import shuffle
 
 def writeClassifiedMovesCSV(entries):
   with open('data/classified-moves.csv', 'w') as fh:
     writer = csv.writer(fh, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
     writer.writerow(['engine', 'titled', 'moveNumber', 'rank', 'loss', 'advantage', 'ambiguity', 'timeConsistent', 'bot', 'blur'])
+    shuffle(entries)
     [writer.writerow(entry) for entry in entries]
       
 
@@ -22,5 +24,6 @@ def writeClassifiedMoveChunksCSV(entries):
       'rank9', 'loss9', 'advantage9', 'ambiguity9', 'timeConsistent9'
       'rank10', 'loss10', 'advantage10', 'ambiguity10', 'timeConsistent10'
     ])
+    shuffle(entries)
     [writer.writerow(entry) for entry in entries]
       

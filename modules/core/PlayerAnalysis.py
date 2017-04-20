@@ -39,6 +39,7 @@ class PlayerAnalysisBSONHandler:
       closedReports = bson['closedReports'],
       gameAnalyses = gameAnalyses)
 
+  @staticmethod
   def writes(playerAnalysis):
     return {
       '_id': playerAnalysis.id,
