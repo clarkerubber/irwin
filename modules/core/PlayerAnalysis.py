@@ -29,10 +29,15 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', ['id', 'titled', 'engine', 'ga
     return chunks
 
   def reason(self):
-    "\n".join(['lichess.org/'+gameAnalysis.id+' avg: '+str(int(100*gameAnalysis.assessmentAverage()))+'% outlier avg: '+str(int(100*gameAnalysis.assessmentOutlierAverage()))+'%' for gameAnalysis in self.gameAnalyses])
+    if len(self.gameAnalyses) > 0:
+      return "[BETA]\n"+"\n".join(['lichess.org/'+gameAnalysis.id+' AVERAGE: '+str(gameAnalysis.assessmentAverage())+'% OUTLIER AVG: '+str(gameAnalysis.assessmentOutlierAverage())+'%' for gameAnalysis in self.gameAnalyses])
+    return "[BETA] No Games"
+
+  def result(self):
+    return sum([1 for g in self.gameAnalyses if g.assessmentAverage() > 0.5]) > 1
 
   def report(self):
-    {'result': False,
+    return {'result': False,
     'reason': self.reason()}
 
 class PlayerAnalysisBSONHandler:

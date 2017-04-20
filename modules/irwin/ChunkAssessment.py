@@ -150,4 +150,4 @@ class ChunkAssessment():
         coord.request_stop()
         coord.join(threads)
         sess.close()
-        return [IrwinReport(a[1], a[1]>0.5) for a in result[0]]
+        return [IrwinReport(int(100*a[1])) for a in result[0]]

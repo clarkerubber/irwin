@@ -57,11 +57,9 @@ def nextPlayerId():
       userId = env.playerAnalysisDB.oldestUnsortedUserId()
   return userId
 
-legitsiter = iter(legits)
-
 while True:
   # Get player data
-  userId = next(legitsiter, None)
+  userId = nextPlayerId()
   playerData = env.api.getPlayerData(userId)
 
   # Filter games and assessments for relevant info

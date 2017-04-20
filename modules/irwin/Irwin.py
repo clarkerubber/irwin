@@ -6,9 +6,9 @@ import time
 from modules.irwin.TrainNetworks import TrainNetworks
 from modules.irwin.MoveAssessment import MoveAssessment
 from modules.irwin.ChunkAssessment import ChunkAssessment
-from modules.core.AssessedMove import AssessedMove
-from modules.core.AssessedChunk import AssessedChunk
+from modules.irwin.TrainingStats import TrainingStats, Accuracy, Sample
 from modules.core.PlayerAnalysis import PlayerAnalysis
+
 
 class Irwin(namedtuple('Irwin', ['api', 'learner', 'trainingStatsDB', 'playerAnalysisDB'])):
   def train(self): # runs forever
@@ -17,8 +17,8 @@ class Irwin(namedtuple('Irwin', ['api', 'learner', 'trainingStatsDB', 'playerAna
 
   @staticmethod
   def assessGame(gameAnalysis, titled):
-    gameAnalysis.assessedMoves = [AssessedMove(analysedMove, irwinReport) for analysedMove, irwinReport in zip(gameAnalysis.analysedMoves, MoveAssessment.applyNet(gameAnalysis.tensorInputMoves(titled)))]
-    gameAnalysis.assessedChunks = [AssessedChunk(move, irwinReport) for move, irwinReport in enumerate(ChunkAssessment.applyNet(gameAnalysis.tensorInputChunks(titled)))]
+    gameAnalysis.assessedMoves = MoveAssessment.applyNet(gameAnalysis.tensorInputMoves(titled))
+    gameAnalysis.assessedChunks = ChunkAssessment.applyNet(gameAnalysis.tensorInputChunks(titled))
     gameAnalysis.assessed = True
     return gameAnalysis
 
@@ -45,13 +45,26 @@ class TrainAndEvaluate(threading.Thread):
     while True:
       time.sleep(10)
       if self.outOfDate():
-        #trainer = TrainNetworks(self.api, self.playerAnalysisDB)
-        #trainer.start()
-        #trainer.join()
+        trainer = TrainNetworks(self.api, self.playerAnalysisDB)
+        trainer.start()
+        trainer.join()
         engines = self.playerAnalysisDB.engines()
         legits = self.playerAnalysisDB.legits()
+        unsorted = self.playerAnalysisDB.countUnsorted()
+
         engines = [Irwin.assessPlayer(engine) for engine in engines]
         legits = [Irwin.assessPlayer(legit) for legit in legits]
+
+        truePositive = sum([1 for p in engines if p.result()])
+        trueNegative = sum([1 for p in legits if not p.result()])
+        falsePositive = sum([1 for p in legits if p.result()])
+        falseNegative = sum([1 for p in engines if not p.result()])
+
+        self.trainingStatsDB.write(TrainingStats(
+          date = datetime.datetime.utcnow(),
+          sample = Sample(engines = len(engines), legits = len(legits), unprocessed = unsorted),
+          accuracy = Accuracy(truePositive = truePositive, trueNegative = trueNegative, falsePositive = falsePositive, falseNegative = falseNegative)))
+
 
 
   def outOfDate(self):

@@ -10,8 +10,8 @@ from modules.core.AnalysedMove import AnalysedMove, Analysis, Score
 from modules.core.Game import GameBSONHandler
 from modules.core.GameAnalyses import GameAnalyses
 from modules.core.AnalysedMove import AnalysedMoveBSONHandler
-from modules.core.AssessedMove import AssessedMoveBSONHandler
-from modules.core.AssessedChunk import AssessedChunkBSONHandler
+
+from modules.irwin.IrwinReport import IrwinReportBSONHandler
 
 from collections import namedtuple
 
@@ -29,14 +29,17 @@ class GameAnalysis:
     self.playerAssessment = playerAssessment
 
     self.analysedMoves = analysedMoves # List[AnalysedMove] (Analysed by Stockfish)
-    self.assessedMoves = assessedMoves # List[AssessedMove] (Assessed by Irwin/TensorFlow)
-    self.assessedChunks = assessedChunks # List[AssessedChunk] (groups of 10 moves assessed by Irwin/TensorFlow)
+    self.assessedMoves = assessedMoves # List[IrwinReport] (Assessed by Irwin/TensorFlow)
+    self.assessedChunks = assessedChunks # List[IrwinReport] (groups of 10 moves assessed by Irwin/TensorFlow)
     
     self.analysed = len(self.analysedMoves) > 0
     self.assessed = len(self.assessedMoves) > 0
 
     self.playableGame = chess.pgn.read_game(StringIO(game.pgn))
     self.white = self.playerAssessment.white
+
+  def __str__(self):
+    return 'GameAnalysis('+self.id+', '+str(self.assessedMoves)+', '+str(self.assessedChunks)+')'
 
   def rankedMoves(self): # Moves where the played move is in top 5
     return [am for am in self.analysedMoves if am.inAnalyses()]
@@ -78,22 +81,30 @@ class GameAnalysis:
 
   @staticmethod
   def averageChunks(assessedChunks):
-    return numpy.mean([chunk.irwinReport.activation for chunk in assessedChunks])
+    return numpy.mean([chunk.activation for chunk in assessedChunks])
 
   def normalisedAssessedMoves(self):
     if self.assessed: # bear with me here. Average of the move (50%) and all the chunks that cover it (50%).
       return [numpy.mean([
-          assessedMove.irwinReport.activation,
-          GameAnalysis.averageChunks(self.assessedChunks[max(0,assessedMove.analysedMove.move-10):min(len(self.assessedChunks),assessedMove.analysedMove.move)])
-        ]) for assessedMove in self.assessedMoves]
+          assessedMove.activation,
+          GameAnalysis.averageChunks(self.assessedChunks[max(0,move-10):min(len(self.assessedChunks),move+1)])
+        ]) for move, assessedMove in enumerate(self.assessedMoves)]
     return []
 
   def assessmentOutlierAverage(self):
-    norm = sorted(self.normalisedAssessedMoves())
-    return numpy.mean(norm[-int(0.2*len(norm)):])
+    if self.assessed:
+      norm = sorted(self.normalisedAssessedMoves())
+      mean = numpy.mean(norm[-int(0.2*len(norm)):])
+      if not numpy.isnan(mean):
+        return int(mean)
+    return 0
 
   def assessmentAverage(self):
-    return numpy.mean(self.normalisedAssessedMoves())
+    if self.assessed:
+      mean = numpy.mean(self.normalisedAssessedMoves())
+      if not numpy.isnan(mean):
+        return int(mean)
+    return 0
 
 
 def gameAnalysisId(gameId, white):
@@ -106,8 +117,8 @@ class GameAnalysisBSONHandler:
       game,
       playerAssessment,
       [AnalysedMoveBSONHandler.reads(am) for am in analysedMovesBSON],
-      [AssessedMoveBSONHandler.reads(am) for am in assessedMovesBSON],
-      [AssessedChunkBSONHandler.reads(ac) for ac in assessedChunksBSON])
+      [IrwinReportBSONHandler.reads(am) for am in assessedMovesBSON],
+      [IrwinReportBSONHandler.reads(ac) for ac in assessedChunksBSON])
 
   @staticmethod
   def writes(gameAnalysis):
@@ -116,8 +127,8 @@ class GameAnalysisBSONHandler:
       'gameId': gameAnalysis.gameId,
       'userId': gameAnalysis.userId,
       'analysedMoves': [AnalysedMoveBSONHandler.writes(am) for am in gameAnalysis.analysedMoves],
-      'assessedMoves': [AssessedMoveBSONHandler.writes(am) for am in gameAnalysis.assessedMoves],
-      'assessedChunks': [AssessedChunkBSONHandler.writes(am) for am in gameAnalysis.assessedChunks]
+      'assessedMoves': [IrwinReportBSONHandler.writes(am) for am in gameAnalysis.assessedMoves],
+      'assessedChunks': [IrwinReportBSONHandler.writes(am) for am in gameAnalysis.assessedChunks]
     }
 
 class GameAnalysisDB(namedtuple('GameAnalysisDB', ['gameAnalysisColl', 'gameDB', 'playerAssessmentDB'])):

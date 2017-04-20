@@ -1,6 +1,5 @@
 from collections import namedtuple
 
-import datetime
 import pymongo
 
 Accuracy = namedtuple('Accuracy', ['truePositive', 'falsePositive', 'trueNegative', 'falseNegative'])
