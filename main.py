@@ -45,7 +45,7 @@ logging.getLogger("requests.packages.urllib3").setLevel(logging.WARNING)
 logging.getLogger("chess.uci").setLevel(logging.WARNING)
 
 env = Env(settings)
-env.irwin.train()
+#env.irwin.train()
 
 def nextPlayerId():
   userId = None
@@ -57,7 +57,7 @@ def nextPlayerId():
 
 while True:
   # Get player data
-  userId = nextPlayerId()
+  userId = 'neri'#nextPlayerId()
   playerData = env.api.getPlayerData(userId)
 
   # Filter games and assessments for relevant info
@@ -77,7 +77,7 @@ while True:
   games = env.gameDB.byIds(playerAssessments.gameIds())
   gameAnalyses = env.gameAnalysisDB.byUserId(userId)
 
-  logging.debug(bcolors.WARNING + "Already Analysed: " + str(len(gameAnalyses.gameAnalyses)) + bcolors.ENDC)
+  logging.debug("Already Analysed: " + str(len(gameAnalyses.gameAnalyses)))
 
   for g in games.games:
     if playerAssessments.hasGameId(g.id):
