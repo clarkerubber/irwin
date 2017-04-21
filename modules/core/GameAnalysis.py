@@ -81,27 +81,37 @@ class GameAnalysis:
 
   @staticmethod
   def averageChunks(assessedChunks):
-    return numpy.mean([chunk.activation for chunk in assessedChunks])
+    if len(assessedChunks) > 0:
+      return numpy.mean([chunk.activation for chunk in assessedChunks])
+    return 0
 
   def normalisedAssessedMoves(self):
-    if self.assessed: # bear with me here. Average of the move (50%) and all the chunks that cover it (50%).
-      return [numpy.mean([
-          assessedMove.activation,
-          GameAnalysis.averageChunks(self.assessedChunks[max(0,move-10):min(len(self.assessedChunks),move+1)])
-        ]) for move, assessedMove in enumerate(self.assessedMoves)]
+    if self.assessed: # bear with me here. Average of the move (60%) and all the chunks that cover it (40%).
+      return [(
+        0.6 * assessedMove.activation + 
+        0.4 * GameAnalysis.averageChunks(self.assessedChunks[max(0,move-10):min(len(self.assessedChunks),move+1)])
+      ) for move, assessedMove in enumerate(self.assessedMoves)]
     return []
 
   def assessmentOutlierAverage(self):
     if self.assessed:
       norm = sorted(self.normalisedAssessedMoves())
-      mean = numpy.mean(norm[-int(0.2*len(norm)):])
+      top20Percent = norm[-int(0.2*len(norm)):]
+      if len(top20Percent) > 0:
+        mean = numpy.mean(top20Percent)
+      else:
+        mean = 0
       if not numpy.isnan(mean):
         return int(mean)
     return 0
 
   def assessmentAverage(self):
     if self.assessed:
-      mean = numpy.mean(self.normalisedAssessedMoves())
+      norm = self.normalisedAssessedMoves()
+      if len(norm) > 0:
+        mean = numpy.mean(norm)
+      else:
+        mean = 0
       if not numpy.isnan(mean):
         return int(mean)
     return 0

@@ -8,7 +8,7 @@ from collections import namedtuple
 
 class Api(namedtuple('Api', ['token'])):
   def postReport(self, userId, report):
-    logging.info('Posting report for ' + userId)
+    logging.warning('Posting report for ' + userId)
     success = False
     while not success:
       try:

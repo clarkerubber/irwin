@@ -78,7 +78,7 @@ class MoveAssessment():
           sess.run(initOp)
           
         if initialStep >= 45000:
-          trainingSteps = initialStep + 10000
+          trainingSteps = initialStep + 5000
         else: 
           trainingSteps = 50000
 
