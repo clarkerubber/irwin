@@ -82,7 +82,7 @@ class ChunkAssessment():
         else: 
           trainingSteps = 50000
 
-        logging.debug("training to: "+str(trainingSteps))
+        logging.warning("training chunks to: "+str(trainingSteps))
 
         for step in range(initialStep, trainingSteps):
           sess.run(trainOp)
@@ -111,7 +111,7 @@ class ChunkAssessment():
                 else:
                   indecise += 1
             logging.debug(compar)
-            logging.debug("Step: " + str(step))
+            logging.warning("Step: " + str(step))
             logging.debug("True P:   " + str(100*truePositive/positive) + "% (" + str(truePositive) + ")")
             logging.debug("True N:   " + str(100*trueNegative/negative) + "% (" + str(trueNegative) + ")")
             logging.debug("False P:  " + str(100*falsePositive/positive) + "% (" + str(falsePositive) + ")")
