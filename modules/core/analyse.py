@@ -6,9 +6,9 @@ def analyse(gameAnalysis, engine, infoHandler, override = False):
   if not gameAnalysis.analysed or override:
     node = gameAnalysis.playableGame
 
-    logging.debug(bcolors.WARNING + "Game ID: " + gameAnalysis.gameId + bcolors.ENDC)
-    logging.debug(bcolors.OKGREEN + "Game Length: " + str(node.end().board().fullmove_number))
-    logging.debug("Analysing Game..." + bcolors.ENDC)
+    logging.debug("Game ID: " + gameAnalysis.gameId)
+    logging.debug("Game Length: " + str(node.end().board().fullmove_number))
+    logging.debug("Analysing Game...")
 
     engine.ucinewgame()
 

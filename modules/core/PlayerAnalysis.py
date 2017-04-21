@@ -34,7 +34,7 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', ['id', 'titled', 'engine', 'ga
     return "[BETA] No Games"
 
   def result(self):
-    return sum([1 for g in self.gameAnalyses if g.assessmentAverage() > 0.7]) > 1
+    return sum([1 for g in self.gameAnalyses if g.assessmentAverage() > 0.75]) > 2
 
   def report(self):
     return {'result': False,
