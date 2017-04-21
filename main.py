@@ -45,7 +45,7 @@ logging.getLogger("requests.packages.urllib3").setLevel(logging.WARNING)
 logging.getLogger("chess.uci").setLevel(logging.WARNING)
 
 env = Env(settings)
-#env.irwin.train()
+env.irwin.train()
 
 def nextPlayerId():
   userId = None
