@@ -57,7 +57,7 @@ def nextPlayerId():
 
 while True:
   # Get player data
-  userId = 'neri'#nextPlayerId()
+  userId = nextPlayerId()
   playerData = env.api.getPlayerData(userId)
 
   # Filter games and assessments for relevant info
