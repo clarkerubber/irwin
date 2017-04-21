@@ -3,6 +3,7 @@ from collections import namedtuple
 import datetime
 import pymongo
 import random
+import numpy
 
 class PlayerAnalysis(namedtuple('PlayerAnalysis', ['id', 'titled', 'engine', 'gamesPlayed', 'closedReports', 'gameAnalyses'])): # id = userId, engine = (True | False | None)
   def setEngine(self, engine):
@@ -34,7 +35,7 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', ['id', 'titled', 'engine', 'ga
     return "[BETA] No Games"
 
   def result(self):
-    return sum([1 for g in self.gameAnalyses if g.assessmentAverage() > 0.75]) > 2
+    return numpy.mean(g.assessmentAverage() for g in self.gameAnalyses.gameAnalyses) > 0.85
 
   def report(self):
     return {'result': False,
