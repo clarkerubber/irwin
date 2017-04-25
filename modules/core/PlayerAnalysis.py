@@ -29,17 +29,23 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', ['id', 'titled', 'engine', 'ga
     [chunks.append([int(self.engine)] + chunk) for chunk in self.tensorInputChunks()]
     return chunks
 
-  def reason(self):
-    if len(self.gameAnalyses.gameAnalyses) > 0:
-      return "[BETA]\n"+"\n".join(['lichess.org/'+gameAnalysis.id+' AVERAGE: '+str(gameAnalysis.assessmentAverage())+'% OUTLIER AVG: '+str(gameAnalysis.assessmentOutlierAverage())+'%' for gameAnalysis in self.gameAnalyses.gameAnalyses])
-    return "[BETA] No Games"
-
-  def result(self):
-    return sum([1 for g in self.gameAnalyses.gameAnalyses if g.assessmentAverage() > 60]) > 1
-
   def report(self):
-    return {'result': False,
-    'reason': self.reason()}
+    return {
+      'userId': self.id,
+      'isLegit': self.isLegit(),
+      'activation': int(numpy.mean([ga.assessmentNoOutlierAverage() for ga in self.gameAnalyses.gameAnalyses])),
+      'games': [ga.reportDict() for go in self.gameAnalyses.gameAnalyses]
+    }
+
+  def isLegit(self):
+    gamesAnalysed = len(self.gameAnalyses.gameAnalyses)
+    susGames = sum([int(g.assessmentNoOutlierAverage() > 70) for g in self.gameAnalyses.gameAnalyses])
+    legitGames = sum([int(g.assessmentNoOutlierAverage() < 35) for g in self.gameAnalyses.gameAnalyses])
+    if susGames >= (2/5)*len(self.gameAnalyses.gameAnalyses) and susGames > 1:
+      return False
+    elif legitGames == gamesAnalysed and len(self.gameAnalyses.gameAnalyses) > 0:
+      return True # Player is legit
+    return None # Player falls into a grey area
 
 class PlayerAnalysisBSONHandler:
   @staticmethod

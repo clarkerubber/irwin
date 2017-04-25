@@ -34,7 +34,7 @@ class Irwin(namedtuple('Irwin', ['api', 'learner', 'trainingStatsDB', 'playerAna
       gamesPlayed = playerAnalysis.gamesPlayed,
       closedReports = playerAnalysis.closedReports,
       gameAnalyses = GameAnalyses([Irwin.assessGame(gameAnalysis, playerAnalysis.titled) for gameAnalysis in playerAnalysis.gameAnalyses.gameAnalyses])
-      )
+    )
 
   @staticmethod
   def flatten(listOfLists):
@@ -86,31 +86,30 @@ class TrainAndEvaluate(threading.Thread):
   def run(self):
     while True:
       time.sleep(10)
-      if self.outOfDate():
+      if self.outOfDate() or True:
         logging.warning("OUT OF DATE: UPDATING!")
-        trainer = TrainNetworks(self.api, self.playerAnalysisDB)
-        trainer.start()
+        #trainer = TrainNetworks(self.api, self.playerAnalysisDB)
+        #trainer.start()
         engines = self.playerAnalysisDB.engines()
         legits = self.playerAnalysisDB.legits()
+        #trainer.join()
         unsorted = self.playerAnalysisDB.countUnsorted()
-        trainer.join()
         logging.warning("Assessing new networks")
         engines = Irwin.assessPlayers(engines)
         legits = Irwin.assessPlayers(legits)
 
         logging.warning("Calculating results")
-        truePositive = sum([1 for p in engines if p.result()])
-        trueNegative = sum([1 for p in legits if not p.result()])
-        falsePositive = sum([1 for p in legits if p.result()])
-        falseNegative = sum([1 for p in engines if not p.result()])
+        truePositive = sum([int(False == p.isLegit()) for p in engines]) # cheaters marked as cheaters
+        trueNegative = sum([int(True == p.isLegit()) for p in legits]) # legits not marked or left open
+        falsePositive = sum([int(False == p.isLegit()) for p in legits]) # legits marked as engines
+        falseNegative = sum([int(True == p.isLegit()) for p in engines]) # cheaters marked as legits
+        indecise = sum([int(p.isLegit() is None) for p in (engines + legits)])
 
         logging.warning("Writing training stats")
         self.trainingStatsDB.write(TrainingStats(
           date = datetime.datetime.utcnow(),
           sample = Sample(engines = len(engines), legits = len(legits), unprocessed = unsorted),
-          accuracy = Accuracy(truePositive = truePositive, trueNegative = trueNegative, falsePositive = falsePositive, falseNegative = falseNegative)))
-
-
+          accuracy = Accuracy(truePositive = truePositive, trueNegative = trueNegative, falsePositive = falsePositive, falseNegative = falseNegative, indecise = indecise)))
 
   def outOfDate(self):
     latest = self.trainingStatsDB.latest()

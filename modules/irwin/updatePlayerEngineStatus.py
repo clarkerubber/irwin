@@ -1,9 +1,10 @@
 from modules.irwin.TrainingStats import Sample
 
 def updatePlayerEngineStatus(api, playerAnalysisDB): # For all players in DB, organise them into engine or legit
-  for playerAnalysis in playerAnalysisDB.allUnsorted(): # Get all players who have engine = None
+  playerStatuses = api.getPlayerStatuses([playerAnalysis.id for playerAnalysis in playerAnalysisDB.allUnsorted()])
+  for userId, status in playerStatuses.items(): # Get all players who have engine = None
     try:
-      engine = isEngine(api.getPlayerData(playerAnalysis.id))
+      engine = isEngine(status)
       if engine is not None:
         playerAnalysisDB.write(playerAnalysis.setEngine(engine))
     except IndexError:
@@ -11,10 +12,9 @@ def updatePlayerEngineStatus(api, playerAnalysisDB): # For all players in DB, or
     except KeyError:
       pass
 
-def isEngine(playerData):
-  processed = next((x for x in playerData['history'] if x['type'] == 'report' and x['data']['reason'] == 'cheat'), {}).get('data', {}).get('processedBy', None) is not None
-  if playerData['assessment']['user']['engine']:
-    return True
-  elif processed:
+def isEngine(status):
+  if status['engine'] == False and status['report'] == False:
     return False
+  elif status['engine'] == True:
+    return True
   return None

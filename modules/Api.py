@@ -7,12 +7,12 @@ from modules.bcolors.bcolors import bcolors
 from collections import namedtuple
 
 class Api(namedtuple('Api', ['token'])):
-  def postReport(self, userId, report):
+  def postReport(self, report):
     logging.warning('Posting report for ' + userId)
     success = False
     while not success:
       try:
-        r = requests.post('https://en.lichess.org/mod/' + userId + '/irwin?api_key=' + self.token, json=report)
+        r = requests.post('https://en.lichess.org/mod/irwin2?api_key=' + self.token, json=report)
         success = True
       except requests.ConnectionError:
         logging.warning("CONNECTION ERROR: Failed to post puzzle.")
@@ -71,3 +71,34 @@ class Api(namedtuple('Api', ['token'])):
       return response.text
     except ValueError:
       return None
+
+  @staticmethod
+  def chunks(l, n):
+    """Yield successive n-sized chunks from l."""
+    for i in range(0, len(l), n):
+        yield l[i:i + n]
+
+  def getPlayerStatuses(self, userIds):
+    idChunks = Api.chunks(userIds, 10)
+    logging.debug('Getting player status for ' + str(len(userIds)) + ' players')
+    data = {}
+    for idChunk in idChunks:
+      ids = ','.join(idChunk)
+      success = False
+      while not success:
+        try:
+          response = requests.post('https://en.lichess.org/mod/users-mark-and-current-report?ids=' + ids + '&api_key=' + self.token)
+          success = True
+        except requests.ConnectionError:
+          logging.warning("CONNECTION ERROR: Failed to post puzzle.")
+          logging.debug("Trying again in 30 sec")
+          time.sleep(30)
+        except requests.exceptions.SSLError:
+          logging.warning("SSL ERROR: Failed to post puzzle.")
+          logging.debug("Trying again in 30 sec")
+          time.sleep(30)
+      try:
+        data = dict(data, json.loads(response.text))
+      except ValueError:
+        pass
+    return data
