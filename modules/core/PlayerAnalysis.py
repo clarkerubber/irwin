@@ -34,7 +34,7 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', ['id', 'titled', 'engine', 'ga
       'userId': self.id,
       'isLegit': self.isLegit(),
       'activation': int(numpy.mean([ga.assessmentNoOutlierAverage() for ga in self.gameAnalyses.gameAnalyses])),
-      'games': [ga.reportDict() for go in self.gameAnalyses.gameAnalyses]
+      'games': [ga.reportDict() for ga in self.gameAnalyses.gameAnalyses]
     }
 
   def isLegit(self):
