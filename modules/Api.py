@@ -8,18 +8,18 @@ from collections import namedtuple
 
 class Api(namedtuple('Api', ['token'])):
   def postReport(self, report):
-    logging.warning('Posting report for ' + userId)
+    logging.warning('Posting report for ' + report['userId'])
     success = False
     while not success:
       try:
         r = requests.post('https://en.l.org/mod/irwin2?api_key=' + self.token, json=report)
         success = True
       except requests.ConnectionError:
-        logging.warning("CONNECTION ERROR: Failed to post puzzle.")
+        logging.warning("CONNECTION ERROR: Failed to post report.")
         logging.debug("Trying again in 30 sec")
         time.sleep(30)
       except requests.exceptions.SSLError:
-        logging.warning("SSL ERROR: Failed to post puzzle.")
+        logging.warning("SSL ERROR: Failed to post report.")
         logging.debug("Trying again in 30 sec")
         time.sleep(30)
 
@@ -87,14 +87,19 @@ class Api(namedtuple('Api', ['token'])):
       success = False
       while not success:
         try:
-          response = requests.post('https://en.lichess.org/mod/users-mark-and-current-report?ids=' + ids + '&api_key=' + self.token)
-          success = True
+          response = requests.get('https://en.lichess.org/mod/users-mark-and-current-report?ids=' + ids + '&api_key=' + self.token)
+          if response.status_code == 200:
+            success = True
+          else:
+            logging.warning(str(response.status_code) + ': Failed get to player data')
+            logging.debug('Trying again in 60 sec')
+            time.sleep(60)
         except requests.ConnectionError:
-          logging.warning("CONNECTION ERROR: Failed to post puzzle.")
+          logging.warning("CONNECTION ERROR: Failed to get player data.")
           logging.debug("Trying again in 30 sec")
           time.sleep(30)
         except requests.exceptions.SSLError:
-          logging.warning("SSL ERROR: Failed to post puzzle.")
+          logging.warning("SSL ERROR: Failed to get player data.")
           logging.debug("Trying again in 30 sec")
           time.sleep(30)
       try:
