@@ -93,7 +93,7 @@ while True:
     closedReports = sum(1 if r.get('processedBy', None) is not None else 0 for r in playerData['history'] if r['type'] == 'report' and r['data']['reason'] == 'cheat'),
     gameAnalyses = gameAnalyses))
 
-  env.api.postReport(userId, playerAnalysis.report())
+  env.api.postReport(playerAnalysis.report())
 
   env.playerAnalysisDB.write(playerAnalysis)
   env.gameAnalysisDB.lazyWriteGames(gameAnalyses)

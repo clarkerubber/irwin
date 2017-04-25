@@ -9,7 +9,7 @@ from modules.core.PlayerAssessment import PlayerAssessment
 from modules.core.AnalysedMove import AnalysedMove, Analysis, Score
 from modules.core.Game import GameBSONHandler
 from modules.core.GameAnalyses import GameAnalyses
-from modules.core.AnalysedMove import AnalysedMoveBSONHandler
+from modules.core.AnalysedMove import AnalysedMoveBSONHandler, winningChances
 
 from modules.irwin.IrwinReport import IrwinReportBSONHandler
 
@@ -40,6 +40,26 @@ class GameAnalysis:
 
   def __str__(self):
     return 'GameAnalysis('+self.id+', '+str(self.assessedMoves)+', '+str(self.assessedChunks)+')'
+
+  def reportDict(self):
+    return {
+      'gameId': self.gameId,
+      'activation': self.assessmentAverage(),
+      'blurs': self.playerAssessment.blurs,
+      'bot': self.playerAssessment.hold,
+      'moves': self.movesReportDict()
+    }
+
+  def movesReportDict(self):
+    if self.analysed:
+      return [{
+        'activation': nam,
+        'rank': am.trueRank(),
+        'ambiguity': am.ambiguity(),
+        'odds': am.advantage(),
+        'loss': am.winningChancesLoss()
+      } for nam, am in zip(self.normalisedAssessedMoves(), self.analysedMoves)]
+    return []
 
   def rankedMoves(self): # Moves where the played move is in top 5
     return [am for am in self.analysedMoves if am.inAnalyses()]
@@ -88,8 +108,8 @@ class GameAnalysis:
   def normalisedAssessedMoves(self):
     if self.assessed: # bear with me here. Average of the move (60%) and all the chunks that cover it (40%).
       return [(
-        0.6 * assessedMove.activation + 
-        0.4 * GameAnalysis.averageChunks(self.assessedChunks[max(0,move-10):min(len(self.assessedChunks),move+1)])
+        0.40 * assessedMove.activation + 
+        0.60 * GameAnalysis.averageChunks(self.assessedChunks[max(0,move-10):min(len(self.assessedChunks),move+1)])
       ) for move, assessedMove in enumerate(self.assessedMoves)]
     return []
 
@@ -99,6 +119,18 @@ class GameAnalysis:
       top20Percent = norm[-int(0.2*len(norm)):]
       if len(top20Percent) > 0:
         mean = numpy.mean(top20Percent)
+      else:
+        mean = 0
+      if not numpy.isnan(mean):
+        return int(mean)
+    return 0
+
+  def assessmentNoOutlierAverage(self):
+    if self.assessed:
+      norm = sorted(self.normalisedAssessedMoves())
+      top80Percent = norm[-int(0.8*len(norm)):]
+      if len(top80Percent) > 0:
+        mean = numpy.mean(top80Percent)
       else:
         mean = 0
       if not numpy.isnan(mean):
@@ -115,7 +147,6 @@ class GameAnalysis:
       if not numpy.isnan(mean):
         return int(mean)
     return 0
-
 
 def gameAnalysisId(gameId, white):
   return gameId + '/' + ('white' if white else 'black')
