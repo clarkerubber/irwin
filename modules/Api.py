@@ -12,7 +12,7 @@ class Api(namedtuple('Api', ['token'])):
     success = False
     while not success:
       try:
-        r = requests.post('https://en.lichess.org/mod/irwin2?api_key=' + self.token, json=report)
+        r = requests.post('https://en.l.org/mod/irwin2?api_key=' + self.token, json=report)
         success = True
       except requests.ConnectionError:
         logging.warning("CONNECTION ERROR: Failed to post puzzle.")

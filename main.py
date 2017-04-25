@@ -88,7 +88,7 @@ while True:
   playerAnalysis = env.irwin.assessPlayer(PlayerAnalysis(
     id = userId,
     titled = 'titled' in playerData['assessment']['user'].keys(),
-    engine = isEngine(playerData),
+    engine = None,
     gamesPlayed = playerData['assessment']['user']['games'],
     closedReports = sum(1 if r.get('processedBy', None) is not None else 0 for r in playerData['history'] if r['type'] == 'report' and r['data']['reason'] == 'cheat'),
     gameAnalyses = gameAnalyses))
