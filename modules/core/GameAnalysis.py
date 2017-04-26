@@ -74,7 +74,6 @@ class GameAnalysis:
     entries = []
     for i in range(len(self.analysedMoves) - 9):
       entry = [
-        int(titled),
         int(self.playerAssessment.hold),
         i]
       for analysedMove in self.analysedMoves[i:i+10]:
@@ -82,19 +81,20 @@ class GameAnalysis:
         int(100*analysedMove.winningChancesLoss()),
         int(100*analysedMove.advantage()),
         analysedMove.ambiguity(),
-        int(self.consistentMoveTime(analysedMove.move))])
+        int(self.consistentMoveTime(analysedMove.move)),
+        int(analysedMove.emt)])
       entries.append(entry)
     return entries
 
   def tensorInputMoves(self, titled):
     return [[
-      int(titled),
       analysedMove.move,
       analysedMove.rank(),
       int(100*analysedMove.winningChancesLoss()),
       int(100*analysedMove.advantage()),
       analysedMove.ambiguity(),
       int(self.consistentMoveTime(analysedMove.move)),
+      int(analysedMove.emt),
       int(self.playerAssessment.hold)] for analysedMove in self.analysedMoves]
 
   @staticmethod

@@ -24,7 +24,7 @@ class MoveAssessment():
 
   @staticmethod
   def inputs():
-    inputList = MoveAssessment.readCSV(800, [[0.0]]*8)
+    inputList = MoveAssessment.readCSV(800, [[0.0]]*9)
     features = tf.transpose(tf.stack(inputList[1:]))
     cheat = tf.to_float(tf.equal(inputList[0], [1]))
     legit = tf.to_float(tf.equal(inputList[0], [0]))
@@ -120,9 +120,10 @@ class MoveAssessment():
             logging.debug("loss: " + str(tloss))
             logging.debug("eval: " + str(eva) + "\n")
             saver.save(sess, 'modules/irwin/models/moves/model', global_step=step)
-
         coord.request_stop()
         coord.join(threads)
+        saver.save(sess, 'modules/irwin/models/moves/model', global_step=training_steps)
+        saver = tf.train.Saver(sharded=True)
         sess.close()
 
   @staticmethod
@@ -130,7 +131,7 @@ class MoveAssessment():
     graph = tf.Graph()
     with graph.as_default():
       with tf.Session(graph=graph) as sess:
-        a = tf.placeholder(tf.float32, shape=[None, 7])
+        a = tf.placeholder(tf.float32, shape=[None, 8])
         infer = MoveAssessment.inference(a)
         feedDict = {a: batch}
         ## initliase graph for running
