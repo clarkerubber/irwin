@@ -57,7 +57,8 @@ def nextPlayerId():
 
 while True:
   # Get player data
-  userId = nextPlayerId()
+  #userId = nextPlayerId()
+  userId = 'insidetorecoil'
   playerData = env.api.getPlayerData(userId)
 
   # Filter games and assessments for relevant info
@@ -84,16 +85,15 @@ while True:
       gameAnalyses.append(GameAnalysis(g, playerAssessments.byGameId(g.id), [], [], []))
 
   gameAnalyses.analyse(env.engine, env.infoHandler)
+  env.gameAnalysisDB.lazyWriteGames(gameAnalyses)
 
   playerAnalysis = env.irwin.assessPlayer(PlayerAnalysis(
     id = userId,
     titled = 'titled' in playerData['assessment']['user'].keys(),
     engine = None,
     gamesPlayed = playerData['assessment']['user']['games'],
-    closedReports = sum(1 if r.get('processedBy', None) is not None else 0 for r in playerData['history'] if r['type'] == 'report' and r['data']['reason'] == 'cheat'),
+    closedReports = sum(int(r.get('processedBy', None) is not None) for r in playerData['history'] if r['type'] == 'report' and r['data']['reason'] == 'cheat'),
     gameAnalyses = gameAnalyses))
 
-  env.api.postReport(playerAnalysis.report())
-
   env.playerAnalysisDB.write(playerAnalysis)
-  env.gameAnalysisDB.lazyWriteGames(gameAnalyses)
+  env.api.postReport(playerAnalysis.report())

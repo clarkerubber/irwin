@@ -53,11 +53,11 @@ class GameAnalysis:
   def movesReportDict(self):
     if self.analysed:
       return [{
-        'activation': nam,
+        'activation': int(nam),
         'rank': am.trueRank(),
         'ambiguity': am.ambiguity(),
-        'odds': am.advantage(),
-        'loss': am.winningChancesLoss()
+        'odds': int(100*am.advantage()),
+        'loss': int(100*am.winningChancesLoss())
       } for nam, am in zip(self.normalisedAssessedMoves(), self.analysedMoves)]
     return []
 
@@ -76,7 +76,6 @@ class GameAnalysis:
       entry = [
         int(titled),
         int(self.playerAssessment.hold),
-        int(self.playerAssessment.blurs),
         i]
       for analysedMove in self.analysedMoves[i:i+10]:
         entry.extend([analysedMove.rank(),
@@ -96,8 +95,7 @@ class GameAnalysis:
       int(100*analysedMove.advantage()),
       analysedMove.ambiguity(),
       int(self.consistentMoveTime(analysedMove.move)),
-      int(self.playerAssessment.hold),
-      self.playerAssessment.blurs] for analysedMove in self.analysedMoves]
+      int(self.playerAssessment.hold)] for analysedMove in self.analysedMoves]
 
   @staticmethod
   def averageChunks(assessedChunks):

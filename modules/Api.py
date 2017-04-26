@@ -12,8 +12,15 @@ class Api(namedtuple('Api', ['token'])):
     success = False
     while not success:
       try:
-        r = requests.post('https://en.l.org/mod/irwin2?api_key=' + self.token, json=report)
-        success = True
+        print(report)
+        response = requests.post('https://listage.ovh/mod/irwin2?api_key=' + self.token, json=report)
+        if response.status_code == 200:
+          success = True
+        else:
+          print(response.text)
+          logging.warning(str(response.status_code) + ': Failed to post player report')
+          logging.debug('Trying again in 60 sec')
+          time.sleep(60)
       except requests.ConnectionError:
         logging.warning("CONNECTION ERROR: Failed to post report.")
         logging.debug("Trying again in 30 sec")
@@ -103,7 +110,7 @@ class Api(namedtuple('Api', ['token'])):
           logging.debug("Trying again in 30 sec")
           time.sleep(30)
       try:
-        data = dict(data, json.loads(response.text))
+        data = {**data, **json.loads(response.text)}
       except ValueError:
         pass
     return data
