@@ -46,7 +46,7 @@ logging.getLogger("chess.uci").setLevel(logging.WARNING)
 
 env = Env(settings)
 env.irwin.train()
-
+"""
 def nextPlayerId():
   userId = None
   while userId is None:
@@ -97,3 +97,4 @@ while True:
 
   env.playerAnalysisDB.write(playerAnalysis)
   env.api.postReport(playerAnalysis.report())
+"""

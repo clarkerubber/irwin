@@ -13,7 +13,7 @@ class Api(namedtuple('Api', ['token'])):
     while not success:
       try:
         print(report)
-        response = requests.post('https://listage.ovh/mod/irwin2?api_key=' + self.token, json=report)
+        response = requests.post('https://en.listage.ovh/mod/irwin2?api_key=' + self.token, json=report)
         if response.status_code == 200:
           success = True
         else:

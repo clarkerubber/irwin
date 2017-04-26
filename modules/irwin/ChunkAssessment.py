@@ -24,7 +24,7 @@ class ChunkAssessment():
 
   @staticmethod
   def inputs():
-    inputList = ChunkAssessment.readCSV(800, [[0.0]]*53)
+    inputList = ChunkAssessment.readCSV(800, [[0.0]]*62)
     features = tf.transpose(tf.stack(inputList[1:]))
     cheat = tf.to_float(tf.equal(inputList[0], [1]))
     legit = tf.to_float(tf.equal(inputList[0], [0]))
@@ -120,9 +120,10 @@ class ChunkAssessment():
             logging.debug("loss: " + str(tloss))
             logging.debug("eval: " + str(eva) + "\n")
             saver.save(sess, 'modules/irwin/models/chunks/model', global_step=step)
-
         coord.request_stop()
         coord.join(threads)
+        saver.save(sess, 'modules/irwin/models/chunks/model', global_step=training_steps)
+        saver = tf.train.Saver(sharded=True)
         sess.close()
 
   @staticmethod
@@ -130,7 +131,7 @@ class ChunkAssessment():
     graph = tf.Graph()
     with graph.as_default():
       with tf.Session(graph=graph) as sess:
-        a = tf.placeholder(tf.float32, shape=[None, 52])
+        a = tf.placeholder(tf.float32, shape=[None, 61])
         infer = ChunkAssessment.inference(a)
         feedDict = {a: batch}
         ## initliase graph for running
