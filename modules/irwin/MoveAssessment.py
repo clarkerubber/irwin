@@ -77,7 +77,7 @@ class MoveAssessment():
         else:
           sess.run(initOp)
           
-        if initialStep >= 45000:
+        if initialStep >= 50000:
           trainingSteps = initialStep + 5000
         else: 
           trainingSteps = 50000
@@ -122,7 +122,7 @@ class MoveAssessment():
             saver.save(sess, 'modules/irwin/models/moves/model', global_step=step)
         coord.request_stop()
         coord.join(threads)
-        saver.save(sess, 'modules/irwin/models/moves/model', global_step=training_steps)
+        saver.save(sess, 'modules/irwin/models/moves/model', global_step=trainingSteps)
         saver = tf.train.Saver(sharded=True)
         sess.close()
 
