@@ -29,6 +29,10 @@ class Api(namedtuple('Api', ['token'])):
         logging.warning("SSL ERROR: Failed to post report.")
         logging.debug("Trying again in 30 sec")
         time.sleep(30)
+      except ValueError:
+        logging.warning("VALUE ERROR: Failed to post report.")
+        logging.debug("Trying again in 30 sec")
+        time.sleep(30)
 
   def getPlayerData(self, userId):
     logging.debug('Getting player data for '+userId+'...')
