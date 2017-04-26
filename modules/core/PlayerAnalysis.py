@@ -39,9 +39,9 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', ['id', 'titled', 'engine', 'ga
 
   def isLegit(self):
     gamesAnalysed = len(self.gameAnalyses.gameAnalyses)
-    susGames = sum([int(g.assessmentNoOutlierAverage() > 70) for g in self.gameAnalyses.gameAnalyses])
-    legitGames = sum([int(g.assessmentNoOutlierAverage() < 35) for g in self.gameAnalyses.gameAnalyses])
-    if susGames >= (2/5)*len(self.gameAnalyses.gameAnalyses) and susGames > 1:
+    susGames = sum([int(g.assessmentNoOutlierAverage() > 65) for g in self.gameAnalyses.gameAnalyses])
+    legitGames = sum([int(g.assessmentNoOutlierAverage() < 40) for g in self.gameAnalyses.gameAnalyses])
+    if susGames >= (2/5)*len(self.gameAnalyses.gameAnalyses) and susGames > 1 and not self.titled:
       return False
     elif legitGames == gamesAnalysed and len(self.gameAnalyses.gameAnalyses) > 0:
       return True # Player is legit
@@ -95,9 +95,9 @@ class PlayerAnalysisDB:
     return None
 
   def oldestUnsortedUserId(self):
-    playerAnalysisBSON = next(self.playerAnalysisColl.find({'engine': None}).sort('date', pymongo.ASCENDING), None)
-    if playerAnalysisBSON is not None:
-      return playerAnalysisBSON['_id']
+    oldest = self.oldestUnsorted()
+    if oldest is not None:
+      return oldest.id
     return None
 
   def allUnsorted(self): # Players who have not been marked as Engine or Legit

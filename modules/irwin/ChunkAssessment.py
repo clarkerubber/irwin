@@ -24,7 +24,7 @@ class ChunkAssessment():
 
   @staticmethod
   def inputs():
-    inputList = ChunkAssessment.readCSV(800, [[0.0]]*55)
+    inputList = ChunkAssessment.readCSV(800, [[0.0]]*53)
     features = tf.transpose(tf.stack(inputList[1:]))
     cheat = tf.to_float(tf.equal(inputList[0], [1]))
     legit = tf.to_float(tf.equal(inputList[0], [0]))
@@ -124,18 +124,13 @@ class ChunkAssessment():
         coord.request_stop()
         coord.join(threads)
         sess.close()
-        return Accuracy(
-          truePositive = truePositive,
-          trueNegative = trueNegative,
-          falsePositive = falsePositive,
-          falseNegative = falseNegative)
 
   @staticmethod
   def applyNet(batch):
     graph = tf.Graph()
     with graph.as_default():
       with tf.Session(graph=graph) as sess:
-        a = tf.placeholder(tf.float32, shape=[None, 54])
+        a = tf.placeholder(tf.float32, shape=[None, 52])
         infer = ChunkAssessment.inference(a)
         feedDict = {a: batch}
         ## initliase graph for running
