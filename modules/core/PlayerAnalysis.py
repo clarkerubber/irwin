@@ -39,8 +39,8 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', ['id', 'titled', 'engine', 'ga
 
   def isLegit(self):
     gamesAnalysed = len(self.gameAnalyses.gameAnalyses)
-    susGames = sum([int(g.assessmentNoOutlierAverage() > 65) for g in self.gameAnalyses.gameAnalyses])
-    legitGames = sum([int(g.assessmentNoOutlierAverage() < 40) for g in self.gameAnalyses.gameAnalyses])
+    susGames = sum([int(g.assessmentNoOutlierAverage() > 60) for g in self.gameAnalyses.gameAnalyses])
+    legitGames = sum([int(g.assessmentNoOutlierAverage() < 35) for g in self.gameAnalyses.gameAnalyses])
     if susGames >= (2/5)*len(self.gameAnalyses.gameAnalyses) and susGames > 1 and not self.titled:
       return False
     elif legitGames == gamesAnalysed and len(self.gameAnalyses.gameAnalyses) > 0:

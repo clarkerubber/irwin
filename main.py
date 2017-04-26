@@ -46,19 +46,10 @@ logging.getLogger("chess.uci").setLevel(logging.WARNING)
 
 env = Env(settings)
 env.irwin.train()
-"""
-def nextPlayerId():
-  userId = None
-  while userId is None:
-    userId = env.api.getPlayerId()
-    if userId is None:
-      userId = env.playerAnalysisDB.oldestUnsortedUserId()
-  return userId
 
 while True:
   # Get player data
-  #userId = nextPlayerId()
-  userId = 'insidetorecoil'
+  userId = env.api.getPlayerId()
   playerData = env.api.getPlayerData(userId)
 
   # Filter games and assessments for relevant info
@@ -97,4 +88,3 @@ while True:
 
   env.playerAnalysisDB.write(playerAnalysis)
   env.api.postReport(playerAnalysis.report())
-"""
