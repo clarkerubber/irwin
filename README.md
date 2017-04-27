@@ -43,7 +43,7 @@ Irwin has been designed so that `modules/irwin` can be replaced with other appro
 `Env.py` contains all of the tools to interact with lichess, irwin, and the database handlers.
 
 `main.py` covers accessing the lichess API (`modules/Api.py`) via Env to get player data; pulling records from mongodb,
-analysing games using stockfish, analysing those games using tensorflow and then posting the final assessments.
+analysing games using stockfish, assessing those games using tensorflow and then posting the final assessments.
 
 ### Terminology
 - _Analysed_: Analysed by stockfish
