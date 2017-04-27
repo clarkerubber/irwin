@@ -45,8 +45,6 @@ class GameAnalysis:
     return {
       'gameId': self.gameId,
       'activation': self.assessmentAverage(),
-      'blurs': self.playerAssessment.blurs,
-      'bot': self.playerAssessment.hold,
       'moves': self.movesReportDict()
     }
 

@@ -86,7 +86,7 @@ class TrainAndEvaluate(threading.Thread):
   def run(self):
     while True:
       time.sleep(10)
-      if self.outOfDate():
+      if self.outOfDate() or True:
         logging.warning("OUT OF DATE: UPDATING!")
         trainer = TrainNetworks(self.api, self.playerAnalysisDB)
         trainer.start()

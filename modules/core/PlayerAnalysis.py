@@ -29,11 +29,14 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', ['id', 'titled', 'engine', 'ga
     [chunks.append([int(self.engine)] + chunk) for chunk in self.tensorInputChunks()]
     return chunks
 
+  def activation(self):
+    return int(numpy.mean([ga.assessmentNoOutlierAverage() for ga in self.gameAnalyses.gameAnalyses]))
+
   def report(self):
     return {
       'userId': self.id,
       'isLegit': self.isLegit(),
-      'activation': int(numpy.mean([ga.assessmentNoOutlierAverage() for ga in self.gameAnalyses.gameAnalyses])),
+      'activation': self.activation(),
       'games': [ga.reportDict() for ga in self.gameAnalyses.gameAnalyses]
     }
 
