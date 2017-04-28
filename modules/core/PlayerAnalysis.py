@@ -30,7 +30,10 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', ['id', 'titled', 'engine', 'ga
     return chunks
 
   def activation(self):
-    return int(numpy.mean([ga.assessmentNoOutlierAverage() for ga in self.gameAnalyses.gameAnalyses]))
+    mean = numpy.mean([ga.assessmentNoOutlierAverage() for ga in self.gameAnalyses.gameAnalyses])
+    if not numpy.isnan(mean):
+      return int(mean)
+    return 0
 
   def report(self):
     return {
