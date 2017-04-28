@@ -9,7 +9,7 @@ def recentGames(playerAssessments, gameJSONs):
     return Games([Game(pa.gameId, gameJSONs[pa.gameId]['pgn'], gameJSONs[pa.gameId]['emts']) for pa in playerAssessments.playerAssessments if 
       'variant' not in gameJSONs[pa.gameId] and
       'emts' in gameJSONs[pa.gameId] and
-      gameLength(gameJSONs[pa.gameId].get('pgn', '')) > 50][:5])
+      gameLength(gameJSONs[pa.gameId].get('pgn', '')) > 44][:5])
   except ValueError:
     return []
   except IndexError:
