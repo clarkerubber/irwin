@@ -12,12 +12,10 @@ class Api(namedtuple('Api', ['token'])):
     success = False
     while not success:
       try:
-        print(report)
         response = requests.post('https://en.lichess.org/mod/irwin2?api_key=' + self.token, json=report)
         if response.status_code == 200:
           success = True
         else:
-          print(response.text)
           logging.warning(str(response.status_code) + ': Failed to post player report')
           logging.debug('Trying again in 60 sec')
           time.sleep(60)
