@@ -103,13 +103,20 @@ class TrainAndEvaluate(threading.Thread):
         trueNegative = sum([int(True == p.isLegit()) for p in legits]) # legits not marked or left open
         falsePositive = sum([int(False == p.isLegit()) for p in legits]) # legits marked as engines
         falseNegative = sum([int(True == p.isLegit()) for p in engines]) # cheaters marked as legits
-        indecise = sum([int(p.isLegit() is None) for p in (engines + legits)])
+        indeciseEngines = sum([int(p.isLegit() is None) for p in engines])
+        indeciseLegits = sum([int(p.isLegit() is None) for p in legits])
 
         logging.warning("Writing training stats")
         self.trainingStatsDB.write(TrainingStats(
           date = datetime.datetime.utcnow(),
           sample = Sample(engines = len(engines), legits = len(legits), unprocessed = unsorted),
-          accuracy = Accuracy(truePositive = truePositive, trueNegative = trueNegative, falsePositive = falsePositive, falseNegative = falseNegative, indecise = indecise)))
+          accuracy = Accuracy(
+            truePositive = truePositive,
+            trueNegative = trueNegative,
+            falsePositive = falsePositive,
+            falseNegative = falseNegative,
+            indeciseEngines = indeciseEngines,
+            indeciseLegits = indeciseLegits)))
 
   def outOfDate(self):
     latest = self.trainingStatsDB.latest()

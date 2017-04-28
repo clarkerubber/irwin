@@ -2,7 +2,7 @@ from collections import namedtuple
 
 import pymongo
 
-Accuracy = namedtuple('Accuracy', ['truePositive', 'falsePositive', 'trueNegative', 'falseNegative', 'indecise'])
+Accuracy = namedtuple('Accuracy', ['truePositive', 'falsePositive', 'trueNegative', 'falseNegative', 'indeciseEngines', 'indeciseLegits'])
 Sample = namedtuple('Sample', ['engines', 'legits', 'unprocessed'])
 
 TrainingStats = namedtuple('TrainingStats', ['date', 'accuracy', 'sample'])
@@ -17,7 +17,8 @@ class TrainingStatsBSONHandler:
         falsePositive = bson['accuracy'].get('falsePositive', 0),
         trueNegative = bson['accuracy'].get('trueNegative', 0),
         falseNegative = bson['accuracy'].get('falseNegative', 0),
-        indecise = bson['accuracy'].get('indecise', 0)
+        indeciseEngines = bson['accuracy'].get('indeciseEngines', 0),
+        indeciseLegits = bson['accuracy'].get('indeciseLegits', 0)
       ),
       sample = Sample(**bson['sample'])
     )
