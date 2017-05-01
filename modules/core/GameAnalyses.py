@@ -35,3 +35,18 @@ class GameAnalyses:
 
   def reportDicts(self):
     return [gameAnalysis.reportDict() for gameAnalysis in self.gameAnalyses]
+
+  def pv0ByAmbiguityStats(self):
+    totalStats = [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0]] # Counter
+    gameAnalysesStats = [gameAnalysis.pv0ByAmbiguityStats() for gameAnalysis in self.gameAnalyses] # Compute and store all stats
+    for i in range(len(gameAnalysesStats)): # I don't like this either
+      for j in range(5):
+        totalStats[j][0] = totalStats[j][0] + gameAnalysesStats[i][j][0]
+        totalStats[j][1] = totalStats[j][1] + gameAnalysesStats[i][j][1]
+    outputStats = [0] * 5
+    for i, stat in enumerate(totalStats):
+      if stat[1] > 0:
+        outputStats[i] = int(100 * stat[0] / stat[1]) # Convert to rate
+      else:
+        outputStats[i] = None
+    return outputStats
