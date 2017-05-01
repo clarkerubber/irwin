@@ -12,7 +12,7 @@ class Api(namedtuple('Api', ['token'])):
     success = False
     while not success:
       try:
-        response = requests.post('https://en.lichess.org/mod/irwin2?api_key=' + self.token, json=report)
+        response = requests.post('https://en.lichess.org/irwin/report?api_key=' + self.token, json=report)
         if response.status_code == 200:
           success = True
         else:
@@ -37,7 +37,7 @@ class Api(namedtuple('Api', ['token'])):
     success = False
     while not success:
       try:
-        response = requests.get('https://en.lichess.org/mod/'+userId+'/assessment?api_key='+self.token)
+        response = requests.get('https://en.lichess.org/irwin/'+userId+'/assessment?api_key='+self.token)
         success = True
       except requests.ConnectionError:
         logging.warning('CONNECTION ERROR: Failed to pull assessment data')
@@ -57,7 +57,7 @@ class Api(namedtuple('Api', ['token'])):
     success = False
     while not success:
       try:
-        response = requests.get('https://en.lichess.org/report/irwin-bot-next?api_key='+self.token)
+        response = requests.get('https://en.lichess.org/irwin/request?api_key='+self.token)
         if response.status_code == 200:
           success = True
         else:
@@ -94,7 +94,7 @@ class Api(namedtuple('Api', ['token'])):
       success = False
       while not success:
         try:
-          response = requests.get('https://en.lichess.org/mod/users-mark-and-current-report?ids=' + ids + '&api_key=' + self.token)
+          response = requests.get('https://en.lichess.org/irwin/users-mark-and-current-report?ids=' + ids + '&api_key=' + self.token)
           if response.status_code == 200:
             success = True
           else:

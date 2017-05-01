@@ -19,3 +19,19 @@ class GameAnalyses:
 
   def hasId(self, _id):
     return (_id in self.ids())
+
+  def tensorInputMoves(self, titled):
+    moves = []
+    [moves.extend(gameAnalysis.tensorInputMoves(titled)) for gameAnalysis in self.gameAnalyses]
+    return moves
+
+  def tensorInputChunks(self, titled):
+    chunks = []
+    [chunks.extend(gameAnalysis.tensorInputChunks(titled)) for gameAnalysis in self.gameAnalyses]
+    return chunks
+
+  def assessmentNoOutlierAverages(self):
+    return [gameAnalysis.assessmentNoOutlierAverage() for gameAnalysis in self.gameAnalyses]
+
+  def reportDicts(self):
+    return [gameAnalysis.reportDict() for gameAnalysis in self.gameAnalyses]
