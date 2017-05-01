@@ -10,14 +10,10 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', ['id', 'titled', 'engine', 'ga
     return PlayerAnalysis(self.id, self.titled, engine, self.gamesPlayed, self.closedReports, self.gameAnalyses)
 
   def tensorInputMoves(self):
-    moves = []
-    [moves.extend(gameAnalysis.tensorInputMoves(self.titled)) for gameAnalysis in self.gameAnalyses.gameAnalyses]
-    return moves
+    return self.gameAnalyses.tensorInputMoves(self.titled)
 
   def tensorInputChunks(self):
-    chunks = []
-    [chunks.extend(gameAnalysis.tensorInputChunks(self.titled)) for gameAnalysis in self.gameAnalyses.gameAnalyses]
-    return chunks
+    return self.gameAnalyses.tensorInputChunks(self.titled)
 
   def CSVMoves(self):
     moves = []
