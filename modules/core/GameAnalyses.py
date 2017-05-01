@@ -41,8 +41,8 @@ class GameAnalyses:
     gameAnalysesStats = [gameAnalysis.pv0ByAmbiguityStats() for gameAnalysis in self.gameAnalyses] # Compute and store all stats
     for i in range(len(gameAnalysesStats)): # I don't like this either
       for j in range(5):
-        totalStats[j][0] = totalStats[j][0] + gameAnalysesStats[i][j][0]
-        totalStats[j][1] = totalStats[j][1] + gameAnalysesStats[i][j][1]
+        totalStats[j][0] += gameAnalysesStats[i][j][0]
+        totalStats[j][1] += gameAnalysesStats[i][j][1]
     outputStats = [0] * 5
     for i, stat in enumerate(totalStats):
       if stat[1] > 0:
