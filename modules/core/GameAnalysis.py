@@ -144,6 +144,15 @@ class GameAnalysis:
         return int(mean)
     return 0
 
+  def pv0ByAmbiguity(self, ambiguity):
+    return sum(int(analysedMove.trueRank() == 0) for analysedMove in self.analysedMoves if analysedMove.ambiguity() == ambiguity)
+
+  def ambiguitySum(self, ambiguity): # Amount of positions where ambiguity == X
+    return sum(int(analysedMove.ambiguity() == ambiguity) for analysedMove in self.analysedMoves)
+
+  def pv0ByAmbiguityStats(self): # [{sum of pv0 moves given X ambiguity, amount of positions with X ambiguity}]
+    return [(self.pv0ByAmbiguity(ambiguity), self.ambiguitySum(ambiguity)) for ambiguity in range (1, 6)]
+
 def gameAnalysisId(gameId, white):
   return gameId + '/' + ('white' if white else 'black')
 
@@ -151,11 +160,11 @@ class GameAnalysisBSONHandler:
   @staticmethod
   def reads(game, playerAssessment, analysedMovesBSON, assessedMovesBSON, assessedChunksBSON):
     return GameAnalysis(
-      game,
-      playerAssessment,
-      [AnalysedMoveBSONHandler.reads(am) for am in analysedMovesBSON],
-      [IrwinReportBSONHandler.reads(am) for am in assessedMovesBSON],
-      [IrwinReportBSONHandler.reads(ac) for ac in assessedChunksBSON])
+      game = game,
+      playerAssessment = playerAssessment,
+      analysedMoves = [AnalysedMoveBSONHandler.reads(am) for am in analysedMovesBSON],
+      assessedMoves = [IrwinReportBSONHandler.reads(am) for am in assessedMovesBSON],
+      assessedChunks = [IrwinReportBSONHandler.reads(ac) for ac in assessedChunksBSON])
 
   @staticmethod
   def writes(gameAnalysis):

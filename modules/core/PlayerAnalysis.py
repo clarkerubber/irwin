@@ -26,7 +26,7 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', ['id', 'titled', 'engine', 'ga
     return chunks
 
   def activation(self):
-    mean = numpy.mean([ga.assessmentNoOutlierAverage() for ga in self.gameAnalyses.gameAnalyses])
+    mean = numpy.mean(self.gameAnalyses.assessmentNoOutlierAverages())
     if not numpy.isnan(mean):
       return int(mean)
     return 0
@@ -36,13 +36,14 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', ['id', 'titled', 'engine', 'ga
       'userId': self.id,
       'isLegit': self.isLegit(),
       'activation': self.activation(),
-      'games': [ga.reportDict() for ga in self.gameAnalyses.gameAnalyses]
+      'pv0ByAmbiguity': self.gameAnalyses.pv0ByAmbiguityStats(),
+      'games': self.gameAnalyses.reportDicts()
     }
 
   def isLegit(self):
     gamesAnalysed = len(self.gameAnalyses.gameAnalyses)
 
-    noOutlierAverages = [g.assessmentNoOutlierAverage() for g in self.gameAnalyses.gameAnalyses]
+    noOutlierAverages = self.gameAnalyses.assessmentNoOutlierAverages()
 
     susGames = sum([int(a > 60) for a in noOutlierAverages])
     verySusGames = sum([int(a > 75) for a in noOutlierAverages])
