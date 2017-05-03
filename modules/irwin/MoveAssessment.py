@@ -24,7 +24,7 @@ class MoveAssessment():
 
   @staticmethod
   def inputs():
-    inputList = MoveAssessment.readCSV(800, [[0.0]]*9)
+    inputList = MoveAssessment.readCSV(800, [[0.0]]*8)
     features = tf.transpose(tf.stack(inputList[1:]))
     cheat = tf.to_float(tf.equal(inputList[0], [1]))
     legit = tf.to_float(tf.equal(inputList[0], [0]))
@@ -77,10 +77,10 @@ class MoveAssessment():
         else:
           sess.run(initOp)
           
-        if initialStep >= 50000:
+        if initialStep >= 10000:
           trainingSteps = initialStep + 5000
         else: 
-          trainingSteps = 50000
+          trainingSteps = 10000
 
         logging.warning("training moves to: "+str(trainingSteps))
 
@@ -131,7 +131,7 @@ class MoveAssessment():
     graph = tf.Graph()
     with graph.as_default():
       with tf.Session(graph=graph) as sess:
-        a = tf.placeholder(tf.float32, shape=[None, 8])
+        a = tf.placeholder(tf.float32, shape=[None, 7])
         infer = MoveAssessment.inference(a)
         feedDict = {a: batch}
         ## initliase graph for running

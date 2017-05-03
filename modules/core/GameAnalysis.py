@@ -71,9 +71,7 @@ class GameAnalysis:
   def tensorInputChunks(self):
     entries = []
     for i in range(len(self.analysedMoves) - 9):
-      entry = [
-        int(self.playerAssessment.hold),
-        i]
+      entry = [i]
       for analysedMove in self.analysedMoves[i:i+10]:
         entry.extend([analysedMove.rank(),
         int(100*analysedMove.winningChancesLoss()),
@@ -92,8 +90,7 @@ class GameAnalysis:
       int(100*analysedMove.advantage()),
       analysedMove.ambiguity(),
       int(self.consistentMoveTime(analysedMove.move)),
-      int(analysedMove.emt),
-      int(self.playerAssessment.hold)] for analysedMove in self.analysedMoves]
+      int(analysedMove.emt)] for analysedMove in self.analysedMoves]
 
   @staticmethod
   def averageChunks(assessedChunks):

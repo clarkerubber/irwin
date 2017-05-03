@@ -77,10 +77,10 @@ class PVAssessment():
         else:
           sess.run(initOp)
           
-        if initialStep >= 50000:
+        if initialStep >= 10000:
           trainingSteps = initialStep + 5000
         else: 
-          trainingSteps = 50000
+          trainingSteps = 10000
 
         logging.warning("training pvs to: "+str(trainingSteps))
 

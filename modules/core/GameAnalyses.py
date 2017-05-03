@@ -20,14 +20,14 @@ class GameAnalyses:
   def hasId(self, _id):
     return (_id in self.ids())
 
-  def tensorInputMoves(self, titled):
+  def tensorInputMoves(self):
     moves = []
-    [moves.extend(gameAnalysis.tensorInputMoves(titled)) for gameAnalysis in self.gameAnalyses]
+    [moves.extend(gameAnalysis.tensorInputMoves()) for gameAnalysis in self.gameAnalyses]
     return moves
 
-  def tensorInputChunks(self, titled):
+  def tensorInputChunks(self):
     chunks = []
-    [chunks.extend(gameAnalysis.tensorInputChunks(titled)) for gameAnalysis in self.gameAnalyses]
+    [chunks.extend(gameAnalysis.tensorInputChunks()) for gameAnalysis in self.gameAnalyses]
     return chunks
 
   def assessmentNoOutlierAverages(self):
