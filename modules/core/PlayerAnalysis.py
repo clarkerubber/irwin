@@ -36,13 +36,13 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', ['id', 'titled', 'engine', 'ga
     return [int(self.engine)] + self.tensorInputPVs()
 
   def activation(self):
-    return 0.3 * self.PVAssessment + 0.7 * numpy.mean(self.gameAnalyses.pv0ByAmbiguityStats())
+    return numpy.mean(self.gameAnalyses.assessmentNoOutlierAverages())
 
   def report(self):
     return {
       'userId': self.id,
       'isLegit': self.isLegit(),
-      'activation': self.activation(),
+      'activation': int(self.activation()),
       'pv0ByAmbiguity': self.gameAnalyses.pv0ByAmbiguityStats(),
       'games': self.gameAnalyses.reportDicts()
     }
