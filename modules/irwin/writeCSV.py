@@ -26,4 +26,11 @@ def writeClassifiedMoveChunksCSV(entries):
     ])
     shuffle(entries)
     [writer.writerow(entry) for entry in entries]
-      
+
+
+def writeClassifiedPVsCSV(entries):
+  with open('data/classified-pvs.csv', 'w') as fh:
+    writer = csv.writer(fh, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+    writer.writerow(['engine', 'amb1', 'amb2', 'amb3', 'amb4', 'amb5'])
+    shuffle(entries)
+    [writer.writerow(entry) for entry in entries]

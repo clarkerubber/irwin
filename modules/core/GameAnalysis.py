@@ -68,7 +68,7 @@ class GameAnalysis:
   def consistentMoveTime(self, moveNumber):
     return self.game.emts[self.ply(moveNumber)] in self.game.emtsNoOutliers()
 
-  def tensorInputChunks(self, titled):
+  def tensorInputChunks(self):
     entries = []
     for i in range(len(self.analysedMoves) - 9):
       entry = [
@@ -84,7 +84,7 @@ class GameAnalysis:
       entries.append(entry)
     return entries
 
-  def tensorInputMoves(self, titled):
+  def tensorInputMoves(self):
     return [[
       analysedMove.move,
       analysedMove.rank(),

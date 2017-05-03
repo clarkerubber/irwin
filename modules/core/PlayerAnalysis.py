@@ -5,15 +5,22 @@ import pymongo
 import random
 import numpy
 
-class PlayerAnalysis(namedtuple('PlayerAnalysis', ['id', 'titled', 'engine', 'gamesPlayed', 'closedReports', 'gameAnalyses'])): # id = userId, engine = (True | False | None)
+class PlayerAnalysis(namedtuple('PlayerAnalysis', ['id', 'titled', 'engine', 'gamesPlayed', 'closedReports', 'gameAnalyses', 'PVAssessment'])): # id = userId, engine = (True | False | None)
   def setEngine(self, engine):
-    return PlayerAnalysis(self.id, self.titled, engine, self.gamesPlayed, self.closedReports, self.gameAnalyses)
+    return PlayerAnalysis(self.id, self.titled, engine, self.activation, self.gamesPlayed, self.closedReports, self.gameAnalyses)
 
   def tensorInputMoves(self):
     return self.gameAnalyses.tensorInputMoves(self.titled)
 
   def tensorInputChunks(self):
     return self.gameAnalyses.tensorInputChunks(self.titled)
+
+  def tensorInputPVs(self):
+    pvs = self.gameAnalyses.pv0ByAmbiguityStats()
+    for i, pv in enumerate(pvs):
+      if pv is None:
+        pvs[i] = 0
+    return pvs # should be a list of ints 10 items long
 
   def CSVMoves(self):
     moves = []
@@ -25,11 +32,11 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', ['id', 'titled', 'engine', 'ga
     [chunks.append([int(self.engine)] + chunk) for chunk in self.tensorInputChunks()]
     return chunks
 
+  def CSVPVs(self):
+    return [int(self.engine)] + self.tensorInputPVs()
+
   def activation(self):
-    mean = numpy.mean(self.gameAnalyses.assessmentNoOutlierAverages())
-    if not numpy.isnan(mean):
-      return int(mean)
-    return 0
+    return 0.3 * self.PVAssessment + 0.7 * numpy.mean(self.gameAnalyses.pv0ByAmbiguityStats())
 
   def report(self):
     return {
@@ -50,9 +57,12 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', ['id', 'titled', 'engine', 'ga
 
     legitGames = sum([int(a < 35) for a in noOutlierAverages])
 
-    if (verySusGames >= (1/5)*gamesAnalysed or susGames >= (2/5)*gamesAnalysed) and gamesAnalysed > 1 and not self.titled:
+    if ((verySusGames >= (1/5)*gamesAnalysed
+        or susGames >= (2/5)*gamesAnalysed
+        or (self.PVAssessment > 70 and susGames >= (1/5)*gamesAnalysed))
+      and gamesAnalysed > 1 and not self.titled):
       return False
-    elif legitGames == gamesAnalysed and gamesAnalysed > 0:
+    elif legitGames == gamesAnalysed and self.PVAssessment < 30 and gamesAnalysed > 0:
       return True # Player is legit
     return None # Player falls into a grey area
 
@@ -65,7 +75,8 @@ class PlayerAnalysisBSONHandler:
       engine = bson['engine'],
       gamesPlayed = bson['gamesPlayed'],
       closedReports = bson['closedReports'],
-      gameAnalyses = gameAnalyses)
+      gameAnalyses = gameAnalyses,
+      PVAssessment = bson.get('PVAssessment', None))
 
   @staticmethod
   def writes(playerAnalysis):
@@ -75,6 +86,7 @@ class PlayerAnalysisBSONHandler:
       'engine': playerAnalysis.engine,
       'gamesPlayed': playerAnalysis.gamesPlayed,
       'closedReports': playerAnalysis.closedReports,
+      'PVAssessment': playerAnalysis.PVAssessment,
       'date': datetime.datetime.utcnow()
     }
 
@@ -137,6 +149,7 @@ class PlayerAnalysisDB:
       {'_id': playerAnalysis.id},
       {'$set': PlayerAnalysisBSONHandler.writes(playerAnalysis)},
       upsert=True)
+    self.gameAnalysisDB.lazyWriteGames(playerAnalysis.gameAnalyses)
 
   def lazyWriteMany(self, playerAnalyses):
     [self.write(playerAnalysis) for playerAnalysis in playerAnalyses]
