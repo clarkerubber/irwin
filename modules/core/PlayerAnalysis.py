@@ -44,7 +44,7 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', ['id', 'titled', 'engine', 'ga
 
   def activation(self):
     anoa = sorted(self.gameAnalyses.assessmentNoOutlierAverages(), reverse=True)
-    retained = anoa[min(1, int(0.3*len(anoa)))]
+    retained = anoa[:min(1, int(0.3*len(anoa)))]
     return numpy.mean(retained)
 
   def report(self):
