@@ -84,7 +84,8 @@ while True:
     engine = None,
     gamesPlayed = playerData['assessment']['user']['games'],
     closedReports = sum(int(r.get('processedBy', None) is not None) for r in playerData['history'] if r['type'] == 'report' and r['data']['reason'] == 'cheat'),
-    gameAnalyses = gameAnalyses))
+    gameAnalyses = gameAnalyses,
+    PVAssessment = None))
 
   env.playerAnalysisDB.write(playerAnalysis)
   env.api.postReport(playerAnalysis.report())
