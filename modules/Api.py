@@ -10,7 +10,9 @@ class Api(namedtuple('Api', ['token'])):
   def postReport(self, report):
     logging.warning('Posting report for ' + report['userId'])
     success = False
-    while not success:
+    attempts = 0
+    while not success and attempts < 5:
+      attempts += 1
       try:
         response = requests.post('https://en.lichess.org/irwin/report?api_key=' + self.token, json=report)
         if response.status_code == 200:
