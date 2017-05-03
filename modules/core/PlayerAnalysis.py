@@ -7,13 +7,20 @@ import numpy
 
 class PlayerAnalysis(namedtuple('PlayerAnalysis', ['id', 'titled', 'engine', 'gamesPlayed', 'closedReports', 'gameAnalyses', 'PVAssessment'])): # id = userId, engine = (True | False | None)
   def setEngine(self, engine):
-    return PlayerAnalysis(self.id, self.titled, engine, self.activation, self.gamesPlayed, self.closedReports, self.gameAnalyses)
+    return PlayerAnalysis(
+      id = self.id,
+      titled = self.titled, 
+      engine = engine, 
+      gamesPlayed = self.gamesPlayed,
+      closedReports = self.closedReports,
+      gameAnalyses = self.gameAnalyses,
+      PVAssessment = self.PVAssessment)
 
   def tensorInputMoves(self):
-    return self.gameAnalyses.tensorInputMoves(self.titled)
+    return self.gameAnalyses.tensorInputMoves()
 
   def tensorInputChunks(self):
-    return self.gameAnalyses.tensorInputChunks(self.titled)
+    return self.gameAnalyses.tensorInputChunks()
 
   def tensorInputPVs(self):
     pvs = self.gameAnalyses.pv0ByAmbiguityStats()
@@ -36,7 +43,9 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', ['id', 'titled', 'engine', 'ga
     return [int(self.engine)] + self.tensorInputPVs()
 
   def activation(self):
-    return numpy.mean(self.gameAnalyses.assessmentNoOutlierAverages())
+    anoa = sorted(self.gameAnalyses.assessmentNoOutlierAverages(), reverse=True)
+    retained = anoa[min(1, int(0.3*len(anoa)))]
+    return numpy.mean(retained)
 
   def report(self):
     return {
@@ -60,7 +69,7 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', ['id', 'titled', 'engine', 'ga
     if ((verySusGames >= (1/5)*gamesAnalysed
         or susGames >= (2/5)*gamesAnalysed
         or (self.PVAssessment > 70 and susGames >= (1/5)*gamesAnalysed))
-      and gamesAnalysed > 1 and not self.titled):
+      and gamesAnalysed > 0 and not self.titled):
       return False
     elif legitGames == gamesAnalysed and self.PVAssessment < 30 and gamesAnalysed > 0:
       return True # Player is legit

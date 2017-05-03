@@ -24,7 +24,7 @@ class ChunkAssessment():
 
   @staticmethod
   def inputs():
-    inputList = ChunkAssessment.readCSV(800, [[0.0]]*63)
+    inputList = ChunkAssessment.readCSV(800, [[0.0]]*62)
     features = tf.transpose(tf.stack(inputList[1:]))
     cheat = tf.to_float(tf.equal(inputList[0], [1]))
     legit = tf.to_float(tf.equal(inputList[0], [0]))
@@ -77,10 +77,10 @@ class ChunkAssessment():
         else:
           sess.run(initOp)
           
-        if initialStep >= 50000:
+        if initialStep >= 10000:
           trainingSteps = initialStep + 5000
         else: 
-          trainingSteps = 50000
+          trainingSteps = 10000
 
         logging.warning("training chunks to: "+str(trainingSteps))
 
@@ -131,7 +131,7 @@ class ChunkAssessment():
     graph = tf.Graph()
     with graph.as_default():
       with tf.Session(graph=graph) as sess:
-        a = tf.placeholder(tf.float32, shape=[None, 62])
+        a = tf.placeholder(tf.float32, shape=[None, 61])
         infer = ChunkAssessment.inference(a)
         feedDict = {a: batch}
         ## initliase graph for running
