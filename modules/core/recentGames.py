@@ -7,13 +7,13 @@ def recentGames(playerAssessments, gameJSONs):
     playerAssessments = PlayerAssessments(sorted(playerAssessments.playerAssessments,
       key = lambda x: (x.assessment, x.date), reverse=True))
     return Games([Game(pa.gameId, gameJSONs[pa.gameId]['pgn'], gameJSONs[pa.gameId]['emts']) for pa in playerAssessments.playerAssessments if 
-      'variant' not in gameJSONs[pa.gameId] and
-      'emts' in gameJSONs[pa.gameId] and
-      gameLength(gameJSONs[pa.gameId].get('pgn', '')) > 44][:5])
+      'variant' not in gameJSONs.get(pa.gameId, {}) and
+      'emts' in gameJSONs.get(pa.gameId, {}) and
+      gameLength(gameJSONs.get(pa.gameId, {}).get('pgn', '')) > 44][:8])
   except ValueError:
-    return []
+    return Games([])
   except IndexError:
-    return []
+    return Games([])
 
 def gameLength(pgn):
     return len(pgn.split(' '))

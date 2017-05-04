@@ -73,7 +73,7 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', ['id', 'titled', 'engine', 'ga
         or (self.PVAssessment > 70 and susGames >= (1/5)*gamesAnalysed))
       and gamesAnalysed > 0 and not self.titled):
       return False
-    elif legitGames == gamesAnalysed and self.PVAssessment < 30 and gamesAnalysed > 0:
+    elif legitGames == gamesAnalysed and self.PVAssessment < 40 and gamesAnalysed > 0:
       return True # Player is legit
     return None # Player falls into a grey area
 
