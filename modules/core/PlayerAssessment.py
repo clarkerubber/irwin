@@ -5,6 +5,34 @@ from modules.core.PlayerAssessments import PlayerAssessments
 PlayerAssessment = namedtuple('PlayerAssessment', ['id', 'gameId', 'userId', 'white', 'assessment', 'date', 'sfAvg', 'sfSd', 'mtAvg', 'mtSd', 'blurs', 'hold', 'flags'])
 PlayerFlags = namedtuple('PlayerFlags', ['ser', 'aha', 'hbr', 'mbr', 'cmt', 'nfm', 'sha'])
 
+def playerAssessmentId(gameId, white):
+  return gameId + '/' + ('white' if white else 'black')
+
+def nullPlayerAssessment(gameId, userId, white):
+  return PlayerAssessment(
+    id = playerAssessmentId(gameId, white),
+    gameId = gameId,
+    userId = userId,
+    white = white,
+    assessment = 3,
+    date = 0,
+    sfAvg = 0,
+    sfSd = 0,
+    mtAvg = 0,
+    mtSd = 0,
+    blurs = 0,
+    hold = False,
+    flags = PlayerFlags(
+      ser = False,
+      aha = False,
+      hbr = False,
+      mbr = False,
+      cmt = False,
+      nfm = False,
+      sha = False
+    )
+  )
+
 class PlayerAssessmentBSONHandler:
   @staticmethod
   def reads(bson):

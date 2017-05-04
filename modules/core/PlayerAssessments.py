@@ -1,4 +1,5 @@
 from collections import namedtuple
+from modules.core.PlayerAssessment import nullPlayerAssessment
 
 class PlayerAssessments(namedtuple('PlayerAssessments', ['playerAssessments'])):
   def gameIds(self):
@@ -15,3 +16,11 @@ class PlayerAssessments(namedtuple('PlayerAssessments', ['playerAssessments'])):
 
   def suspicious(self):
     return [p for p in self.list if p.assessment > 2]
+
+  def addNulls(self, userId, games, gameJSONs): # Add practically blank playerAssessment objects for games that don't have one
+    new = self.playerAssessments
+    for game in games:
+      gameJSON = gameJSONs.get(game.id, None)
+      if gameJSON is not None and not self.hasGameId(game.id):
+        new.append(nullPlayerAssessment(game.id, userId, game.color == "white"))
+    return PlayerAssessments(new)

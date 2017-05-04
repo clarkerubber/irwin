@@ -49,7 +49,8 @@ env.irwin.train()
 
 while True:
   # Get player data
-  userId = env.api.getPlayerId()
+  #userId = env.api.getPlayerId()
+  userId = 'machur_leshach'
   playerData = env.api.getPlayerData(userId)
 
   # Filter games and assessments for relevant info
@@ -57,6 +58,7 @@ while True:
     pas = list([PlayerAssessmentBSONHandler.reads(pa) for pa in playerData['assessment']['playerAssessments']])
     playerAssessments = PlayerAssessments(pas)
     games = recentGames(playerAssessments, playerData['games'])
+    playerAssessments = playerAssessments.addNulls(games, playerData['games'])
   except KeyError:
     continue # if either of these don't gather any useful data, skip them
 
