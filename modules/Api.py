@@ -19,6 +19,7 @@ class Api(namedtuple('Api', ['token'])):
           success = True
         else:
           logging.warning(str(response.status_code) + ': Failed to post player report')
+          logging.warning(json.dumps(report))
           logging.debug('Trying again in 60 sec')
           time.sleep(60)
       except requests.ConnectionError:
