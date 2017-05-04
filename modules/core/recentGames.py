@@ -17,7 +17,7 @@ def recentGames(playerAssessments, gameJSONs):
         gs1.append(Game(playerAssessment.gameId, pgn, gameJSON['emts']))
       else:
         print(gameJSON)
-    games1 = Games(gs1)
+    games1 = Games(gs1[:5])
     for gameId, gameJSON in gameJSONs.items():
       pgn = gameJSON.get('pgn', '')
       if not games1.hasId(gameId) and 'variant' not in gameJSON and 'emts' in gameJSON and gameLength(pgn) > 44:
