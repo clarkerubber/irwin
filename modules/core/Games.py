@@ -1,7 +1,5 @@
 from collections import namedtuple
 
-from modules.core.PlayerAssessments import PlayerAssessments
-
 # thin wrapper class for multiple games
 class Games(namedtuple('Games', ['games'])):
   def byId(self, gameId):

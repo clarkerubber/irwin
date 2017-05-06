@@ -39,7 +39,7 @@ class GameAnalysis:
     self.white = self.playerAssessment.white
 
   def __str__(self):
-    return 'GameAnalysis('+self.id+', '+str(self.assessedMoves)+', '+str(self.assessedChunks)+')'
+    return 'GameAnalysis('+self.id+', analysedMoves: '+str(len(self.analysedMoves))+', assessedMoves: '+str(len(self.assessedMoves))+', assessedChunks: '+str(len(self.assessedChunks))+')'
 
   def reportDict(self):
     return {
@@ -142,7 +142,7 @@ class GameAnalysis:
     return 0
 
   def pv0ByAmbiguity(self, ambiguity):
-    return sum(int(analysedMove.trueRank() == 0) for analysedMove in self.analysedMoves if analysedMove.ambiguity() == ambiguity)
+    return sum(int(analysedMove.trueRank() == 1) for analysedMove in self.analysedMoves if analysedMove.ambiguity() == ambiguity)
 
   def ambiguitySum(self, ambiguity): # Amount of positions where ambiguity == X
     return sum(int(analysedMove.ambiguity() == ambiguity) for analysedMove in self.analysedMoves)
