@@ -39,7 +39,8 @@ class GameAnalysis:
     self.white = self.playerAssessment.white
 
   def __str__(self):
-    return 'GameAnalysis('+self.id+', analysedMoves: '+str(len(self.analysedMoves))+', assessedMoves: '+str(len(self.assessedMoves))+', assessedChunks: '+str(len(self.assessedChunks))+')'
+    return 'GameAnalysis({}, analysedMoves: {}, assessedMoves: {}, assessedChunks: {})'.format(
+      self.id, len(self.analysedMoves), len(self.assessedMoves), len(self.assessedChunks))
 
   def reportDict(self):
     return {
@@ -66,20 +67,22 @@ class GameAnalysis:
     return (2*(moveNumber-1)) + (0 if self.white else 1)
 
   def consistentMoveTime(self, moveNumber):
-    return self.game.emts[self.ply(moveNumber)] in self.game.emtsNoOutliers()
+    emt = self.game.emts[self.ply(moveNumber)]
+    return not self.game.isEmtOutlier(emt)
 
   def tensorInputChunks(self):
-    entries = []
-    for i in range(len(self.analysedMoves) - 9):
-      entry = [i]
-      for analysedMove in self.analysedMoves[i:i+10]:
-        entry.extend([analysedMove.rank(),
+    allChunks = [[
+        analysedMove.rank(),
         int(100*analysedMove.winningChancesLoss()),
         int(100*analysedMove.advantage()),
         analysedMove.ambiguity(),
         int(self.consistentMoveTime(analysedMove.move)),
-        int(analysedMove.emt)])
-      entries.append(entry)
+        int(analysedMove.emt)
+    ] for analysedMove in self.analysedMoves]
+
+    entries = []
+    for i in range(len(self.analysedMoves) - 9):
+      entries.append([i] + allChunks[i:i+10])
     return entries
 
   def tensorInputMoves(self):
