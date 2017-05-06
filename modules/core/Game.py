@@ -19,11 +19,9 @@ class Game(namedtuple('Game', ['id', 'pgn', 'emts'])):
   def emtMean(self):
     return np.mean(self.emtsNoOutliers())
 
-  def __new__(cls, *args, **kvargs):
-    self = super().__new__(cls, *args, **kvargs)
+  def __init__(self, *args, **kvargs):
     self.mean = np.mean(self.emts)
     self.outlierCutoff = 0.5 * np.std(self.emts)
-    return self
 
 
 class GameBSONHandler:
