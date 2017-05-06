@@ -8,7 +8,7 @@ Compatible with Python 3.x
 - **pymongo** : `pip3 install pymongo`
 - **python-chess** : `pip3 install python-chess`
 - **numpy** : `pip3 install numpy`
-- **tensorflow** : [tensorflow installation guide](https://www.tensorflow.org/versions/r0.10/get_started/os_setup)
+- **tensorflow** : [tensorflow installation guide](https://www.tensorflow.org/install/) (r1.1 or greater)
 
 ### Database
 - **mongodb** : [mongodb installation guide](https://docs.mongodb.com/manual/installation/)
