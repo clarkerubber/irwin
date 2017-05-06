@@ -38,7 +38,7 @@ class AnalysedMove(namedtuple('AnalysedMove', ['uci', 'move', 'emt', 'score', 'a
     return next((x for x, am in enumerate(self.analyses) if am.uci == self.uci), 2*len(self.analyses))
 
   def trueRank(self):
-    return next((x for x, am in enumerate(self.analyses) if am.uci == self.uci), None)
+    return next((x+1 for x, am in enumerate(self.analyses) if am.uci == self.uci), None)
 
 def winningChances(score):
   if score.mate is not None:

@@ -5,8 +5,7 @@ from pprint import pprint
 from modules.bcolors.bcolors import bcolors
 
 from modules.core.Game import Game
-from modules.core.PlayerAssessment import PlayerAssessmentBSONHandler, PlayerAssessment
-from modules.core.PlayerAssessments import PlayerAssessments
+from modules.core.PlayerAssessment import PlayerAssessmentBSONHandler, PlayerAssessment, PlayerAssessments
 from modules.core.GameAnalysis import GameAnalysis
 from modules.core.PlayerAnalysis import PlayerAnalysis
 
@@ -49,8 +48,7 @@ env.irwin.train()
 
 while True:
   # Get player data
-  #userId = env.api.getPlayerId()
-  userId = 'machur_leshach'
+  userId = env.api.getPlayerId()
   playerData = env.api.getPlayerData(userId)
 
   # Filter games and assessments for relevant info
@@ -58,7 +56,7 @@ while True:
     pas = list([PlayerAssessmentBSONHandler.reads(pa) for pa in playerData['assessment']['playerAssessments']])
     playerAssessments = PlayerAssessments(pas)
     games = recentGames(playerAssessments, playerData['games'])
-    playerAssessments = playerAssessments.addNulls(games, playerData['games'])
+    playerAssessments = playerAssessments.addNulls(userId, games, playerData['games'])
   except KeyError:
     continue # if either of these don't gather any useful data, skip them
 

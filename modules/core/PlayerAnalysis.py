@@ -27,7 +27,7 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', ['id', 'titled', 'engine', 'ga
     for i, pv in enumerate(pvs):
       if pv is None:
         pvs[i] = 0
-    return pvs # should be a list of ints 10 items long
+    return pvs # should be a list of ints 5 items long
 
   def CSVMoves(self):
     moves = []
@@ -63,7 +63,7 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', ['id', 'titled', 'engine', 'ga
 
     noOutlierAverages = self.gameAnalyses.assessmentNoOutlierAverages()
 
-    susGames = sum([int(a > 60) for a in noOutlierAverages])
+    susGames = sum([int(a > 62) for a in noOutlierAverages])
     verySusGames = sum([int(a > 75) for a in noOutlierAverages])
 
     legitGames = sum([int(a < 35) for a in noOutlierAverages])
