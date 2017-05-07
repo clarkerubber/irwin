@@ -22,6 +22,35 @@ Then run main.py until there are enough analysed players in the database for tra
 
 The bot will retrain itself roughly every 24 hours to stay up to date with changing trends.
 
+### Create `conf/config.json`
+```javascript
+{
+  "api": {
+    "url": "https://en.lichess.org/",
+    "token": "token"
+  },
+  "stockfish": {
+    "threads": 4,
+    "memory": 2048,
+    "nodes": 6000000,
+    "update": true
+  },
+  "db": {
+    "host": "localhost",
+    "port": 27017,
+    "authenticate": false,
+    "authentication": {
+      "username": "username",
+      "password": "password"
+    }
+  },
+  "irwin": {
+    "minStep": 10000,
+    "incStep": 5000
+  }
+}
+```
+
 `conf/config.json` contains settings for stockfish, mongodb, tensorflow, lichess (authentication token and URL), etc...
 
 ## Launching
