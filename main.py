@@ -28,6 +28,8 @@ parser.add_argument("--learn", dest="learn", nargs="?",
                     default=False, const=True, help="does this bot learn")
 parser.add_argument("--forcetrain", dest="forcetrain", nargs="?",
                     default=False, const=True, help="force training to start")
+parser.add_argument("--no-assess", dest="noassess", nargs="?",
+                    default=False, const=True, help="disable player analysis")
 parser.add_argument("--quiet", dest="loglevel",
                     default=logging.DEBUG, action="store_const", const=logging.INFO,
                     help="substantially reduce the number of logged messages")
@@ -53,7 +55,7 @@ logging.getLogger("chess.uci").setLevel(logging.WARNING)
 env = Env(config)
 env.irwin.train(config['irwin']['forcetrain'])
 
-while True:
+while True and not settings.noassess:
   # Get player data
   userId = env.api.getPlayerId()
   playerData = env.api.getPlayerData(userId)
