@@ -24,10 +24,10 @@ if config == {}:
   raise Exception('Config file empty or does not exist!')
 
 parser = argparse.ArgumentParser(description=__doc__)
-parser.add_argument("learn", metavar="LEARN",
-                    help="does this bot learn", nargs="?", type=int, default=1)
-parser.add_argument("forcetrain", metavar="TRAIN",
-                    help="force training", nargs="?", type=int, default=0)
+parser.add_argument("--learn", dest="learn", nargs="?",
+                    default=False, const=True, help="does this bot learn")
+parser.add_argument("--forcetrain", dest="forcetrain", nargs="?",
+                    default=False, const=True, help="force training to start")
 parser.add_argument("--quiet", dest="loglevel",
                     default=logging.DEBUG, action="store_const", const=logging.INFO,
                     help="substantially reduce the number of logged messages")
