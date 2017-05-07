@@ -12,7 +12,7 @@
   "db": {
     "host": "localhost",
     "port": 27017,
-    "authenticate": true,
+    "authenticate": false,
     "authentication": {
       "username": "username",
       "password": "password"
