@@ -49,7 +49,7 @@ logging.getLogger("chess.uci").setLevel(logging.WARNING)
 
 env = Env(config)
 env.irwin.train()
-
+"""
 while True:
   # Get player data
   userId = env.api.getPlayerId()
@@ -93,3 +93,4 @@ while True:
 
   env.playerAnalysisDB.write(playerAnalysis)
   env.api.postReport(playerAnalysis.report())
+"""
