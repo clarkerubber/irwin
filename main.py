@@ -24,19 +24,22 @@ if config == {}:
   raise Exception('Config file empty or does not exist!')
 
 parser = argparse.ArgumentParser(description=__doc__)
-parser.add_argument("--learn", dest="learn", nargs="?",
+parser.add_argument("--learner", dest="learn", nargs="?",
                     default=False, const=True, help="does this bot learn")
-parser.add_argument("--forcetrain", dest="forcetrain", nargs="?",
+parser.add_argument("--force-train", dest="forcetrain", nargs="?",
                     default=False, const=True, help="force training to start")
-parser.add_argument("--no-assess", dest="noassess", nargs="?",
+parser.add_argument("--no-analyse", dest="noanalyse", nargs="?",
                     default=False, const=True, help="disable player analysis")
+parser.add_argument("--no-assess", dest="noanalyse", nargs="?",
+                    default=False, const=True, help="disable player assessment (use of neural networks)")
+parser.add_argument("--no-report", dest="noreport", nargs="?",
+                    default=False, const=True, help="disable posting of player reports")
 parser.add_argument("--quiet", dest="loglevel",
                     default=logging.DEBUG, action="store_const", const=logging.INFO,
                     help="substantially reduce the number of logged messages")
 settings = parser.parse_args()
 
 config['irwin']['learn'] = settings.learn
-config['irwin']['forcetrain'] = settings.forcetrain
 
 try:
   # Optionally fix colors on Windows and in journals if the colorama module
@@ -53,9 +56,9 @@ logging.getLogger("requests.packages.urllib3").setLevel(logging.WARNING)
 logging.getLogger("chess.uci").setLevel(logging.WARNING)
 
 env = Env(config)
-env.irwin.train(config['irwin']['forcetrain'])
+env.irwin.train(settings.forcetrain)
 
-while True and not settings.noassess:
+while True and not settings.noanalyse:
   # Get player data
   userId = env.api.getPlayerId()
   playerData = env.api.getPlayerData(userId)
@@ -87,14 +90,16 @@ while True and not settings.noassess:
   gameAnalyses.analyse(env.engine, env.infoHandler, config['stockfish']['nodes'])
   env.gameAnalysisDB.lazyWriteGames(gameAnalyses)
 
-  playerAnalysis = env.irwin.assessPlayer(PlayerAnalysis(
-    id = userId,
-    titled = 'titled' in playerData['assessment']['user'].keys(),
-    engine = None,
-    gamesPlayed = playerData['assessment']['user']['games'],
-    closedReports = sum(int(r.get('processedBy', None) is not None) for r in playerData['history'] if r['type'] == 'report' and r['data']['reason'] == 'cheat'),
-    gameAnalyses = gameAnalyses,
-    PVAssessment = None))
+  if not settings.noassess:
+    playerAnalysis = env.irwin.assessPlayer(PlayerAnalysis(
+      id = userId,
+      titled = 'titled' in playerData['assessment']['user'].keys(),
+      engine = None,
+      gamesPlayed = playerData['assessment']['user']['games'],
+      closedReports = sum(int(r.get('processedBy', None) is not None) for r in playerData['history'] if r['type'] == 'report' and r['data']['reason'] == 'cheat'),
+      gameAnalyses = gameAnalyses,
+      PVAssessment = None))
 
   env.playerAnalysisDB.write(playerAnalysis)
-  env.api.postReport(playerAnalysis.report())
+  if not settings.noreport:
+    env.api.postReport(playerAnalysis.report())
