@@ -30,7 +30,7 @@ parser.add_argument("--force-train", dest="forcetrain", nargs="?",
                     default=False, const=True, help="force training to start")
 parser.add_argument("--no-analyse", dest="noanalyse", nargs="?",
                     default=False, const=True, help="disable player analysis")
-parser.add_argument("--no-assess", dest="noanalyse", nargs="?",
+parser.add_argument("--no-assess", dest="noassess", nargs="?",
                     default=False, const=True, help="disable player assessment (use of neural networks)")
 parser.add_argument("--no-report", dest="noreport", nargs="?",
                     default=False, const=True, help="disable posting of player reports")
