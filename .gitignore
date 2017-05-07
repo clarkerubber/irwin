@@ -100,4 +100,4 @@ model-*
 stockfish*
 
 # Config
-*.json
+conf/
