@@ -5,10 +5,10 @@ irwin is the AI that learns cheating patterns, marks cheaters, and assists moder
 Compatible with Python 3.x
 
 ### Python Libraries
-- **pymongo** : `pip3 install pymongo`
-- **python-chess** : `pip3 install python-chess`
-- **numpy** : `pip3 install numpy`
-- **tensorflow** : [tensorflow installation guide](https://www.tensorflow.org/install/) (r1.1 or greater)
+```sh
+pip3 install pymongo python-chess numpy requests
+```
+- **tensorflow** : [tensorflow installation guide](https://www.tensorflow.org/install)
 
 ### Database
 - **mongodb** : [mongodb installation guide](https://docs.mongodb.com/manual/installation/)

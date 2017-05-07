@@ -9,4 +9,4 @@ class Games(namedtuple('Games', ['games'])):
     return [g.id for g in self.games]
 
   def hasId(self, gameId):
-    return (gameId in self.ids())
+    return gameId in self.ids()

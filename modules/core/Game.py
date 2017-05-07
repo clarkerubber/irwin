@@ -6,21 +6,23 @@ from modules.core.Games import Games
 import numpy as np
 
 class Game(namedtuple('Game', ['id', 'pgn', 'emts'])):
-  def getEmt(self, ply):
-    return self.emts[ply]
+
+  def isEmtOutlier(self, emt):
+    abs(emt - self.mean) >= self.outlierCutoff
 
   def emtsNoOutliers(self):
-    m = 0.5
-    u = np.mean(self.emts)
-    s = np.std(self.emts)
-    filtered = [e for e in self.emts if (u - m * s < e < u + m * s)]
-    return filtered
+    return [e for e in self.emts if not self.isEmtOutlier(e)]
 
   def emtStd(self):
-    return np.std(self.emtsNoOutliers)
+    return np.std(self.emtsNoOutliers())
 
   def emtMean(self):
-    return np.mean(self.emtsNoOutliers)
+    return np.mean(self.emtsNoOutliers())
+
+  def __init__(self, *args, **kvargs):
+    self.mean = np.mean(self.emts)
+    self.outlierCutoff = 0.5 * np.std(self.emts)
+
 
 class GameBSONHandler:
   @staticmethod
