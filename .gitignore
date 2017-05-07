@@ -98,3 +98,6 @@ model-*
 
 # Stockfish
 stockfish*
+
+# Config
+config.json
