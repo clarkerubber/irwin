@@ -12,9 +12,9 @@
   "db": {
     "host": "localhost",
     "port": 27017,
-    "authenticate": false,
+    "authenticate": true,
     "authentication": {
-      "username": "username",
+      "username": "irwinAdmin",
       "password": "password"
     }
   },
