@@ -2,7 +2,7 @@ import logging
 from modules.bcolors.bcolors import bcolors
 from modules.core.AnalysedMove import Analysis, AnalysedMove, Score
 
-def analyse(gameAnalysis, engine, infoHandler, override = False):
+def analyse(gameAnalysis, engine, infoHandler, nodes, override = False):
   if not gameAnalysis.analysed or override:
     node = gameAnalysis.playableGame
 
@@ -19,7 +19,7 @@ def analyse(gameAnalysis, engine, infoHandler, override = False):
       if gameAnalysis.white == node.board().turn:
         engine.setoption({'multipv': 5})
         engine.position(node.board())
-        engine.go(nodes=4000000)
+        engine.go(nodes=nodes)
 
         analyses = list([
           Analysis(pv[1][0].uci(),
@@ -29,7 +29,7 @@ def analyse(gameAnalysis, engine, infoHandler, override = False):
 
         engine.setoption({'multipv': 1})
         engine.position(nextNode.board())
-        engine.go(nodes=3000000)
+        engine.go(nodes=nodes)
 
         cp = infoHandler.info['score'][1].cp
         mate = infoHandler.info['score'][1].mate

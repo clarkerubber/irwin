@@ -24,7 +24,7 @@ class PlayerAssessments(namedtuple('PlayerAssessments', ['playerAssessments'])):
     for game in games.games:
       gameJSON = gameJSONs.get(game.id, None)
       if gameJSON is not None and not self.hasGameId(game.id):
-        new.append(nullPlayerAssessment(game.id, userId, game.color == "white"))
+        new.append(nullPlayerAssessment(game.id, userId, game.playerAssessment.color == "white"))
     return PlayerAssessments(new)
 
 def playerAssessmentId(gameId, white):

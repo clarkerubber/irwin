@@ -22,8 +22,10 @@ Then run main.py until there are enough analysed players in the database for tra
 
 The bot will retrain itself roughly every 24 hours to stay up to date with changing trends.
 
+`conf/config.json` contains settings for stockfish, mongodb, tensorflow, lichess (authentication token and URL), etc...
+
 ## Launching
-`python3 main.py --quiet <Secret API Token> <Learner (1 or 0) = 1> <#Threads = 4> <Hash (Bytes) = 2048>`
+`python3 main.py --quiet <Learner (1 or 0) = 1>`
 
 ## About
 Irwin (named after Steve Irwin, the Crocodile Hunter) started as the name of the server that the original
