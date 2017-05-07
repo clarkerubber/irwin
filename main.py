@@ -26,12 +26,15 @@ if config == {}:
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("learn", metavar="LEARN",
                     help="does this bot learn", nargs="?", type=int, default=1)
+parser.add_argument("forcetrain", metavar="TRAIN",
+                    help="force training", nargs="?", type=int, default=0)
 parser.add_argument("--quiet", dest="loglevel",
                     default=logging.DEBUG, action="store_const", const=logging.INFO,
                     help="substantially reduce the number of logged messages")
 settings = parser.parse_args()
 
 config['irwin']['learn'] = settings.learn
+config['irwin']['forcetrain'] = settings.forcetrain
 
 try:
   # Optionally fix colors on Windows and in journals if the colorama module
@@ -48,7 +51,7 @@ logging.getLogger("requests.packages.urllib3").setLevel(logging.WARNING)
 logging.getLogger("chess.uci").setLevel(logging.WARNING)
 
 env = Env(config)
-env.irwin.train()
+env.irwin.train(config['irwin']['forcetrain'])
 
 while True:
   # Get player data
