@@ -75,7 +75,7 @@ eval: 0.588125
 ```
 It means that the neural net was poorly initialised and it is not making useful predictions.
 If this happens, stop irwin `ctrl+c` and go to the relevant models folder.
-`modules/irwin/models/[moves|chunks|pvs]` and delete its contents (leaving the __init__.py
+`modules/irwin/models/[moves|chunks|pvs]` and delete its contents (leaving the `__init__.py`
 if you intend to push to this git). Then start irwin back up with the same command.
 It might take a few tries to get a good initialisation that looks like this.
 
@@ -101,6 +101,10 @@ Once you have a good initialisation, it shouldn't be necessary to redo this.
 
 ## Launching
 `python3 main.py [--quiet] [--learner] [--force-train] [--no-assess] [--no-analyse] [--no-report]>`
+
+For normal use in the command line `python3 main.py` is adequate.
+If you want this instance to re-train itself every 24 hours enable the `--learner` flag.
+For use as a service the `--quiet` option is recommended.
 
 ## About
 Irwin (named after Steve Irwin, the Crocodile Hunter) started as the name of the server that the original
