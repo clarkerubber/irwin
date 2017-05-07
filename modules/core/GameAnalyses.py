@@ -11,8 +11,8 @@ class GameAnalyses:
     if not self.hasId(gameAnalysis.id):
       self.gameAnalyses.append(gameAnalysis)
 
-  def analyse(self, engine, infoHandler):
-    self.gameAnalyses = [analyse(ga, engine, infoHandler) for ga in self.gameAnalyses]
+  def analyse(self, engine, infoHandler, nodes):
+    self.gameAnalyses = [analyse(ga, engine, infoHandler, nodes) for ga in self.gameAnalyses]
 
   def ids(self):
     return list([ga.id for ga in self.gameAnalyses])

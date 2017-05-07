@@ -1,0 +1,25 @@
+{
+  "api": {
+    "url": "https://en.lichess.org/",
+    "token": "token"
+  },
+  "stockfish": {
+    "threads": 4,
+    "memory": 2048,
+    "nodes": 6000000,
+    "update": true
+  },
+  "db": {
+    "host": "localhost",
+    "port": 27017,
+    "authenticate": true,
+    "authentication": {
+      "username": "username",
+      "password": "password"
+    }
+  },
+  "irwin": {
+    "minStep": 10000,
+    "incStep": 5000
+  }
+}

@@ -14,10 +14,10 @@ from modules.core.PlayerAnalysis import PlayerAnalysis
 from modules.core.GameAnalyses import GameAnalyses
 
 
-class Irwin(namedtuple('Irwin', ['api', 'learner', 'trainingStatsDB', 'playerAnalysisDB'])):
+class Irwin(namedtuple('Irwin', ['api', 'learner', 'trainingStatsDB', 'playerAnalysisDB', 'minTrainingSteps', 'incTrainingSteps'])):
   def train(self): # runs forever
     if self.learner == 1:
-      TrainAndEvaluate(self.api, self.trainingStatsDB, self.playerAnalysisDB).start()
+      TrainAndEvaluate(self.api, self.trainingStatsDB, self.playerAnalysisDB, self.minTrainingSteps, self.incTrainingSteps).start()
 
   @staticmethod
   def assessGame(gameAnalysis):
@@ -103,18 +103,20 @@ class Irwin(namedtuple('Irwin', ['api', 'learner', 'trainingStatsDB', 'playerAna
     return outputPlayerAnalyses
 
 class TrainAndEvaluate(threading.Thread):
-  def __init__(self, api, trainingStatsDB, playerAnalysisDB):
+  def __init__(self, api, trainingStatsDB, playerAnalysisDB, minTrainingSteps, incTrainingSteps):
     threading.Thread.__init__(self)
     self.api = api
     self.trainingStatsDB = trainingStatsDB
     self.playerAnalysisDB = playerAnalysisDB
+    self.minTrainingSteps = minTrainingSteps
+    self.incTrainingSteps = incTrainingSteps
 
   def run(self):
     while True:
       time.sleep(10)
       if self.outOfDate():
         logging.warning("OUT OF DATE: UPDATING!")
-        trainer = TrainNetworks(self.api, self.playerAnalysisDB)
+        trainer = TrainNetworks(self.api, self.playerAnalysisDB, self.minTrainingSteps, self.incTrainingSteps)
         trainer.start()
         engines = self.playerAnalysisDB.engines()
         legits = self.playerAnalysisDB.legits()

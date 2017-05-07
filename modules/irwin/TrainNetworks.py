@@ -7,10 +7,12 @@ from modules.irwin.ChunkAssessment import ChunkAssessment
 from modules.irwin.PVAssessment import PVAssessment
 
 class TrainNetworks(threading.Thread):
-  def __init__(self, api, playerAnalysisDB):
+  def __init__(self, api, playerAnalysisDB, minTrainingSteps, incTrainingSteps):
     threading.Thread.__init__(self)
     self.api = api
     self.playerAnalysisDB = playerAnalysisDB
+    self.minTrainingSteps = minTrainingSteps
+    self.incTrainingSteps = incTrainingSteps
 
   def run(self):
     updatePlayerEngineStatus(self.api, self.playerAnalysisDB)
@@ -18,9 +20,9 @@ class TrainNetworks(threading.Thread):
     self.classifyMoves(sortedUsers)
     self.classifyMoveChunks(sortedUsers)
     self.classifyPVs(sortedUsers)
-    MoveAssessment.learn()
-    ChunkAssessment.learn()
-    PVAssessment.learn()
+    MoveAssessment.learn(self.minTrainingSteps, self.incTrainingSteps)
+    ChunkAssessment.learn(self.minTrainingSteps, self.incTrainingSteps)
+    PVAssessment.learn(self.minTrainingSteps, self.incTrainingSteps)
 
   def classifyMoves(self, playerAnalyses):
     entries = []

@@ -6,7 +6,7 @@ import json
 from modules.bcolors.bcolors import bcolors
 from collections import namedtuple
 
-class Api(namedtuple('Api', ['token'])):
+class Api(namedtuple('Api', ['url', 'token'])):
   def postReport(self, report):
     logging.warning('Posting report for ' + report['userId'])
     success = False
@@ -14,7 +14,7 @@ class Api(namedtuple('Api', ['token'])):
     while not success and attempts < 5:
       attempts += 1
       try:
-        response = requests.post('https://en.lichess.org/irwin/report?api_key=' + self.token, json=report)
+        response = requests.post(self.url+'irwin/report?api_key=' + self.token, json=report)
         if response.status_code == 200:
           success = True
         else:
@@ -40,7 +40,7 @@ class Api(namedtuple('Api', ['token'])):
     success = False
     while not success:
       try:
-        response = requests.get('https://en.lichess.org/irwin/'+userId+'/assessment?api_key='+self.token)
+        response = requests.get(self.url+'irwin/'+userId+'/assessment?api_key='+self.token)
         success = True
       except requests.ConnectionError:
         logging.warning('CONNECTION ERROR: Failed to pull assessment data')
@@ -60,7 +60,7 @@ class Api(namedtuple('Api', ['token'])):
     success = False
     while not success:
       try:
-        response = requests.get('https://en.lichess.org/irwin/request?api_key='+self.token)
+        response = requests.get(self.url+'irwin/request?api_key='+self.token)
         if response.status_code == 200:
           success = True
         else:
@@ -97,7 +97,7 @@ class Api(namedtuple('Api', ['token'])):
       success = False
       while not success:
         try:
-          response = requests.get('https://en.lichess.org/irwin/users-mark-and-current-report?ids=' + ids + '&api_key=' + self.token)
+          response = requests.get(self.url+'irwin/users-mark-and-current-report?ids=' + ids + '&api_key=' + self.token)
           if response.status_code == 200:
             success = True
           else:

@@ -55,7 +55,7 @@ class PVAssessment():
       min_after_dequeue=batchSize*10)
 
   @staticmethod
-  def learn():
+  def learn(minTrainingSteps, incTrainingSteps):
     graph = tf.Graph()
     with graph.as_default():
       with tf.Session(graph=graph) as sess:
@@ -77,10 +77,10 @@ class PVAssessment():
         else:
           sess.run(initOp)
           
-        if initialStep >= 10000:
-          trainingSteps = initialStep + 5000
+        if initialStep >= minTrainingSteps:
+          trainingSteps = initialStep + incTrainingSteps
         else: 
-          trainingSteps = 10000
+          trainingSteps = minTrainingSteps
 
         logging.warning("training pvs to: "+str(trainingSteps))
 

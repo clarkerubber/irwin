@@ -1,6 +1,8 @@
 import argparse
 import sys
 import logging
+import json
+
 from pprint import pprint
 from modules.bcolors.bcolors import bcolors
 
@@ -15,19 +17,21 @@ from modules.irwin.updatePlayerEngineStatus import isEngine
 
 from Env import Env
 
+config = {}
+with open('conf/config.json') as confFile:
+  config = json.load(confFile)
+if config == {}:
+  raise Exception('Config file empty or does not exist!')
+
 parser = argparse.ArgumentParser(description=__doc__)
-parser.add_argument("token", metavar="TOKEN",
-                    help="secret token for the lichess api")
 parser.add_argument("learn", metavar="LEARN",
                     help="does this bot learn", nargs="?", type=int, default=1)
-parser.add_argument("threads", metavar="THREADS", nargs="?", type=int, default=4,
-                    help="number of engine threads")
-parser.add_argument("memory", metavar="MEMORY", nargs="?", type=int, default=2048,
-                    help="memory in MB to use for engine hashtables")
 parser.add_argument("--quiet", dest="loglevel",
                     default=logging.DEBUG, action="store_const", const=logging.INFO,
                     help="substantially reduce the number of logged messages")
 settings = parser.parse_args()
+
+config['irwin']['learn'] = settings.learn
 
 try:
   # Optionally fix colors on Windows and in journals if the colorama module
@@ -43,7 +47,7 @@ logging.basicConfig(format="%(message)s", level=settings.loglevel, stream=sys.st
 logging.getLogger("requests.packages.urllib3").setLevel(logging.WARNING)
 logging.getLogger("chess.uci").setLevel(logging.WARNING)
 
-env = Env(settings)
+env = Env(config)
 env.irwin.train()
 
 while True:
@@ -75,7 +79,7 @@ while True:
     if playerAssessments.hasGameId(g.id):
       gameAnalyses.append(GameAnalysis(g, playerAssessments.byGameId(g.id), [], [], []))
 
-  gameAnalyses.analyse(env.engine, env.infoHandler)
+  gameAnalyses.analyse(env.engine, env.infoHandler, config['stockfish']['nodes'])
   env.gameAnalysisDB.lazyWriteGames(gameAnalyses)
 
   playerAnalysis = env.irwin.assessPlayer(PlayerAnalysis(

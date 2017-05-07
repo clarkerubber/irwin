@@ -18,17 +18,21 @@ class Env:
   def __init__(self, settings):
     self.settings = settings
 
-    self.engine = chess.uci.popen_engine(stockfish_command())
-    self.engine.setoption({'Threads': settings.threads, 'Hash': settings.memory})
+    self.engine = chess.uci.popen_engine(stockfish_command(settings['stockfish']['update']))
+    self.engine.setoption({'Threads': settings['stockfish']['threads'], 'Hash': settings['stockfish']['memory']})
     self.engine.uci()
     self.infoHandler = chess.uci.InfoHandler()
     self.engine.info_handlers.append(self.infoHandler)
 
-    self.api = Api(settings.token)
+    self.api = Api(settings['api']['url'], settings['api']['token'])
 
     # Set up mongodb
-    self.client = MongoClient()
+    self.client = MongoClient(settings['db']['host'])
     self.db = self.client.irwin
+    if settings['db']['authenticate']:
+        self.db.authenticate(
+            settings['db']['authentication']['username'],
+            settings['db']['authentication']['password'], mechanism='MONGODB-CR')
 
     # Colls
     self.playerColl = self.db.player
@@ -48,7 +52,9 @@ class Env:
     # Irwin
     self.irwin = Irwin(
       api = self.api,
-      learner = settings.learn,
+      learner = settings['irwin']['learn'],
       trainingStatsDB = self.trainingStatsDB,
-      playerAnalysisDB = self.playerAnalysisDB
+      playerAnalysisDB = self.playerAnalysisDB,
+      minTrainingSteps = settings['irwin']['minStep'],
+      incTrainingSteps = settings['irwin']['incStep']
     )
