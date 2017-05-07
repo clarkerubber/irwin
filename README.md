@@ -14,14 +14,6 @@ pip3 install pymongo python-chess numpy requests
 - **mongodb** : [mongodb installation guide](https://docs.mongodb.com/manual/installation/)
 
 ## Configuring
-Currently configuring the application is quite manual. The bot needs analysed players in the database to
-train the neural networks, and it needs trained neural networks to assess players.
-
-To work around this, training and assessing players with the neural network needs to be manually disabled.
-Then run main.py until there are enough analysed players in the database for training to commence.
-
-The bot will retrain itself roughly every 24 hours to stay up to date with changing trends.
-
 ### Create `conf/config.json`
 ```javascript
 {
@@ -52,9 +44,63 @@ The bot will retrain itself roughly every 24 hours to stay up to date with chang
 ```
 
 `conf/config.json` contains settings for stockfish, mongodb, tensorflow, lichess (authentication token and URL), etc...
+### Build a database of analysed players
+If you do not already have a database of analysed players, it will be necessary to analyse
+a few hundred players to train the neural networks on.
+`python3 main.py --no-assess --no-report`
+
+### Train Neural Networks
+`python3 main.py --learner --force-train --no-analyse`
+This will force irwin to start training on the players that it has analysed. The `--no-analyse` flag will stop
+irwin from analysing players with stockfish, and it will not assess players or post reports on them.
+
+#### Debugging
+If you see outputs like this where `True P: 0.0%` or `True N: 0.0%`
+```
+[[ 0.59259665  0.          1.          0.          1.          0.        ]
+ [ 0.          0.          0.          0.          0.          1.        ]
+ [ 0.          0.          0.          0.          0.          1.        ]
+ ..., 
+ [ 1.54029167  0.          1.          0.          1.          0.        ]
+ [ 0.45083776  0.          1.          0.          1.          0.        ]
+ [ 1.04098701  0.          1.          0.          1.          0.        ]]
+Step: 37000
+True P:   0.0% (0)
+True N:   64.0% (320)
+False P:  0.0% (0)
+False N:  35.8% (179)
+Indecise: 37.625% (301)
+loss: 0.663807
+eval: 0.588125
+```
+It means that the neural net was poorly initialised and it is not making useful predictions.
+If this happens, stop irwin `ctrl+c` and go to the relevant models folder.
+`modules/irwin/models/[moves|chunks|pvs]` and delete its contents (leaving the __init__.py
+if you intend to push to this git). Then start irwin back up with the same command.
+It might take a few tries to get a good initialisation that looks like this.
+
+```
+[[ 0.50404608  0.          1.          0.          0.          1.        ]
+ [ 1.43572056  0.          1.          0.          1.          0.        ]
+ [ 0.59026158  0.71266842  0.          1.          0.          1.        ]
+ ..., 
+ [ 1.36209404  1.39978981  0.          1.          0.          1.        ]
+ [ 0.75175393  0.          1.          0.          1.          0.        ]
+ [ 0.          4.04198742  0.          1.          0.          1.        ]]
+Step: 79000
+True P:   89.20454545454545% (314)
+True N:   75.84650112866817% (336)
+False P:  10.511363636363637% (37)
+False N:  23.927765237020317% (106)
+Indecise: 0.875% (7)
+loss: 0.38671
+eval: 0.816875
+```
+
+Once you have a good initialisation, it shouldn't be necessary to redo this.
 
 ## Launching
-`python3 main.py --quiet <Learner (1 or 0) = 1>`
+`python3 main.py [--quiet] [--learner] [--force-train] [--no-assess] [--no-analyse] [--no-report]>`
 
 ## About
 Irwin (named after Steve Irwin, the Crocodile Hunter) started as the name of the server that the original
