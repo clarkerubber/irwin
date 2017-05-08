@@ -17,7 +17,7 @@ from modules.core.GameAnalyses import GameAnalyses
 
 class Irwin(namedtuple('Irwin', ['api', 'learner', 'trainingStatsDB', 'playerAnalysisDB', 'falsePositivesDB', 'settings'])):
   def train(self, forcetrain, updateAll, testOnly): # runs forever
-    if self.learner:
+    if self.learner or testOnly:
       TrainAndEvaluate(self.api, self.trainingStatsDB, self.playerAnalysisDB, self.falsePositivesDB, self.settings, forcetrain, updateAll, testOnly).start()
 
   @staticmethod
