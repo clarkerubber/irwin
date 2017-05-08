@@ -6,7 +6,6 @@ from modules.core.Games import Games
 import numpy as np
 
 class Game(namedtuple('Game', ['id', 'pgn', 'emts'])):
-
   def isEmtOutlier(self, emt):
     abs(emt - self.mean) >= self.outlierCutoff
 

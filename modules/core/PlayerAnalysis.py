@@ -138,6 +138,9 @@ class PlayerAnalysisDB:
   def allSorted(self):
     return self.byBSONs(self.playerAnalysisColl.find({'engine': {'$in': [True, False]}}))
 
+  def all(self):
+    return self.byBSONs(self.playerAnalysisColl.find())
+
   def balancedSorted(self):
     enginePlayerAnalyses = self.engines()
     legitPlayerAnalyses = self.legits()

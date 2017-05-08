@@ -10,14 +10,15 @@ from modules.irwin.MoveAssessment import MoveAssessment
 from modules.irwin.ChunkAssessment import ChunkAssessment
 from modules.irwin.PVAssessment import PVAssessment
 from modules.irwin.TrainingStats import TrainingStats, Accuracy, Sample
+from modules.irwin.FalsePositives import FalsePositive, FalsePositives
 from modules.core.PlayerAnalysis import PlayerAnalysis
 from modules.core.GameAnalyses import GameAnalyses
 
 
-class Irwin(namedtuple('Irwin', ['api', 'learner', 'trainingStatsDB', 'playerAnalysisDB', 'minTrainingSteps', 'incTrainingSteps'])):
-  def train(self, forcetrain): # runs forever
+class Irwin(namedtuple('Irwin', ['api', 'learner', 'trainingStatsDB', 'playerAnalysisDB', 'falsePositivesDB', 'minTrainingSteps', 'incTrainingSteps'])):
+  def train(self, forcetrain, updateAll): # runs forever
     if self.learner:
-      TrainAndEvaluate(self.api, self.trainingStatsDB, self.playerAnalysisDB, self.minTrainingSteps, self.incTrainingSteps, forcetrain).start()
+      TrainAndEvaluate(self.api, self.trainingStatsDB, self.playerAnalysisDB, self.falsePositivesDB, self.minTrainingSteps, self.incTrainingSteps, forcetrain, updateAll).start()
 
   @staticmethod
   def assessGame(gameAnalysis):
@@ -103,21 +104,23 @@ class Irwin(namedtuple('Irwin', ['api', 'learner', 'trainingStatsDB', 'playerAna
     return outputPlayerAnalyses
 
 class TrainAndEvaluate(threading.Thread):
-  def __init__(self, api, trainingStatsDB, playerAnalysisDB, minTrainingSteps, incTrainingSteps, forcetrain):
+  def __init__(self, api, trainingStatsDB, playerAnalysisDB, falsePositivesDB, minTrainingSteps, incTrainingSteps, forcetrain, updateAll):
     threading.Thread.__init__(self)
     self.api = api
     self.trainingStatsDB = trainingStatsDB
     self.playerAnalysisDB = playerAnalysisDB
+    self.falsePositivesDB = falsePositivesDB
     self.minTrainingSteps = minTrainingSteps
     self.incTrainingSteps = incTrainingSteps
     self.forcetrain = forcetrain
+    self.updateAll = updateAll
 
   def run(self):
     while True:
       time.sleep(10)
       if self.outOfDate() or self.forcetrain:
         logging.warning("OUT OF DATE: UPDATING!")
-        trainer = TrainNetworks(self.api, self.playerAnalysisDB, self.minTrainingSteps, self.incTrainingSteps)
+        trainer = TrainNetworks(self.api, self.playerAnalysisDB, self.minTrainingSteps, self.incTrainingSteps, self.updateAll)
         trainer.start()
         engines = self.playerAnalysisDB.engines()
         legits = self.playerAnalysisDB.legits()
@@ -128,9 +131,11 @@ class TrainAndEvaluate(threading.Thread):
         legits = Irwin.assessPlayers(legits)
 
         logging.warning("Calculating results")
+        falsePositives = FalsePositives([FalsePositive(fp.id, fp.activation()) for fp in legits if fp.isLegit() == False])
+
         truePositive = sum([int(False == p.isLegit()) for p in engines]) # cheaters marked as cheaters
         trueNegative = sum([int(True == p.isLegit()) for p in legits]) # legits not marked or left open
-        falsePositive = sum([int(False == p.isLegit()) for p in legits]) # legits marked as engines
+        falsePositive = len(falsePositives.falsePositives) # legits marked as engines
         falseNegative = sum([int(True == p.isLegit()) for p in engines]) # cheaters marked as legits
         indeciseEngines = sum([int(p.isLegit() is None) for p in engines])
         indeciseLegits = sum([int(p.isLegit() is None) for p in legits])
@@ -146,6 +151,7 @@ class TrainAndEvaluate(threading.Thread):
             falseNegative = falseNegative,
             indeciseEngines = indeciseEngines,
             indeciseLegits = indeciseLegits)))
+        self.falsePositivesDB.write(falsePositives)
         logging.warning("Writing updated player assessments")
         self.playerAnalysisDB.lazyWriteMany(engines + legits)
 

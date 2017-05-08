@@ -13,6 +13,7 @@ from modules.Api import Api
 
 from modules.irwin.Irwin import Irwin
 from modules.irwin.TrainingStats import TrainingStatsDB
+from modules.irwin.FalsePositives import FalsePositivesDB
 
 class Env:
   def __init__(self, settings):
@@ -30,9 +31,9 @@ class Env:
     self.client = MongoClient(settings['db']['host'])
     self.db = self.client.irwin
     if settings['db']['authenticate']:
-        self.db.authenticate(
-            settings['db']['authentication']['username'],
-            settings['db']['authentication']['password'], mechanism='MONGODB-CR')
+      self.db.authenticate(
+        settings['db']['authentication']['username'],
+        settings['db']['authentication']['password'], mechanism='MONGODB-CR')
 
     # Colls
     self.playerColl = self.db.player
@@ -41,6 +42,7 @@ class Env:
     self.playerAssessmentColl = self.db.playerAssessment
     self.playerAnalysisColl = self.db.playerAnalysis
     self.trainingStatsColl = self.db.trainingStats
+    self.falsePositivesColl = self.db.falsePositives
 
     # database abstraction
     self.gameDB = GameDB(self.gameColl)
@@ -48,6 +50,7 @@ class Env:
     self.gameAnalysisDB = GameAnalysisDB(self.GameAnalysisColl, self.gameDB, self.playerAssessmentDB)
     self.playerAnalysisDB = PlayerAnalysisDB(self.playerAnalysisColl, self.gameAnalysisDB)
     self.trainingStatsDB = TrainingStatsDB(self.trainingStatsColl)
+    self.falsePositivesDB = FalsePositivesDB(self.falsePositivesColl)
 
     # Irwin
     self.irwin = Irwin(
@@ -55,6 +58,7 @@ class Env:
       learner = settings['irwin']['learn'],
       trainingStatsDB = self.trainingStatsDB,
       playerAnalysisDB = self.playerAnalysisDB,
+      falsePositivesDB = self.falsePositivesDB,
       minTrainingSteps = settings['irwin']['minStep'],
       incTrainingSteps = settings['irwin']['incStep']
     )

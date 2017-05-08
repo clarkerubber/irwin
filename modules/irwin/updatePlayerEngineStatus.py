@@ -1,7 +1,7 @@
 from modules.irwin.TrainingStats import Sample
 
-def updatePlayerEngineStatus(api, playerAnalysisDB): # For all players in DB, organise them into engine or legit
-  allUnsorted = playerAnalysisDB.allUnsorted()
+def updatePlayerEngineStatus(api, playerAnalysisDB, updateAll): # For all players in DB, organise them into engine or legit
+  allUnsorted = playerAnalysisDB.allUnsorted() if not updateAll else playerAnalysisDB.all()
   playerStatuses = api.getPlayerStatuses([playerAnalysis.id for playerAnalysis in allUnsorted])
   for playerAnalysis in allUnsorted: # Get all players who have engine = None
     try:

@@ -34,6 +34,8 @@ parser.add_argument("--no-assess", dest="noassess", nargs="?",
                     default=False, const=True, help="disable player assessment (use of neural networks)")
 parser.add_argument("--no-report", dest="noreport", nargs="?",
                     default=False, const=True, help="disable posting of player reports")
+parser.add_argument("--update-all", dest="updateall", nargs="?",
+                    default=False, const=True, help="update the engine status for all players in the db")
 parser.add_argument("--quiet", dest="loglevel",
                     default=logging.DEBUG, action="store_const", const=logging.INFO,
                     help="substantially reduce the number of logged messages")
@@ -56,7 +58,7 @@ logging.getLogger("requests.packages.urllib3").setLevel(logging.WARNING)
 logging.getLogger("chess.uci").setLevel(logging.WARNING)
 
 env = Env(config)
-env.irwin.train(settings.forcetrain)
+env.irwin.train(settings.forcetrain, settings.updateall)
 
 while True and not settings.noanalyse:
   # Get player data
