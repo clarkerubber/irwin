@@ -2,6 +2,7 @@ import chess
 import chess.pgn
 import logging
 import numpy
+import itertools
 
 from modules.bcolors.bcolors import bcolors
 
@@ -82,7 +83,9 @@ class GameAnalysis:
 
     entries = []
     for i in range(len(self.analysedMoves) - 9):
-      entries.append([i] + flatten(allChunks[i:i+10]))
+      entry = [i]
+      entry.extend(itertools.chain(*allChunks[i:i+10]))
+      entries.append(entry)
     return entries
 
   def tensorInputMoves(self):
@@ -155,9 +158,6 @@ class GameAnalysis:
 
 def gameAnalysisId(gameId, white):
   return gameId + '/' + ('white' if white else 'black')
-
-def flatten(listOfLists):
-  return [val for sublist in listOfLists for val in sublist]
 
 class GameAnalysisBSONHandler:
   @staticmethod
