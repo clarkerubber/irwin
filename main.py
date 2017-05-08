@@ -104,4 +104,4 @@ while True and not settings.noanalyse:
 
   env.playerAnalysisDB.write(playerAnalysis)
   if not settings.noreport:
-    env.api.postReport(playerAnalysis.report())
+    env.api.postReport(playerAnalysis.report(config['irwin']['thresholds']))

@@ -59,6 +59,5 @@ class Env:
       trainingStatsDB = self.trainingStatsDB,
       playerAnalysisDB = self.playerAnalysisDB,
       falsePositivesDB = self.falsePositivesDB,
-      minTrainingSteps = settings['irwin']['minStep'],
-      incTrainingSteps = settings['irwin']['incStep']
+      settings = settings['irwin']
     )

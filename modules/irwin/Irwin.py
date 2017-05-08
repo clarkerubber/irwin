@@ -15,10 +15,10 @@ from modules.core.PlayerAnalysis import PlayerAnalysis
 from modules.core.GameAnalyses import GameAnalyses
 
 
-class Irwin(namedtuple('Irwin', ['api', 'learner', 'trainingStatsDB', 'playerAnalysisDB', 'falsePositivesDB', 'minTrainingSteps', 'incTrainingSteps'])):
+class Irwin(namedtuple('Irwin', ['api', 'learner', 'trainingStatsDB', 'playerAnalysisDB', 'falsePositivesDB', 'settings'])):
   def train(self, forcetrain, updateAll): # runs forever
     if self.learner:
-      TrainAndEvaluate(self.api, self.trainingStatsDB, self.playerAnalysisDB, self.falsePositivesDB, self.minTrainingSteps, self.incTrainingSteps, forcetrain, updateAll).start()
+      TrainAndEvaluate(self.api, self.trainingStatsDB, self.playerAnalysisDB, self.falsePositivesDB, self.settings, forcetrain, updateAll).start()
 
   @staticmethod
   def assessGame(gameAnalysis):
@@ -104,14 +104,13 @@ class Irwin(namedtuple('Irwin', ['api', 'learner', 'trainingStatsDB', 'playerAna
     return outputPlayerAnalyses
 
 class TrainAndEvaluate(threading.Thread):
-  def __init__(self, api, trainingStatsDB, playerAnalysisDB, falsePositivesDB, minTrainingSteps, incTrainingSteps, forcetrain, updateAll):
+  def __init__(self, api, trainingStatsDB, playerAnalysisDB, falsePositivesDB, settings, forcetrain, updateAll):
     threading.Thread.__init__(self)
     self.api = api
     self.trainingStatsDB = trainingStatsDB
     self.playerAnalysisDB = playerAnalysisDB
     self.falsePositivesDB = falsePositivesDB
-    self.minTrainingSteps = minTrainingSteps
-    self.incTrainingSteps = incTrainingSteps
+    self.settings = settings
     self.forcetrain = forcetrain
     self.updateAll = updateAll
 
@@ -120,7 +119,7 @@ class TrainAndEvaluate(threading.Thread):
       time.sleep(10)
       if self.outOfDate() or self.forcetrain:
         logging.warning("OUT OF DATE: UPDATING!")
-        trainer = TrainNetworks(self.api, self.playerAnalysisDB, self.minTrainingSteps, self.incTrainingSteps, self.updateAll)
+        trainer = TrainNetworks(self.api, self.playerAnalysisDB, self.settings['training']['minStep'], self.settings['training']['incStep'], self.updateAll)
         trainer.start()
         engines = self.playerAnalysisDB.engines()
         legits = self.playerAnalysisDB.legits()
@@ -131,14 +130,14 @@ class TrainAndEvaluate(threading.Thread):
         legits = Irwin.assessPlayers(legits)
 
         logging.warning("Calculating results")
-        falsePositives = FalsePositives([FalsePositive(fp.id, fp.activation()) for fp in legits if fp.isLegit() == False])
+        falsePositives = FalsePositives([FalsePositive(fp.id, fp.activation()) for fp in legits if fp.isLegit(self.settings['thresholds']) == False])
 
-        truePositive = sum([int(False == p.isLegit()) for p in engines]) # cheaters marked as cheaters
-        trueNegative = sum([int(True == p.isLegit()) for p in legits]) # legits not marked or left open
+        truePositive = sum([int(False == p.isLegit(self.settings['thresholds'])) for p in engines]) # cheaters marked as cheaters
+        trueNegative = sum([int(True == p.isLegit(self.settings['thresholds'])) for p in legits]) # legits not marked or left open
         falsePositive = len(falsePositives.falsePositives) # legits marked as engines
-        falseNegative = sum([int(True == p.isLegit()) for p in engines]) # cheaters marked as legits
-        indeciseEngines = sum([int(p.isLegit() is None) for p in engines])
-        indeciseLegits = sum([int(p.isLegit() is None) for p in legits])
+        falseNegative = sum([int(True == p.isLegit(self.settings['thresholds'])) for p in engines]) # cheaters marked as legits
+        indeciseEngines = sum([int(p.isLegit(self.settings['thresholds']) is None) for p in engines])
+        indeciseLegits = sum([int(p.isLegit(self.settings['thresholds']) is None) for p in legits])
 
         logging.warning("Writing training stats")
         self.trainingStatsDB.write(TrainingStats(

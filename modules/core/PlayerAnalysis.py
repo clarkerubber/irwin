@@ -49,31 +49,31 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', ['id', 'titled', 'engine', 'ga
       return numpy.mean(retained)
     return 0
 
-  def report(self):
+  def report(self, thresholds):
     return {
       'userId': self.id,
-      'isLegit': self.isLegit(),
+      'isLegit': self.isLegit(thresholds),
       'activation': int(self.activation()),
       'pv0ByAmbiguity': self.gameAnalyses.pv0ByAmbiguityStats(),
       'games': self.gameAnalyses.reportDicts()
     }
 
-  def isLegit(self):
+  def isLegit(self, thresholds):
     gamesAnalysed = len(self.gameAnalyses.gameAnalyses)
 
     noOutlierAverages = self.gameAnalyses.assessmentNoOutlierAverages()
 
-    susGames = sum([int(a > 62) for a in noOutlierAverages])
-    verySusGames = sum([int(a > 75) for a in noOutlierAverages])
+    susGames = sum([int(a > thresholds['averages']['suspicious']) for a in noOutlierAverages])
+    verySusGames = sum([int(a > thresholds['averages']['verysuspicious']) for a in noOutlierAverages])
 
-    legitGames = sum([int(a < 35) for a in noOutlierAverages])
+    legitGames = sum([int(a < thresholds['averages']['legit']) for a in noOutlierAverages])
 
     if ((verySusGames >= (1/5)*gamesAnalysed
         or susGames >= (2/5)*gamesAnalysed
-        or (self.PVAssessment > 70 and susGames >= (1/5)*gamesAnalysed))
+        or (self.PVAssessment > thresholds['pvs']['suspicious'] and susGames >= (1/5)*gamesAnalysed))
       and gamesAnalysed > 0 and not self.titled):
       return False
-    elif legitGames == gamesAnalysed and self.PVAssessment < 40 and gamesAnalysed > 0:
+    elif legitGames == gamesAnalysed and self.PVAssessment < thresholds['pvs']['legit'] and gamesAnalysed > 0:
       return True # Player is legit
     return None # Player falls into a grey area
 
