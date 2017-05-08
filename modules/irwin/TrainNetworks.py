@@ -7,23 +7,25 @@ from modules.irwin.ChunkAssessment import ChunkAssessment
 from modules.irwin.PVAssessment import PVAssessment
 
 class TrainNetworks(threading.Thread):
-  def __init__(self, api, playerAnalysisDB, minTrainingSteps, incTrainingSteps, updateAll):
+  def __init__(self, api, playerAnalysisDB, minTrainingSteps, incTrainingSteps, updateAll, trainOnly):
     threading.Thread.__init__(self)
     self.api = api
     self.playerAnalysisDB = playerAnalysisDB
     self.minTrainingSteps = minTrainingSteps
     self.incTrainingSteps = incTrainingSteps
     self.updateAll = updateAll
+    self.trainOnly = trainOnly
 
   def run(self):
-    updatePlayerEngineStatus(self.api, self.playerAnalysisDB, self.updateAll)
-    sortedUsers = self.playerAnalysisDB.balancedSorted()
-    self.classifyMoves(sortedUsers)
-    self.classifyMoveChunks(sortedUsers)
-    self.classifyPVs(sortedUsers)
-    MoveAssessment.learn(self.minTrainingSteps, self.incTrainingSteps)
-    ChunkAssessment.learn(self.minTrainingSteps, self.incTrainingSteps)
-    PVAssessment.learn(self.minTrainingSteps, self.incTrainingSteps)
+    if not self.trainOnly:
+      updatePlayerEngineStatus(self.api, self.playerAnalysisDB, self.updateAll)
+      sortedUsers = self.playerAnalysisDB.balancedSorted()
+      self.classifyMoves(sortedUsers)
+      self.classifyMoveChunks(sortedUsers)
+      self.classifyPVs(sortedUsers)
+      MoveAssessment.learn(self.minTrainingSteps, self.incTrainingSteps)
+      ChunkAssessment.learn(self.minTrainingSteps, self.incTrainingSteps)
+      PVAssessment.learn(self.minTrainingSteps, self.incTrainingSteps)
 
   def classifyMoves(self, playerAnalyses):
     entries = []
