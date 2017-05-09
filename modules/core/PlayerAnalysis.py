@@ -71,9 +71,9 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', ['id', 'titled', 'engine', 'ga
     if ((verySusGames >= (1/5)*gamesAnalysed
         or susGames >= (2/5)*gamesAnalysed
         or (self.PVAssessment > thresholds['pvs']['suspicious'] and susGames >= (1/5)*gamesAnalysed))
-      and gamesAnalysed > 4 and not self.titled):
+      and gamesAnalysed > 2 and not self.titled):
       return False
-    elif legitGames == gamesAnalysed and self.PVAssessment < thresholds['pvs']['legit'] and gamesAnalysed > 3:
+    elif legitGames == gamesAnalysed and self.PVAssessment < thresholds['pvs']['legit'] and gamesAnalysed > 2:
       return True # Player is legit
     return None # Player falls into a grey area
 
