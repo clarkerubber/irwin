@@ -69,7 +69,7 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', ['id', 'titled', 'engine', 'ga
     legitGames = sum([int(a < thresholds['averages']['legit']) for a in noOutlierAverages])
 
     if ((verySusGames >= (1/5)*gamesAnalysed
-        or susGames >= (2/5)*gamesAnalysed
+        or (susGames >= (2/5)*gamesAnalysed and gamesAnalysed > 1)
         or (self.PVAssessment > thresholds['pvs']['suspicious'] and susGames >= (1/5)*gamesAnalysed))
       and gamesAnalysed > 0 and not self.titled):
       return False
