@@ -45,6 +45,7 @@ pip3 install pymongo python-chess numpy requests
       "averages": {
         "suspicious": 60,
         "verysuspicious": 75,
+        "exceptional": 85,
         "legit": 40
       },
       "pvs": {

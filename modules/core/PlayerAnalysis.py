@@ -65,13 +65,16 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', ['id', 'titled', 'engine', 'ga
 
     susGames = sum([int(a > thresholds['averages']['suspicious']) for a in noOutlierAverages])
     verySusGames = sum([int(a > thresholds['averages']['verysuspicious']) for a in noOutlierAverages])
+    exceptionalGames = sum([int(a > thresholds['averages']['exceptional']) for a in noOutlierAverages])
 
     legitGames = sum([int(a < thresholds['averages']['legit']) for a in noOutlierAverages])
 
-    if ((verySusGames >= (1/5)*gamesAnalysed
-        or susGames >= (2/5)*gamesAnalysed
-        or (self.PVAssessment > thresholds['pvs']['suspicious'] and susGames >= (1/5)*gamesAnalysed))
-      and gamesAnalysed > 2 and not self.titled):
+    if ((
+        (exceptionalGames >= (1/10)*gamesAnalysed and gamesAnalysed > 0)
+        or (verySusGames >= (1/5)*gamesAnalysed and gamesAnalysed > 1)
+        or (susGames >= (2/5)*gamesAnalysed and gamesAnalysed > 2)
+        or (self.PVAssessment > thresholds['pvs']['suspicious'] and susGames >= (1/5)*gamesAnalysed and gamesAnalysed > 2))
+        and not self.titled):
       return False
     elif legitGames == gamesAnalysed and self.PVAssessment < thresholds['pvs']['legit'] and gamesAnalysed > 2:
       return True # Player is legit
