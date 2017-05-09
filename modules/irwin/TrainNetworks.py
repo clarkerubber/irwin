@@ -17,6 +17,8 @@ class TrainNetworks(threading.Thread):
     self.trainOnly = trainOnly
 
   def run(self):
+    if self.trainOnly and self.updateAll:
+      updatePlayerEngineStatus(self.api, self.playerAnalysisDB, self.updateAll)
     if not self.trainOnly:
       updatePlayerEngineStatus(self.api, self.playerAnalysisDB, self.updateAll)
       sortedUsers = self.playerAnalysisDB.balancedSorted()
