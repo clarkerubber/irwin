@@ -97,7 +97,7 @@ while True and not settings.noanalyse and not settings.testonly:
   if not settings.noassess:
     playerAnalysis = env.irwin.assessPlayer(PlayerAnalysis(
       id = userId,
-      titled = 'titled' in playerData['assessment']['user'].keys(),
+      titled = 'title' in playerData['assessment']['user'].keys(),
       engine = None,
       gamesPlayed = playerData['assessment']['user']['games'],
       closedReports = sum(int(r.get('processedBy', None) is not None) for r in playerData['history'] if r['type'] == 'report' and r['data']['reason'] == 'cheat'),
