@@ -10,6 +10,12 @@ pip3 install pymongo python-chess numpy requests
 ```
 - **tensorflow** : [tensorflow installation guide](https://www.tensorflow.org/install)
 
+#### Optional
+For use with graphing tools.
+```sh
+pip3 install matplotlib
+```
+
 ### Database
 - **mongodb** : [mongodb installation guide](https://docs.mongodb.com/manual/installation/)
 
