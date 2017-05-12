@@ -72,7 +72,7 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', [
 
   def activation(self):
     if self.PVOverallAssessment is not None:
-      return (self.PVOverallAssessment + self.anoaActivation()) / 2
+      return ((self.PVOverallAssessment/100)**2 + (self.anoaActivation()/100)**2)**0.5
     return 0
 
   def anoaActivation(self):
