@@ -107,8 +107,8 @@ class GameAnalysis:
   def normalisedAssessedMoves(self):
     if self.assessed: # bear with me here. Average of the move (40%) and all the chunks that cover it (60%).
       return [(
-        0.40 * assessedMove.activation + 
-        0.60 * GameAnalysis.averageChunks(self.assessedChunks[max(0,move-10):min(len(self.assessedChunks),move+1)])
+        0.30 * assessedMove.activation + 
+        0.70 * GameAnalysis.averageChunks(self.assessedChunks[max(0,move-10):min(len(self.assessedChunks),move+1)])
       ) for move, assessedMove in enumerate(self.assessedMoves)]
     return []
 
