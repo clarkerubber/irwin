@@ -104,7 +104,8 @@ while True and not settings.noanalyse and not settings.testonly:
       gameAnalyses = gameAnalyses,
       PVAssessment = None,
       PVDrawAssessment = None,
-      PVLosingAssessment = None))
+      PVLosingAssessment = None,
+      PVOverallAssessment = None))
 
   env.playerAnalysisDB.write(playerAnalysis)
   if not settings.noreport:
