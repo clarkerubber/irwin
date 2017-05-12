@@ -19,9 +19,9 @@ from modules.core.GameAnalyses import GameAnalyses
 
 
 class Irwin(namedtuple('Irwin', ['api', 'learner', 'trainingStatsDB', 'playerAnalysisDB', 'falsePositivesDB', 'settings'])):
-  def train(self, forcetrain, updateAll, testOnly): # runs forever
-    if self.learner or testOnly:
-      TrainAndEvaluate(self.api, self.trainingStatsDB, self.playerAnalysisDB, self.falsePositivesDB, self.settings, forcetrain, updateAll, testOnly).start()
+  def train(self, forcetrain, updateAll, testOnly, fastTest): # runs forever
+    if self.learner or testOnly or fastTest:
+      TrainAndEvaluate(self.api, self.trainingStatsDB, self.playerAnalysisDB, self.falsePositivesDB, self.settings, forcetrain, updateAll, testOnly, fastTest).start()
 
   @staticmethod
   def assessGame(gameAnalysis):
@@ -133,7 +133,7 @@ class Irwin(namedtuple('Irwin', ['api', 'learner', 'trainingStatsDB', 'playerAna
     return outputPlayerAnalyses
 
 class TrainAndEvaluate(threading.Thread):
-  def __init__(self, api, trainingStatsDB, playerAnalysisDB, falsePositivesDB, settings, forcetrain, updateAll, testOnly):
+  def __init__(self, api, trainingStatsDB, playerAnalysisDB, falsePositivesDB, settings, forcetrain, updateAll, testOnly, fastTest):
     threading.Thread.__init__(self)
     self.api = api
     self.trainingStatsDB = trainingStatsDB
@@ -143,11 +143,12 @@ class TrainAndEvaluate(threading.Thread):
     self.forcetrain = forcetrain
     self.updateAll = updateAll
     self.testOnly = testOnly
+    self.fastTest = fastTest
 
   def run(self):
     while True:
       time.sleep(10)
-      if self.outOfDate() or self.forcetrain or self.testOnly:
+      if self.outOfDate() or self.forcetrain or self.testOnly or self.fastTest:
         logging.warning("OUT OF DATE: UPDATING!")
         trainer = TrainNetworks(self.api, self.playerAnalysisDB, self.settings['training']['minStep'], self.settings['training']['incStep'], self.updateAll, self.testOnly)
         trainer.start()
@@ -156,8 +157,9 @@ class TrainAndEvaluate(threading.Thread):
         legits = self.playerAnalysisDB.legits()
         unsorted = self.playerAnalysisDB.countUnsorted()
         logging.warning("Assessing new networks")
-        engines = Irwin.assessPlayers(engines)
-        legits = Irwin.assessPlayers(legits)
+        if not self.fastTest:
+          engines = Irwin.assessPlayers(engines)
+          legits = Irwin.assessPlayers(legits)
 
         logging.warning("Calculating results")
         falsePositives = FalsePositives([FalsePositive(fp.id, fp.activation()) for fp in legits if fp.isLegit(self.settings['thresholds']) == False])

@@ -38,6 +38,8 @@ parser.add_argument("--update-all", dest="updateall", nargs="?",
                     default=False, const=True, help="update the engine status for all players in the db")
 parser.add_argument("--test-only", dest="testonly", nargs="?",
                     default=False, const=True, help="only test the neural networks performance")
+parser.add_argument("--fast-test", dest="fasttest", nargs="?",
+                    default=False, const=True, help="test networks without re-assessing")
 parser.add_argument("--quiet", dest="loglevel",
                     default=logging.DEBUG, action="store_const", const=logging.INFO,
                     help="substantially reduce the number of logged messages")
@@ -60,9 +62,9 @@ logging.getLogger("requests.packages.urllib3").setLevel(logging.WARNING)
 logging.getLogger("chess.uci").setLevel(logging.WARNING)
 
 env = Env(config)
-env.irwin.train(settings.forcetrain, settings.updateall, settings.testonly)
+env.irwin.train(settings.forcetrain, settings.updateall, settings.testonly, settings.fasttest)
 
-while True and not settings.noanalyse and not settings.testonly:
+while True and not settings.noanalyse and not settings.testonly and not settings.fasttest:
   # Get player data
   userId = env.api.getPlayerId()
   playerData = env.api.getPlayerData(userId)
