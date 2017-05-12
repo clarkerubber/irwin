@@ -92,24 +92,25 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', [
     }
 
   def isLegit(self, thresholds):
-    gamesAnalysed = len(self.gameAnalyses.gameAnalyses)
+    if self.PVOverallAssessment is not None:
+      gamesAnalysed = len(self.gameAnalyses.gameAnalyses)
 
-    noOutlierAverages = self.gameAnalyses.assessmentNoOutlierAverages()
+      noOutlierAverages = self.gameAnalyses.assessmentNoOutlierAverages()
 
-    susGames = sum([int(a > thresholds['averages']['suspicious']) for a in noOutlierAverages])
-    verySusGames = sum([int(a > thresholds['averages']['verysuspicious']) for a in noOutlierAverages])
-    exceptionalGames = sum([int(a > thresholds['averages']['exceptional']) for a in noOutlierAverages])
+      susGames = sum([int(a > thresholds['averages']['suspicious']) for a in noOutlierAverages])
+      verySusGames = sum([int(a > thresholds['averages']['verysuspicious']) for a in noOutlierAverages])
+      exceptionalGames = sum([int(a > thresholds['averages']['exceptional']) for a in noOutlierAverages])
 
-    legitGames = sum([int(a < thresholds['averages']['legit']) for a in noOutlierAverages])
+      legitGames = sum([int(a < thresholds['averages']['legit']) for a in noOutlierAverages])
 
-    if not self.titled and (
-      (exceptionalGames >= (1/10)*gamesAnalysed and gamesAnalysed > 0)
-      or (verySusGames >= (1/5)*gamesAnalysed and gamesAnalysed > 1)
-      or (susGames >= (2/5)*gamesAnalysed and gamesAnalysed > 2)
-      or (self.PVOverallAssessment > thresholds['pvs']['suspicious'] and self.anoaActivation() > 65 and gamesAnalysed > 2)):
-      return False
-    elif legitGames == gamesAnalysed and self.PVAssessment < thresholds['pvs']['legit'] and gamesAnalysed > 2:
-      return True # Player is legit
+      if not self.titled and (
+        (exceptionalGames >= (1/10)*gamesAnalysed and gamesAnalysed > 0)
+        or (verySusGames >= (1/5)*gamesAnalysed and gamesAnalysed > 1)
+        or (susGames >= (2/5)*gamesAnalysed and gamesAnalysed > 2)
+        or (self.PVOverallAssessment > thresholds['pvs']['suspicious'] and self.anoaActivation() > 65 and gamesAnalysed > 2)):
+        return False
+      elif legitGames == gamesAnalysed and self.PVAssessment < thresholds['pvs']['legit'] and gamesAnalysed > 2:
+        return True # Player is legit
     return None # Player falls into a grey area
 
 class PlayerAnalysisBSONHandler:
