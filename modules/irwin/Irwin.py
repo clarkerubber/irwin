@@ -47,7 +47,7 @@ class Irwin(namedtuple('Irwin', ['api', 'learner', 'trainingStatsDB', 'playerAna
     irwinReportPV = PVAssessment.applyNet([playerAnalysis1.tensorInputPVs()])[0]
     irwinReportPVDraw = PVDrawAssessment.applyNet([playerAnalysis1.tensorInputPVs()])[0]
     irwinReportPVLosing = PVLosingAssessment.applyNet([playerAnalysis1.tensorInputPVs()])[0]
-    irwinReportPVOverall = PVOverallAssessment.applyNet([[irwinReportPV, irwinReportPVDraw, irwinReportPVLosing]])[0]
+    irwinReportPVOverall = PVOverallAssessment.applyNet([[irwinReportPV.activation, irwinReportPVDraw.activation, irwinReportPVLosing.activation]])[0]
     
     return PlayerAnalysis(
       id = playerAnalysis1.id,
@@ -67,7 +67,7 @@ class Irwin(namedtuple('Irwin', ['api', 'learner', 'trainingStatsDB', 'playerAna
     return [val for sublist in listOfLists for val in sublist]
 
   @staticmethod
-  def assessPlayers(playerAnalyses): # fast mode
+  def assessPlayers(playerAnalyses): # fast and ugly mode
     moves = []
     chunks = []
     for playerAnalysis in playerAnalyses:
