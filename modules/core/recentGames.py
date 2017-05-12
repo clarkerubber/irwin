@@ -10,9 +10,10 @@ def recentGames(playerAssessments, gameJSONs):
     gs2 = []
     for playerAssessment in playerAssessments.playerAssessments:
       gameJSON = gameJSONs.get(playerAssessment.gameId, None)
-      pgn = gameJSON.get('pgn', '')
-      if gameJSON is not None and 'variant' not in gameJSON and 'emts' in gameJSON and gameLength(pgn) > 44:
-        gs1.append(Game(playerAssessment.gameId, pgn, gameJSON['emts']))
+      if gameJSON is not None:
+        pgn = gameJSON.get('pgn', '')
+        if 'variant' not in gameJSON and 'emts' in gameJSON and gameLength(pgn) > 44:
+          gs1.append(Game(playerAssessment.gameId, pgn, gameJSON['emts']))
     games1 = Games(gs1[:5])
     
     for gameId, gameJSON in gameJSONs.items():
