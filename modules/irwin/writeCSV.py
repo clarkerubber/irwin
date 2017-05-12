@@ -6,8 +6,7 @@ def writeClassifiedMovesCSV(entries):
     writer = csv.writer(fh, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
     writer.writerow(['engine', 'moveNumber', 'rank', 'loss', 'advantage', 'ambiguity', 'timeConsistent', 'emt'])
     shuffle(entries)
-    [writer.writerow(entry) for entry in entries]
-      
+    [writer.writerow(entry) for entry in entries]     
 
 def writeClassifiedMoveChunksCSV(entries):
   with open('data/classified-move-chunks.csv', 'w') as fh:
@@ -27,10 +26,30 @@ def writeClassifiedMoveChunksCSV(entries):
     shuffle(entries)
     [writer.writerow(entry) for entry in entries]
 
-
 def writeClassifiedPVsCSV(entries):
   with open('data/classified-pvs.csv', 'w') as fh:
     writer = csv.writer(fh, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
     writer.writerow(['engine', 'amb1', 'amb2', 'amb3', 'amb4', 'amb5'])
+    shuffle(entries)
+    [writer.writerow(entry) for entry in entries]
+
+def writeClassifiedPVsDrawishCSV(entries):
+  with open('data/classified-pvs-drawish.csv', 'w') as fh:
+    writer = csv.writer(fh, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+    writer.writerow(['engine', 'T1', 'T2', 'T3', 'T4', 'T5'])
+    shuffle(entries)
+    [writer.writerow(entry) for entry in entries]
+
+def writeClassifiedPVsLosingCSV(entries):
+  with open('data/classified-pvs-losing.csv', 'w') as fh:
+    writer = csv.writer(fh, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+    writer.writerow(['engine', 'T1', 'T2', 'T3', 'T4', 'T5'])
+    shuffle(entries)
+    [writer.writerow(entry) for entry in entries]
+
+def writeClassifiedPVsOverallCSV(entries):
+  with open('data/classified-pvs-overall.csv', 'w') as fh:
+    writer = csv.writer(fh, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+    writer.writerow(['engine', 'PV', 'PVDraw', 'PVLosing'])
     shuffle(entries)
     [writer.writerow(entry) for entry in entries]

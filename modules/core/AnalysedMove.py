@@ -34,11 +34,35 @@ class AnalysedMove(namedtuple('AnalysedMove', ['uci', 'move', 'emt', 'score', 'a
   def ambiguity(self): # 1 = only one top move, 5 = all moves good
     return sum(int(similarChances(winningChances(self.top().score), winningChances(analysis.score))) for analysis in self.analyses)
 
+  def broadAmbiguity(self):
+    return sum(int(roughChances(winningChances(self.top().score), winningChances(analysis.score))) for analysis in self.analyses)
+
   def rank(self):
     return next((x for x, am in enumerate(self.analyses) if am.uci == self.uci), 2*len(self.analyses))
 
   def trueRank(self):
     return next((x+1 for x, am in enumerate(self.analyses) if am.uci == self.uci), None)
+
+  def onlyMove(self):
+    if len(self.analyses) == 1:
+      return True
+    if winningChances(self.top().score) - winningChances(self.analyses[1].score) > 0.2: # second move loses more than 20% winning chances
+      return True
+    return False
+
+  def drawish(self):
+    topWinningChances = winningChances(self.top().score)
+    if topWinningChances > -0.1 and topWinningChances < 0.1: # Within 10% winning chances either way
+      return True
+    return False
+
+  def losing(self):
+    if winningChances(self.top().score) < 0.1:
+      return True
+    return False
+
+  def blunder(self):
+    return self.winningChancesLoss() > 0.2 # Loses more than 20% adv
 
 def winningChances(score):
   if score.mate is not None:
@@ -48,6 +72,9 @@ def winningChances(score):
 
 def similarChances(c1, c2):
   return abs(c1 - c2) < 0.05
+
+def roughChances(c1, c2):
+  return abs(c1 - c2) < 0.1
 
 class AnalysisBSONHandler:
   @staticmethod

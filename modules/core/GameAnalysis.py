@@ -156,6 +156,12 @@ class GameAnalysis:
   def pv0ByAmbiguityStats(self): # [{sum of pv0 moves given X ambiguity, amount of positions with X ambiguity}]
     return [(self.pv0ByAmbiguity(ambiguity), self.ambiguitySum(ambiguity)) for ambiguity in range (1, 6)]
 
+  def pvsDraw(self):
+    return [analysedMove.trueRank() for analysedMove in self.analysedMoves if analysedMove.drawish() and not analysedMove.onlyMove()]
+
+  def pvsLosing(self):
+    return [analysedMove.trueRank() for analysedMove in self.analysedMoves if analysedMove.losing() and not analysedMove.onlyMove()]
+
 def gameAnalysisId(gameId, white):
   return gameId + '/' + ('white' if white else 'black')
 

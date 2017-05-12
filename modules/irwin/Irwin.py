@@ -9,6 +9,9 @@ from modules.irwin.TrainNetworks import TrainNetworks
 from modules.irwin.MoveAssessment import MoveAssessment
 from modules.irwin.ChunkAssessment import ChunkAssessment
 from modules.irwin.PVAssessment import PVAssessment
+from modules.irwin.PVDrawAssessment import PVDrawAssessment
+from modules.irwin.PVLosingAssessment import PVLosingAssessment
+from modules.irwin.PVOverallAssessment import PVOverallAssessment
 from modules.irwin.TrainingStats import TrainingStats, Accuracy, Sample
 from modules.irwin.FalsePositives import FalsePositive, FalsePositives
 from modules.core.PlayerAnalysis import PlayerAnalysis
@@ -29,7 +32,7 @@ class Irwin(namedtuple('Irwin', ['api', 'learner', 'trainingStatsDB', 'playerAna
 
   @staticmethod
   def assessPlayer(playerAnalysis):
-    outputPlayerAnalysis = PlayerAnalysis(
+    playerAnalysis1 = PlayerAnalysis(
       id = playerAnalysis.id,
       titled = playerAnalysis.titled,
       engine = playerAnalysis.engine,
@@ -37,16 +40,26 @@ class Irwin(namedtuple('Irwin', ['api', 'learner', 'trainingStatsDB', 'playerAna
       closedReports = playerAnalysis.closedReports,
       gameAnalyses = GameAnalyses([Irwin.assessGame(gameAnalysis) for gameAnalysis in playerAnalysis.gameAnalyses.gameAnalyses]),
       PVAssessment = None,
+      PVDrawAssessment = None,
+      PVLosingAssessment = None,
+      PVOverallAssessment = None
     )
-    irwinReport = PVAssessment.applyNet([outputPlayerAnalysis.tensorInputPVs()])[0]
+    irwinReportPV = PVAssessment.applyNet([playerAnalysis1.tensorInputPVs()])[0]
+    irwinReportPVDraw = PVDrawAssessment.applyNet([playerAnalysis1.tensorInputPVs()])[0]
+    irwinReportPVLosing = PVLosingAssessment.applyNet([playerAnalysis1.tensorInputPVs()])[0]
+    irwinReportPVOverall = PVOverallAssessment.applyNet([[irwinReportPV, irwinReportPVDraw, irwinReportPVLosing]])[0]
+    
     return PlayerAnalysis(
-      id = playerAnalysis.id,
-      titled = playerAnalysis.titled,
-      engine = playerAnalysis.engine,
-      gamesPlayed = playerAnalysis.gamesPlayed,
-      closedReports = playerAnalysis.closedReports,
-      gameAnalyses = outputPlayerAnalysis.gameAnalyses,
-      PVAssessment = irwinReport.activation
+      id = playerAnalysis1.id,
+      titled = playerAnalysis1.titled,
+      engine = playerAnalysis1.engine,
+      gamesPlayed = playerAnalysis1.gamesPlayed,
+      closedReports = playerAnalysis1.closedReports,
+      gameAnalyses = playerAnalysis1.gameAnalyses,
+      PVAssessment = irwinReportPV.activation,
+      PVDrawAssessment = irwinReportPVLosing.activation,
+      PVLosingAssessment = irwinReportPVDraw.activation,
+      PVOverallAssessment = irwinReportPVOverall.activation
     )
 
   @staticmethod
@@ -86,12 +99,25 @@ class Irwin(namedtuple('Irwin', ['api', 'learner', 'trainingStatsDB', 'playerAna
         gamesPlayed = playerAnalysis.gamesPlayed,
         closedReports = playerAnalysis.closedReports,
         gameAnalyses = outputGameAnalyses,
-        PVAssessment = playerAnalysis.PVAssessment
+        PVAssessment = playerAnalysis.PVAssessment,
+        PVDrawAssessment = playerAnalysis.PVDrawAssessment,
+        PVLosingAssessment = playerAnalysis.PVLosingAssessment,
+        PVOverallAssessment = playerAnalysis.PVOverallAssessment
       ))
     pvTensors = [p.tensorInputPVs() for p in playerAnalyses1]
+    pvDrawTensors = [p.tensorInputPVsDraw() for p in playerAnalyses1]
+    pvLosingTensors = [p.tensorInputPVsLosing() for p in playerAnalyses1]
+
     assessedPVs = PVAssessment.applyNet(pvTensors)
+    assessedDrawPVs = PVDrawAssessment.applyNet(pvDrawTensors)
+    assessedLosingPVs = PVLosingAssessment.applyNet(pvLosingTensors)
+
+    pvOverallTensors = [[pv.activation, pvDraw.activation, pvLosing.activation] for pv, pvDraw, pvLosing in zip(assessedPVs, assessedDrawPVs, assessedLosingPVs)]
+
+    assessedOverallPVs = PVOverallAssessment.applyNet(pvOverallTensors)
+
     outputPlayerAnalyses = []
-    for playerAnalysis, playerAnalysis1, irwinReport in zip(playerAnalyses, playerAnalyses1, assessedPVs):
+    for playerAnalysis, playerAnalysis1, irwinReportPV, irwinReportPVDraw, irwinReportPVLosing, irwinReportPVOverall in zip(playerAnalyses, playerAnalyses1, assessedPVs, assessedDrawPVs, assessedLosingPVs, assessedOverallPVs):
       outputPlayerAnalyses.append(PlayerAnalysis(
         id = playerAnalysis.id,
         titled = playerAnalysis.titled,
@@ -99,7 +125,10 @@ class Irwin(namedtuple('Irwin', ['api', 'learner', 'trainingStatsDB', 'playerAna
         gamesPlayed = playerAnalysis.gamesPlayed,
         closedReports = playerAnalysis.closedReports,
         gameAnalyses = playerAnalysis1.gameAnalyses,
-        PVAssessment = irwinReport.activation
+        PVAssessment = irwinReportPV.activation,
+        PVDrawAssessment = irwinReportPVDraw.activation,
+        PVLosingAssessment = irwinReportPVLosing.activation,
+        PVOverallAssessment = irwinReportPVOverall.activation
       ))
     return outputPlayerAnalyses
 

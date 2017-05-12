@@ -30,6 +30,30 @@ class GameAnalyses:
     [chunks.extend(gameAnalysis.tensorInputChunks()) for gameAnalysis in self.gameAnalyses]
     return chunks
 
+  def tensorInputPVsDraw(self): # borrowing from the PGN spy approach a little bit
+    pvs = [] # all of the PV ranks for positions that match
+    ts = [0, 0, 0, 0, 0] # counted PVs
+    [pvs.extend(gameAnalysis.pvsDraw()) for gameAnalysis in self.gameAnalyses]
+    for r in pvs:
+      if r in range(1, 6):
+        ts[r - 1] += 1 # Count how often each ranked PV appears
+    output = [0, 0, 0, 0, 0]
+    for r, t in enumerate(ts):
+      output[r] = int(100 * t / max(1, len(pvs)))
+    return output
+
+  def tensorInputPVsLosing(self):
+    pvs = [] # all of the PV ranks for positions that match
+    ts = [0, 0, 0, 0, 0] # counted PVs
+    [pvs.extend(gameAnalysis.pvsLosing()) for gameAnalysis in self.gameAnalyses]
+    for r in pvs:
+      if r in range(1, 6):
+        ts[r - 1] += 1 # Count how often each ranked PV appears
+    output = [0, 0, 0, 0, 0]
+    for r, t in enumerate(ts):
+      output[r] = int(100 * t / max(1, len(pvs)))
+    return output
+
   def assessmentNoOutlierAverages(self):
     return [gameAnalysis.assessmentNoOutlierAverage() for gameAnalysis in self.gameAnalyses]
 
@@ -50,3 +74,8 @@ class GameAnalyses:
       else:
         outputStats[i] = None
     return outputStats
+
+  def broadAmbiguities(self):
+    ambiguities = []
+    [ambiguities.extend(gameAnalysis.broadAmbiguities()) for gameAnalysis in self.gameAnalyses]
+    return ambiguities
