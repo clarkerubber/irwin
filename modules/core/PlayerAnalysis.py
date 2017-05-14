@@ -72,9 +72,9 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', [
   def CSVPVsLosing(self):
     return [int(self.engine)] + self.tensorInputPVsLosing()
 
-  def CSVPVsOverallAssessment(self):
-    if self.tensorInputPVsOverallAssessment() is not None:
-      return [int(self.engine)] + self.tensorInputPVsOverallAssessment()
+  def CSVPVsOverall(self):
+    if self.tensorInputPVsOverall() is not None:
+      return [int(self.engine)] + self.tensorInputPVsOverall()
     return None
 
   def CSVOverallAssessment(self):
