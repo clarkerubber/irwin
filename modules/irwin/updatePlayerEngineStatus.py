@@ -36,12 +36,12 @@ class PlayerEngineStatusBus(threading.Thread):
       r = requests.get(self.url + 'irwin/stream?api_key=' + self.token, stream=True)
       for line in r.iter_lines():
         lineDict = json.loads(line.decode("utf-8"))
-        user = self.playerAnalysisDB.byId(lineDict['user'])
-        if user is not None:
+        playerAnalysis = self.playerAnalysisDB.byId(lineDict['user'])
+        if playerAnalysis is not None:
           if lineDict['t'] == 'mark':
-            userModified = user.setEngine(lineDict['value'])
-            self.playerAnalysisDB.write(userModified)
-          if lineDict['t'] == 'report':
-            userModified = user.setEngine(None)
-            self.playerAnalysisDB.write(userModified)
+            playerAnalysis1 = playerAnalysis.setEngine(lineDict['value'])
+            self.playerAnalysisDB.write(playerAnalysis1)
+          if lineDict['t'] == 'report' and playerAnalysis.engine == False:
+            playerAnalysis1 = playerAnalysis.setEngine(None)
+            self.playerAnalysisDB.write(playerAnalysis1)
 
