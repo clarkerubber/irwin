@@ -7,7 +7,8 @@ import numpy
 
 class PlayerAnalysis(namedtuple('PlayerAnalysis', [
   'id', 'titled', 'engine', 'gamesPlayed', 'closedReports', 'gameAnalyses',
-  'PVAssessment', 'PVDrawAssessment', 'PVLosingAssessment', 'PVOverallAssessment'])): # id = userId, engine = (True | False | None)
+  'PVAssessment', 'PVDrawAssessment', 'PVLosingAssessment', 'PVOverallAssessment',
+  'overallAssessment'])): # id = userId, engine = (True | False | None)
   def setEngine(self, engine):
     return PlayerAnalysis(
       id = self.id,
@@ -19,7 +20,8 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', [
       PVAssessment = self.PVAssessment,
       PVDrawAssessment = self.PVDrawAssessment,
       PVLosingAssessment = self.PVLosingAssessment,
-      PVOverallAssessment = self.PVOverallAssessment)
+      PVOverallAssessment = self.PVOverallAssessment,
+      overallAssessment = self.overallAssessment)
 
   def tensorInputMoves(self):
     return self.gameAnalyses.tensorInputMoves()
@@ -39,6 +41,11 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', [
       if pv is None:
         pvs[i] = 0
     return pvs # should be a list of ints 5 items long
+
+  def tensorInputOverallAssessment(self):
+    if self.PVOverallAssessment is not None:
+      return [int(self.anoaActivation()), int(self.PVOverallAssessment)]
+    return None
 
   def tensorInputPVsOverall(self):
     pvs = [self.PVAssessment, self.PVDrawAssessment, self.PVLosingAssessment]
@@ -65,15 +72,15 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', [
   def CSVPVsLosing(self):
     return [int(self.engine)] + self.tensorInputPVsLosing()
 
-  def CSVPVsOverall(self):
-    if self.tensorInputPVsOverall() is not None:
-      return [int(self.engine)] + self.tensorInputPVsOverall()
+  def CSVPVsOverallAssessment(self):
+    if self.tensorInputPVsOverallAssessment() is not None:
+      return [int(self.engine)] + self.tensorInputPVsOverallAssessment()
     return None
 
-  def activation(self):
-    if self.PVOverallAssessment is not None:
-      return max(self.PVOverallAssessment, self.anoaActivation())
-    return 0
+  def CSVOverallAssessment(self):
+    if self.tensorInputOverallAssessment() is not None:
+      return [int(self.engine)] + self.tensorInputOverallAssessment()
+    return None
 
   def anoaActivation(self):
     anoa = sorted(self.gameAnalyses.assessmentNoOutlierAverages(), reverse=True)
@@ -86,7 +93,7 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', [
     return {
       'userId': self.id,
       'isLegit': self.isLegit(thresholds),
-      'activation': int(self.activation()),
+      'activation': int(self.overallAssessment),
       'pv0ByAmbiguity': self.gameAnalyses.pv0ByAmbiguityStats(),
       'games': self.gameAnalyses.reportDicts()
     }
@@ -107,9 +114,10 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', [
         (exceptionalGames >= (1/10)*gamesAnalysed and gamesAnalysed > 0)
         or (verySusGames >= (1/5)*gamesAnalysed and gamesAnalysed > 1)
         or (susGames >= (2/5)*gamesAnalysed and gamesAnalysed > 2)
-        or (self.PVOverallAssessment > thresholds['pvs']['suspicious'] and self.anoaActivation() > 65 and gamesAnalysed > 2)):
+        or (self.overallAssessment > thresholds['overall']['engine']
+          and gamesAnalysed > 2)):
         return False
-      elif legitGames == gamesAnalysed and self.PVAssessment < thresholds['pvs']['legit'] and gamesAnalysed > 2:
+      elif legitGames == gamesAnalysed and self.overallAssessment < thresholds['overall']['legit'] and gamesAnalysed > 2:
         return True # Player is legit
     return None # Player falls into a grey area
 
@@ -126,7 +134,8 @@ class PlayerAnalysisBSONHandler:
       PVAssessment = bson.get('PVAssessment', None),
       PVDrawAssessment = bson.get('PVDrawAssessment', None),
       PVLosingAssessment = bson.get('PVLosingAssessment', None),
-      PVOverallAssessment = bson.get('PVOverallAssessment', None))
+      PVOverallAssessment = bson.get('PVOverallAssessment', None),
+      overallAssessment = bson.get('overallAssessment', None))
 
   @staticmethod
   def writes(playerAnalysis):
@@ -140,6 +149,7 @@ class PlayerAnalysisBSONHandler:
       'PVDrawAssessment': playerAnalysis.PVDrawAssessment,
       'PVLosingAssessment': playerAnalysis.PVLosingAssessment,
       'PVOverallAssessment': playerAnalysis.PVOverallAssessment,
+      'overallAssessment': playerAnalysis.overallAssessment,
       'date': datetime.datetime.utcnow()
     }
 

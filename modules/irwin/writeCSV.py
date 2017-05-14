@@ -53,3 +53,10 @@ def writeClassifiedPVsOverallCSV(entries):
     writer.writerow(['engine', 'PV', 'PVDraw', 'PVLosing'])
     shuffle(entries)
     [writer.writerow(entry) for entry in entries]
+
+def writeClassifiedOverallAssessmentCSV(entries):
+  with open('data/classified-overall-assessment.csv', 'w') as fh:
+    writer = csv.writer(fh, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+    writer.writerow(['engine', 'ANOA', 'PV'])
+    shuffle(entries)
+    [writer.writerow(entry) for entry in entries]
