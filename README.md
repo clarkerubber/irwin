@@ -52,11 +52,11 @@ pip3 install matplotlib
         "suspicious": 60,
         "verysuspicious": 75,
         "exceptional": 85,
-        "legit": 40
-      },
-      "pvs": {
-        "suspicious": 70,
         "legit": 35
+      },
+      "overall": {
+        "engine": 80,
+        "legit": 40
       }
     }
   }
