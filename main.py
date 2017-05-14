@@ -13,7 +13,7 @@ from modules.core.PlayerAnalysis import PlayerAnalysis
 
 from modules.core.recentGames import recentGames
 
-from modules.irwin.updatePlayerEngineStatus import isEngine
+from modules.irwin.updatePlayerEngineStatus import isEngine, PlayerEngineStatusBus
 
 from Env import Env
 
@@ -63,6 +63,8 @@ logging.getLogger("chess.uci").setLevel(logging.WARNING)
 
 env = Env(config)
 env.irwin.train(settings.forcetrain, settings.updateall, settings.testonly, settings.fasttest)
+
+PlayerEngineStatusBus(env.playerAnalysisDB, config, settings.learn).start()
 
 while True and not settings.noanalyse and not settings.testonly and not settings.fasttest:
   # Get player data

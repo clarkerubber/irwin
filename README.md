@@ -130,6 +130,7 @@ python3 main.py [--quiet] [--learner] [--force-train] [--no-assess] [--no-analys
 [--no-report] analyse players, but do not post reports to lichess (safe-mode)
 [--update-all] instead of just getting the engine status of unsorted players, resort the entire database.
 [--test-only] just and only test the performance of the neural networks on players.
+[--fast-test] don't pass players through neural networks to performing testing. (use previous results. good when changing thresholds)
 ```
 
 For normal use in the command line `python3 main.py` is adequate.
