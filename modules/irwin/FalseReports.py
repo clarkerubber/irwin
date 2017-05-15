@@ -2,7 +2,7 @@ from collections import namedtuple
 import datetime
 
 FalseReport = namedtuple('FalseReport', ['id', 'activation'])
-FalsePositives = namedtuple('FalseReports', ['falsePositives', 'falseNegatives'])
+FalseReports = namedtuple('FalseReports', ['falsePositives', 'falseNegatives'])
 
 class FalseReportBSONHandler:
   @staticmethod
