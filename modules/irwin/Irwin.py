@@ -14,7 +14,7 @@ from modules.irwin.PVLosingAssessment import PVLosingAssessment
 from modules.irwin.PVOverallAssessment import PVOverallAssessment
 from modules.irwin.OverallAssessment import OverallAssessment
 from modules.irwin.TrainingStats import TrainingStats, Accuracy, Sample
-from modules.irwin.FalsePositives import FalsePositive, FalsePositives
+from modules.irwin.FalseReports import FalseReport, FalseReports
 from modules.core.PlayerAnalysis import PlayerAnalysis
 from modules.core.GameAnalyses import GameAnalyses
 
