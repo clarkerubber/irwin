@@ -71,6 +71,12 @@ class GameAnalysis:
     emt = self.game.emts[self.ply(moveNumber)]
     return not self.game.isEmtOutlier(emt)
 
+  def moveActivations(self):
+    return [move.activation for move in self.assessedMoves]
+
+  def chunkActivations(self):
+    return [chunk.activation for chunk in self.assessedChunks]
+
   def tensorInputChunks(self):
     allChunks = [[
         analysedMove.rank(),

@@ -53,6 +53,12 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', [
       return pvs
     return None
 
+  def moveActivations(self):
+    return self.gameAnalyses.moveActivations()
+
+  def chunkActivations(self):
+    return self.gameAnalyses.chunkActivations()
+
   def CSVMoves(self):
     moves = []
     [moves.append([int(self.engine)] + move) for move in self.tensorInputMoves()]
@@ -115,7 +121,8 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', [
         or (verySusGames >= (1/5)*gamesAnalysed and gamesAnalysed > 1)
         or (susGames >= (2/5)*gamesAnalysed and gamesAnalysed > 2)):
         return False
-      elif legitGames == gamesAnalysed and self.overallAssessment < thresholds['overall']['legit'] and gamesAnalysed > 2:
+      elif ((legitGames == gamesAnalysed and self.overallAssessment < thresholds['overall']['unlikelycheating'])
+        or self.overallAssessment < thresholds['overall']['legit']) and gamesAnalysed > 2:
         return True # Player is legit
     return None # Player falls into a grey area
 

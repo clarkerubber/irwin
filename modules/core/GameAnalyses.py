@@ -79,3 +79,13 @@ class GameAnalyses:
     ambiguities = []
     [ambiguities.extend(gameAnalysis.broadAmbiguities()) for gameAnalysis in self.gameAnalyses]
     return ambiguities
+
+  def moveActivations(self):
+    activations = []
+    [activations.extend(gameAnalysis.moveActivations()) for gameAnalysis in self.gameAnalyses]
+    return activations
+
+  def chunkActivations(self):
+    activations = []
+    [activations.extend(gameAnalysis.chunkActivations()) for gameAnalysis in self.gameAnalyses]
+    return activations
