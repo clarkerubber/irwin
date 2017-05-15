@@ -42,7 +42,7 @@ class Env:
     self.playerAssessmentColl = self.db.playerAssessment
     self.playerAnalysisColl = self.db.playerAnalysis
     self.trainingStatsColl = self.db.trainingStats
-    self.falsePositivesColl = self.db.falsePositives
+    self.falseReportsColl = self.db.falseReports
 
     # database abstraction
     self.gameDB = GameDB(self.gameColl)
@@ -50,7 +50,7 @@ class Env:
     self.gameAnalysisDB = GameAnalysisDB(self.GameAnalysisColl, self.gameDB, self.playerAssessmentDB)
     self.playerAnalysisDB = PlayerAnalysisDB(self.playerAnalysisColl, self.gameAnalysisDB)
     self.trainingStatsDB = TrainingStatsDB(self.trainingStatsColl)
-    self.falsePositivesDB = FalsePositivesDB(self.falsePositivesColl)
+    self.falseReportsDB = FalseReportsDB(self.falseReportsColl)
 
     # Irwin
     self.irwin = Irwin(
@@ -58,6 +58,6 @@ class Env:
       learner = settings['irwin']['learn'],
       trainingStatsDB = self.trainingStatsDB,
       playerAnalysisDB = self.playerAnalysisDB,
-      falsePositivesDB = self.falsePositivesDB,
+      falseReportsDB = self.falseReportsDB,
       settings = settings['irwin']
     )

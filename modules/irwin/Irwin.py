@@ -19,10 +19,10 @@ from modules.core.PlayerAnalysis import PlayerAnalysis
 from modules.core.GameAnalyses import GameAnalyses
 
 
-class Irwin(namedtuple('Irwin', ['api', 'learner', 'trainingStatsDB', 'playerAnalysisDB', 'falsePositivesDB', 'settings'])):
+class Irwin(namedtuple('Irwin', ['api', 'learner', 'trainingStatsDB', 'playerAnalysisDB', 'falseReportsDB', 'settings'])):
   def train(self, forcetrain, updateAll, testOnly, fastTest): # runs forever
     if self.learner or testOnly or fastTest:
-      TrainAndEvaluate(self.api, self.trainingStatsDB, self.playerAnalysisDB, self.falsePositivesDB, self.settings, forcetrain, updateAll, testOnly, fastTest).start()
+      TrainAndEvaluate(self.api, self.trainingStatsDB, self.playerAnalysisDB, self.falseReportsDB, self.settings, forcetrain, updateAll, testOnly, fastTest).start()
 
   @staticmethod
   def assessGame(gameAnalysis):
@@ -173,12 +173,12 @@ class Irwin(namedtuple('Irwin', ['api', 'learner', 'trainingStatsDB', 'playerAna
     return outputPlayerAnalyses
 
 class TrainAndEvaluate(threading.Thread):
-  def __init__(self, api, trainingStatsDB, playerAnalysisDB, falsePositivesDB, settings, forcetrain, updateAll, testOnly, fastTest):
+  def __init__(self, api, trainingStatsDB, playerAnalysisDB, falseReportsDB, settings, forcetrain, updateAll, testOnly, fastTest):
     threading.Thread.__init__(self)
     self.api = api
     self.trainingStatsDB = trainingStatsDB
     self.playerAnalysisDB = playerAnalysisDB
-    self.falsePositivesDB = falsePositivesDB
+    self.falseReportsDB = falseReportsDB
     self.settings = settings
     self.forcetrain = forcetrain
     self.updateAll = updateAll
@@ -202,12 +202,14 @@ class TrainAndEvaluate(threading.Thread):
           legits = Irwin.assessPlayers(legits)
 
         logging.warning("Calculating results")
-        falsePositives = FalsePositives([FalsePositive(fp.id, fp.overallAssessment) for fp in legits if fp.isLegit(self.settings['thresholds']) == False])
+        falseReports = FalseReports(
+          falsePositives = [FalseReport(fp.id, fp.overallAssessment) for fp in legits if fp.isLegit(self.settings['thresholds']) == False],
+          falseNegatives = [FalseReport(fn.id, fn.overallAssessment) for fn in engines if fn.isLegit(self.settings['thresholds']) == False])
 
         truePositive = sum([int(False == p.isLegit(self.settings['thresholds'])) for p in engines]) # cheaters marked as cheaters
         trueNegative = sum([int(True == p.isLegit(self.settings['thresholds'])) for p in legits]) # legits not marked or left open
-        falsePositive = len(falsePositives.falsePositives) # legits marked as engines
-        falseNegative = sum([int(True == p.isLegit(self.settings['thresholds'])) for p in engines]) # cheaters marked as legits
+        falsePositive = len(falseReports.falsePositives) # legits marked as engines
+        falseNegative = len(falseReports.falseNegatives) # cheaters marked as legits
         indeciseEngines = sum([int(p.isLegit(self.settings['thresholds']) is None) for p in engines])
         indeciseLegits = sum([int(p.isLegit(self.settings['thresholds']) is None) for p in legits])
 
@@ -222,7 +224,7 @@ class TrainAndEvaluate(threading.Thread):
             falseNegative = falseNegative,
             indeciseEngines = indeciseEngines,
             indeciseLegits = indeciseLegits)))
-        self.falsePositivesDB.write(falsePositives)
+        self.falseReportsDB.write(falseReports)
         logging.warning("Writing updated player assessments")
         self.playerAnalysisDB.lazyWriteMany(engines + legits)
 
