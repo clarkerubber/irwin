@@ -13,7 +13,7 @@ from modules.Api import Api
 
 from modules.irwin.Irwin import Irwin
 from modules.irwin.TrainingStats import TrainingStatsDB
-from modules.irwin.FalsePositives import FalsePositivesDB
+from modules.irwin.FalseReports import FalseReportsDB
 
 class Env:
   def __init__(self, settings):
