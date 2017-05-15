@@ -27,7 +27,7 @@ class FalseReportsBSONHandler:
   def writes(falseReports):
     return {
       'falsePositives': [FalseReportBSONHandler.writes(fp) for fp in falseReports.falsePositives],
-      'falseNegatives': [FalseReportBSONHandler.writes(fn) for fn in falseReports.falseNegatives]
+      'falseNegatives': [FalseReportBSONHandler.writes(fn) for fn in falseReports.falseNegatives],
       'date': datetime.datetime.utcnow()
     }
 
