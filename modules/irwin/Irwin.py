@@ -204,7 +204,7 @@ class TrainAndEvaluate(threading.Thread):
         logging.warning("Calculating results")
         falseReports = FalseReports(
           falsePositives = [FalseReport(fp.id, fp.overallAssessment) for fp in legits if fp.isLegit(self.settings['thresholds']) == False],
-          falseNegatives = [FalseReport(fn.id, fn.overallAssessment) for fn in engines if fn.isLegit(self.settings['thresholds']) == False])
+          falseNegatives = [FalseReport(fn.id, fn.overallAssessment) for fn in engines if fn.isLegit(self.settings['thresholds']) == True])
 
         truePositive = sum([int(False == p.isLegit(self.settings['thresholds'])) for p in engines]) # cheaters marked as cheaters
         trueNegative = sum([int(True == p.isLegit(self.settings['thresholds'])) for p in legits]) # legits not marked or left open
