@@ -24,7 +24,7 @@ class ChunkAssessment():
 
   @staticmethod
   def inputs():
-    inputList = ChunkAssessment.readCSV(800, [[0.0]]*62)
+    inputList = ChunkAssessment.readCSV(800, [[0.0]]*72)
     features = tf.transpose(tf.stack(inputList[1:]))
     cheat = tf.to_float(tf.equal(inputList[0], [1]))
     legit = tf.to_float(tf.equal(inputList[0], [0]))
@@ -33,7 +33,7 @@ class ChunkAssessment():
 
   @staticmethod
   def train(totalLoss):
-    learningRate = 0.001
+    learningRate = 0.0001
     return tf.train.AdamOptimizer(learningRate).minimize(totalLoss)
 
   @staticmethod
@@ -131,7 +131,7 @@ class ChunkAssessment():
     graph = tf.Graph()
     with graph.as_default():
       with tf.Session(graph=graph) as sess:
-        a = tf.placeholder(tf.float32, shape=[None, 61])
+        a = tf.placeholder(tf.float32, shape=[None, 71])
         infer = ChunkAssessment.inference(a)
         feedDict = {a: batch}
         ## initliase graph for running

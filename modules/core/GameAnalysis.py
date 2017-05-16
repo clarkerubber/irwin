@@ -84,7 +84,8 @@ class GameAnalysis:
         int(100*analysedMove.advantage()),
         analysedMove.ambiguity(),
         int(self.consistentMoveTime(analysedMove.move)),
-        int(analysedMove.emt)
+        int(analysedMove.emt),
+        int(1 if analysedMove.onlyMove() else -1)
     ] for analysedMove in self.analysedMoves]
 
     entries = []
@@ -102,7 +103,8 @@ class GameAnalysis:
       int(100*analysedMove.advantage()),
       analysedMove.ambiguity(),
       int(self.consistentMoveTime(analysedMove.move)),
-      int(analysedMove.emt)] for analysedMove in self.analysedMoves]
+      int(analysedMove.emt),
+      int(1 if analysedMove.onlyMove() else -1)] for analysedMove in self.analysedMoves]
 
   @staticmethod
   def averageChunks(assessedChunks):
