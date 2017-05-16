@@ -122,7 +122,7 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', [
         or (susGames >= (2/5)*gamesAnalysed and gamesAnalysed > 2)):
         return False
       elif ((legitGames == gamesAnalysed and self.overallAssessment < thresholds['overall']['unlikelycheating'])
-        or (self.overallAssessment < thresholds['overall']['legit'] and legitGames > int(0.8*gamesAnalysed))) and gamesAnalysed > 2:
+        or (self.overallAssessment < thresholds['overall']['legit'] and susGames < int(0.4*gamesAnalysed))) and gamesAnalysed > 2:
         return True # Player is legit
     return None # Player falls into a grey area
 
