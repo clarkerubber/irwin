@@ -175,7 +175,7 @@ class PlayerAnalysisDB:
     return [PlayerAnalysisBSONHandler.reads(bson, self.gameAnalysisDB.byUserId(bson['_id'])) for bson in bsons]
 
   def byEngineStatus(self, status):
-    return self.byBSONs(self.playerAnalysisColl.find({'engine': status}))
+    return self.byBSONs(self.playerAnalysisColl.find({'engine': status}).sort('date', pymongo.DESCENDING).limit(2000))
 
   def oldestUnsorted(self):
     playerAnalysisBSON = next(self.playerAnalysisColl.find({'engine': None}).sort('date', pymongo.ASCENDING), None)
