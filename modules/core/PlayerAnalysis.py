@@ -105,7 +105,7 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', [
     }
 
   def isLegit(self, thresholds):
-    if self.PVOverallAssessment is not None:
+    if self.overallAssessment is not None:
       gamesAnalysed = len(self.gameAnalyses.gameAnalyses)
 
       noOutlierAverages = self.gameAnalyses.assessmentNoOutlierAverages()
