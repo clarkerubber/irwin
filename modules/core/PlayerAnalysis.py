@@ -110,6 +110,7 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', [
 
       noOutlierAverages = self.gameAnalyses.assessmentNoOutlierAverages()
 
+      moderateGames = sum([int(a > thresholds['averages']['moderate']) for a in noOutlierAverages])
       susGames = sum([int(a > thresholds['averages']['suspicious']) for a in noOutlierAverages])
       verySusGames = sum([int(a > thresholds['averages']['verysuspicious']) for a in noOutlierAverages])
       exceptionalGames = sum([int(a > thresholds['averages']['exceptional']) for a in noOutlierAverages])
@@ -122,7 +123,7 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', [
         or (susGames >= (2/5)*gamesAnalysed and gamesAnalysed > 2)):
         return False
       elif ((legitGames == gamesAnalysed and self.overallAssessment < thresholds['overall']['unlikelycheating'])
-        or (self.overallAssessment < thresholds['overall']['legit'] and susGames == 0 and gamesAnalysed > 2)):
+        or (self.overallAssessment < thresholds['overall']['legit'] and moderateGames == 0 and gamesAnalysed > 2)):
         return True # Player is legit
     return None # Player falls into a grey area
 
