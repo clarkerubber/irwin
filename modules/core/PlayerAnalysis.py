@@ -111,6 +111,7 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', [
       noOutlierAverages = self.gameAnalyses.assessmentNoOutlierAverages()
 
       moderateGames = sum([int(a > thresholds['averages']['moderate']) for a in noOutlierAverages])
+      
       slightGames = sum([int(a > thresholds['averages']['slight']) for a in noOutlierAverages])
       susGames = sum([int(a > thresholds['averages']['suspicious']) for a in noOutlierAverages])
       verySusGames = sum([int(a > thresholds['averages']['verysuspicious']) for a in noOutlierAverages])

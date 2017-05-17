@@ -201,11 +201,49 @@ class TrainAndEvaluate(threading.Thread):
           engines = Irwin.assessPlayers(engines)
           legits = Irwin.assessPlayers(legits)
 
-        logging.warning("Calculating results")
+        logging.warning("Optimising thresholds")
+        thresholds = {
+          "averages": {
+            "legit": 35,
+            "moderate": 50,
+            "slight": 100,
+            "suspicious": 100,
+            "verysuspicious": 100,
+            "exceptional": 100
+          },
+          "overall": {
+            "engine": 70,
+            "legit": 10
+          }
+        }
+        fps = len([1 for fp in legits if fp.isLegit(self.settings['thresholds']) == False])
+        while fps == 0:
+          thresholds['averages']['exceptional'] -= 2
+          fps = len([1 for fp in legits if fp.isLegit(thresholds) == False])
+        thresholds['averages']['exceptional'] += 2
+
+        while fps == 0:
+          thresholds['averages']['verysuspicious'] -= 2
+          fps = len([1 for fp in legits if fp.isLegit(thresholds) == False])
+        thresholds['averages']['verysuspicious'] += 2
+
+        while fps == 0:
+          thresholds['averages']['suspicious'] -= 2
+          fps = len([1 for fp in legits if fp.isLegit(thresholds) == False])
+        thresholds['averages']['suspicious'] += 2
+
+        while fps == 0:
+          thresholds['averages']['slight'] -= 2
+          fps = len([1 for fp in legits if fp.isLegit(thresholds) == False])
+        thresholds['averages']['slight'] += 2
+
+        print(thresholds)
+
         falseReports = FalseReports(
           falsePositives = [FalseReport(fp.id, fp.overallAssessment) for fp in legits if fp.isLegit(self.settings['thresholds']) == False],
           falseNegatives = [FalseReport(fn.id, fn.overallAssessment) for fn in engines if fn.isLegit(self.settings['thresholds']) == True])
 
+        logging.warning("Calculating results")
         truePositive = sum([int(False == p.isLegit(self.settings['thresholds'])) for p in engines]) # cheaters marked as cheaters
         trueNegative = sum([int(True == p.isLegit(self.settings['thresholds'])) for p in legits]) # legits not marked or left open
         falsePositive = len(falseReports.falsePositives) # legits marked as engines
