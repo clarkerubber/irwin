@@ -120,9 +120,9 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', [
       if not self.titled and self.overallAssessment > thresholds['overall']['engine'] and (
         (exceptionalGames >= (1/10)*gamesAnalysed and exceptionalGames > 0)
         or (verySusGames >= (2/10)*gamesAnalysed and verySusGames > 1)
-        or (susGames >= (3/10)*gamesAnalysed and susGames > 2)):
+        or (susGames >= (4/10)*gamesAnalysed and susGames > 3)):
         return False
-      elif self.overallAssessment < thresholds['overall']['legit'] and moderateGames == 0 and gamesAnalysed > 2:
+      elif self.overallAssessment < thresholds['overall']['legit'] and moderateGames == 0 and gamesAnalysed > 4:
         return True # Player is legit
     return None # Player falls into a grey area
 
