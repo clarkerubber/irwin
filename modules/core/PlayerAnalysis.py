@@ -118,7 +118,7 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', [
       legitGames = sum([int(a < thresholds['averages']['legit']) for a in noOutlierAverages])
 
       if not self.titled and self.overallAssessment > thresholds['overall']['engine'] and (
-        (exceptionalGames >= (1/10)*gamesAnalysed and exceptionalGames > 0 and)
+        (exceptionalGames >= (1/10)*gamesAnalysed and exceptionalGames > 0)
         or (verySusGames >= (2/10)*gamesAnalysed and verySusGames > 1)
         or (susGames >= (3/10)*gamesAnalysed and susGames > 2)):
         return False
