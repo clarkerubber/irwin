@@ -222,16 +222,19 @@ class TrainAndEvaluate(threading.Thread):
           fps = len([1 for fp in legits if fp.isLegit(thresholds) == False])
         thresholds['averages']['exceptional'] += 4
 
+        fps = 0
         while fps == 0:
           thresholds['averages']['verysuspicious'] -= 2
           fps = len([1 for fp in legits if fp.isLegit(thresholds) == False])
         thresholds['averages']['verysuspicious'] += 4
 
+        fps = 0
         while fps == 0:
           thresholds['averages']['suspicious'] -= 2
           fps = len([1 for fp in legits if fp.isLegit(thresholds) == False])
         thresholds['averages']['suspicious'] += 4
 
+        fps = 0
         while fps == 0:
           thresholds['averages']['slight'] -= 2
           fps = len([1 for fp in legits if fp.isLegit(thresholds) == False])
