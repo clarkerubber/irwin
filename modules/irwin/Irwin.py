@@ -205,40 +205,21 @@ class TrainAndEvaluate(threading.Thread):
         thresholds = {
           "averages": {
             "legit": 35,
-            "moderate": 50,
-            "slight": 100,
-            "suspicious": 100,
-            "verysuspicious": 100,
-            "exceptional": 100
+            "moderate": 40,
+            "suspicious": 50,
+            "verysuspicious": 55,
+            "exceptional": 75
           },
           "overall": {
-            "engine": 70,
+            "engine": 80,
             "legit": 10
           }
         }
         fps = len([1 for fp in legits if fp.isLegit(self.settings['thresholds']) == False])
         while fps == 0:
-          thresholds['averages']['exceptional'] -= 2
+          thresholds['overall']['engine'] -= 2
           fps = len([1 for fp in legits if fp.isLegit(thresholds) == False])
-        thresholds['averages']['exceptional'] += 4
-
-        fps = 0
-        while fps == 0:
-          thresholds['averages']['verysuspicious'] -= 2
-          fps = len([1 for fp in legits if fp.isLegit(thresholds) == False])
-        thresholds['averages']['verysuspicious'] += 4
-
-        fps = 0
-        while fps == 0:
-          thresholds['averages']['suspicious'] -= 2
-          fps = len([1 for fp in legits if fp.isLegit(thresholds) == False])
-        thresholds['averages']['suspicious'] += 4
-
-        fps = 0
-        while fps == 0:
-          thresholds['averages']['slight'] -= 2
-          fps = len([1 for fp in legits if fp.isLegit(thresholds) == False])
-        thresholds['averages']['slight'] += 4
+        thresholds['overall']['engine'] += 4
 
         print(thresholds)
 
