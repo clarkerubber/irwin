@@ -211,15 +211,15 @@ class TrainAndEvaluate(threading.Thread):
             "exceptional": 75
           },
           "overall": {
-            "engine": 80,
-            "legit": 10
+            "engine": 65,
+            "legit": 5
           }
         }
-        fps = len([1 for fp in legits if fp.isLegit(self.settings['thresholds']) == False])
-        while fps == 0:
-          thresholds['overall']['engine'] -= 2
-          fps = len([1 for fp in legits if fp.isLegit(thresholds) == False])
-        thresholds['overall']['engine'] += 4
+        fns = len([1 for fp in engines if fp.isLegit(self.settings['thresholds']) == True])
+        while fns < 50 :
+          thresholds['overall']['legit'] += 2
+          fns = len([1 for fp in engines if fp.isLegit(self.settings['thresholds']) == True])
+        thresholds['overall']['legit'] -= 2
 
         print(thresholds)
 
