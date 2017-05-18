@@ -201,28 +201,6 @@ class TrainAndEvaluate(threading.Thread):
           engines = Irwin.assessPlayers(engines)
           legits = Irwin.assessPlayers(legits)
 
-        logging.warning("Optimising thresholds")
-        thresholds = {
-          "averages": {
-            "legit": 35,
-            "moderate": 40,
-            "suspicious": 50,
-            "verysuspicious": 55,
-            "exceptional": 75
-          },
-          "overall": {
-            "engine": 65,
-            "legit": 5
-          }
-        }
-        fns = len([1 for fp in engines if fp.isLegit(self.settings['thresholds']) == True])
-        while fns < 50 :
-          thresholds['overall']['legit'] += 2
-          fns = len([1 for fp in engines if fp.isLegit(self.settings['thresholds']) == True])
-        thresholds['overall']['legit'] -= 2
-
-        print(thresholds)
-
         falseReports = FalseReports(
           falsePositives = [FalseReport(fp.id, fp.overallAssessment) for fp in legits if fp.isLegit(self.settings['thresholds']) == False],
           falseNegatives = [FalseReport(fn.id, fn.overallAssessment) for fn in engines if fn.isLegit(self.settings['thresholds']) == True])
