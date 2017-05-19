@@ -206,6 +206,7 @@ class TrainAndEvaluate(threading.Thread):
           logging.warning("Engines page: " + str(page))
           if not self.fastTest:
             engines = Irwin.assessPlayers(engines)
+            self.playerAnalysisDB.lazyWriteMany(engines)
           truePositives += len([1 for p in engines if p.isLegit(self.settings['thresholds']) == False])
           indeciseEngines += len([1 for p in engines if p.isLegit(self.settings['thresholds']) is None])
           falseNegatives.extend([FalseReport(fn.id, fn.overallAssessment) for fn in engines if fn.isLegit(self.settings['thresholds']) == True])
@@ -224,6 +225,7 @@ class TrainAndEvaluate(threading.Thread):
           logging.warning("Legits page: " + str(page))
           if not self.fastTest:
             legits = Irwin.assessPlayers(legits)
+            self.playerAnalysisDB.lazyWriteMany(legits)
           trueNegatives += len([1 for p in legits if p.isLegit(self.settings['thresholds']) == True])
           indeciseLegits += len([1 for p in legits if p.isLegit(self.settings['thresholds']) is None])
           falsePositives.extend([FalseReport(fp.id, fp.overallAssessment) for fp in legits if fp.isLegit(self.settings['thresholds']) == False])
@@ -238,13 +240,11 @@ class TrainAndEvaluate(threading.Thread):
           accuracy = Accuracy(
             truePositive = truePositives,
             trueNegative = trueNegatives,
-            falsePositive = falsePositives,
-            falseNegative = falseNegatives,
+            falsePositive = len(falsePositives),
+            falseNegative = len(falseNegatives),
             indeciseEngines = indeciseEngines,
             indeciseLegits = indeciseLegits)))
         self.falseReportsDB.write(FalseReports(falsePositives = falsePositives, falseNegatives = falseNegatives))
-        logging.warning("Writing updated player assessments")
-        self.playerAnalysisDB.lazyWriteMany(engines + legits)
 
   def outOfDate(self):
     latest = self.trainingStatsDB.latest()
