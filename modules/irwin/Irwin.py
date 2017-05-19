@@ -193,38 +193,56 @@ class TrainAndEvaluate(threading.Thread):
         trainer = TrainNetworks(self.api, self.playerAnalysisDB, self.settings['training']['minStep'], self.settings['training']['incStep'], self.updateAll, self.testOnly)
         trainer.start()
         trainer.join()
-        engines = self.playerAnalysisDB.engines()
-        legits = self.playerAnalysisDB.legits()
         unsorted = self.playerAnalysisDB.countUnsorted()
-        logging.warning("Assessing new networks")
-        if not self.fastTest:
-          engines = Irwin.assessPlayers(engines)
-          legits = Irwin.assessPlayers(legits)
 
-        falseReports = FalseReports(
-          falsePositives = [FalseReport(fp.id, fp.overallAssessment) for fp in legits if fp.isLegit(self.settings['thresholds']) == False],
-          falseNegatives = [FalseReport(fn.id, fn.overallAssessment) for fn in engines if fn.isLegit(self.settings['thresholds']) == True])
+        # Counters for engines
+        truePositives = 0
+        indeciseEngines = 0
+        falseNegatives = []
 
-        logging.warning("Calculating results")
-        truePositive = sum([int(False == p.isLegit(self.settings['thresholds'])) for p in engines]) # cheaters marked as cheaters
-        trueNegative = sum([int(True == p.isLegit(self.settings['thresholds'])) for p in legits]) # legits not marked or left open
-        falsePositive = len(falseReports.falsePositives) # legits marked as engines
-        falseNegative = len(falseReports.falseNegatives) # cheaters marked as legits
-        indeciseEngines = sum([int(p.isLegit(self.settings['thresholds']) is None) for p in engines])
-        indeciseLegits = sum([int(p.isLegit(self.settings['thresholds']) is None) for p in legits])
+        page = 0
+        engines = self.playerAnalysisDB.enginesPaginated(page)
+        while len(engines) > 0:
+          logging.warning("Engines page: " + str(page))
+          if not self.fastTest:
+            engines = Irwin.assessPlayers(engines)
+          truePositives += len([1 for p in engines if p.isLegit(self.settings['thresholds']) == False])
+          indeciseEngines += len([1 for p in engines if p.isLegit(self.settings['thresholds']) is None])
+          falseNegatives.extend([FalseReport(fn.id, fn.overallAssessment) for fn in engines if fn.isLegit(self.settings['thresholds']) == True])
+
+          page += 1
+          engines = self.playerAnalysisDB.enginesPaginated(page)
+
+        # Counters for legits
+        trueNegatives = 0
+        indeciseLegits = 0
+        falsePositives = []
+
+        page = 0
+        legits = self.playerAnalysisDB.legitsPaginated(page)
+        while len(legits) > 0:
+          logging.warning("Legits page: " + str(page))
+          if not self.fastTest:
+            legits = Irwin.assessPlayers(legits)
+          trueNegatives += len([1 for p in legits if p.isLegit(self.settings['thresholds']) == True])
+          indeciseLegits += len([1 for p in legits if p.isLegit(self.settings['thresholds']) is None])
+          falsePositives.extend([FalseReport(fp.id, fp.overallAssessment) for fp in legits if fp.isLegit(self.settings['thresholds']) == False])
+
+          page += 1
+          legits = self.playerAnalysisDB.legitsPaginated(page)
 
         logging.warning("Writing training stats")
         self.trainingStatsDB.write(TrainingStats(
           date = datetime.datetime.utcnow(),
-          sample = Sample(engines = len(engines), legits = len(legits), unprocessed = unsorted),
+          sample = Sample(engines = truePositives + indeciseEngines + len(falseNegatives), legits = trueNegatives + indeciseLegits + len(falsePositives), unprocessed = unsorted),
           accuracy = Accuracy(
-            truePositive = truePositive,
-            trueNegative = trueNegative,
-            falsePositive = falsePositive,
-            falseNegative = falseNegative,
+            truePositive = truePositives,
+            trueNegative = trueNegatives,
+            falsePositive = falsePositives,
+            falseNegative = falseNegatives,
             indeciseEngines = indeciseEngines,
             indeciseLegits = indeciseLegits)))
-        self.falseReportsDB.write(falseReports)
+        self.falseReportsDB.write(FalseReports(falsePositives = falsePositives, falseNegatives = falseNegatives))
         logging.warning("Writing updated player assessments")
         self.playerAnalysisDB.lazyWriteMany(engines + legits)
 

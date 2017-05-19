@@ -178,6 +178,9 @@ class PlayerAnalysisDB:
   def byEngineStatus(self, status):
     return self.byBSONs(self.playerAnalysisColl.find({'engine': status}).sort('date', pymongo.DESCENDING).limit(2000))
 
+  def byEngineStatusPaginated(self, status, page, nb):
+    return self.byBSONs(self.playerAnalysisColl.find({'engine': status})[nb*page:nb*(page+1)])
+
   def oldestUnsorted(self):
     playerAnalysisBSON = next(self.playerAnalysisColl.find({'engine': None}).sort('date', pymongo.ASCENDING), None)
     if playerAnalysisBSON is not None:
@@ -215,6 +218,12 @@ class PlayerAnalysisDB:
 
   def legits(self):
     return self.byEngineStatus(False)
+
+  def enginesPaginated(self, page = 0, nb = 500):
+    return self.byEngineStatusPaginated(True, page, nb)
+
+  def legitsPaginated(self, page = 0, nb = 500):
+    return self.byEngineStatusPaginated(False, page, nb)
 
   def write(self, playerAnalysis):
     self.playerAnalysisColl.update(
