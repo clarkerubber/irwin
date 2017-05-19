@@ -7,7 +7,7 @@ from modules.irwin.IrwinReport import IrwinReport
 class ChunkAssessment():
   @staticmethod
   def combineInputs(X):
-    playerandgamesfnn = tf.contrib.layers.stack(X, tf.contrib.layers.fully_connected, [150, 100, 80, 40, 10, 2], scope="mainnetwork")
+    playerandgamesfnn = tf.contrib.layers.stack(X, tf.contrib.layers.fully_connected, [150, 140, 90, 40, 10, 2], scope="mainnetwork")
     return tf.reshape(playerandgamesfnn, [-1, 2])
 
   @staticmethod
@@ -24,7 +24,7 @@ class ChunkAssessment():
 
   @staticmethod
   def inputs():
-    inputList = ChunkAssessment.readCSV(800, [[0.0]]*72)
+    inputList = ChunkAssessment.readCSV(800, [[0.0]]*82)
     features = tf.transpose(tf.stack(inputList[1:]))
     cheat = tf.to_float(tf.equal(inputList[0], [1]))
     legit = tf.to_float(tf.equal(inputList[0], [0]))
@@ -131,7 +131,7 @@ class ChunkAssessment():
     graph = tf.Graph()
     with graph.as_default():
       with tf.Session(graph=graph) as sess:
-        a = tf.placeholder(tf.float32, shape=[None, 71])
+        a = tf.placeholder(tf.float32, shape=[None, 81])
         infer = ChunkAssessment.inference(a)
         feedDict = {a: batch}
         ## initliase graph for running

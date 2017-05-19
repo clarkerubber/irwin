@@ -85,6 +85,7 @@ class GameAnalysis:
         analysedMove.ambiguity(),
         int(self.consistentMoveTime(analysedMove.move)),
         int(analysedMove.emt),
+        int(100*(analysedMove.rank()+1)/analysedMove.ambiguity()),
         int(1 if analysedMove.onlyMove() else -1)
     ] for analysedMove in self.analysedMoves]
 
@@ -104,6 +105,7 @@ class GameAnalysis:
       analysedMove.ambiguity(),
       int(self.consistentMoveTime(analysedMove.move)),
       int(analysedMove.emt),
+      int(100*(analysedMove.rank()+1)/analysedMove.ambiguity()),
       int(1 if analysedMove.onlyMove() else -1)] for analysedMove in self.analysedMoves]
 
   @staticmethod
