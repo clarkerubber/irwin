@@ -21,15 +21,15 @@ class TrainNetworks(threading.Thread):
     if self.trainOnly and self.updateAll:
       updatePlayerEngineStatus(self.api, self.playerAnalysisDB, self.updateAll)
     if not self.trainOnly:
-      #updatePlayerEngineStatus(self.api, self.playerAnalysisDB, self.updateAll)
-      #sortedUsers = self.playerAnalysisDB.balancedSorted()
-      #self.classifyMoves(sortedUsers)
-      #self.classifyMoveChunks(sortedUsers)
-      #self.classifyGames(sortedUsers)
-      #self.classifyPlayers(sortedUsers)
-      #MoveAssessment.learn(self.minTrainingSteps, self.incTrainingSteps)
-      #ChunkAssessment.learn(self.minTrainingSteps, self.incTrainingSteps)
-      #GameAssessment.learn(self.minTrainingSteps, self.incTrainingSteps)
+      updatePlayerEngineStatus(self.api, self.playerAnalysisDB, self.updateAll)
+      sortedUsers = self.playerAnalysisDB.balancedSorted()
+      self.classifyMoves(sortedUsers)
+      self.classifyMoveChunks(sortedUsers)
+      self.classifyGames(sortedUsers)
+      self.classifyPlayers(sortedUsers)
+      MoveAssessment.learn(self.minTrainingSteps, self.incTrainingSteps)
+      ChunkAssessment.learn(self.minTrainingSteps, self.incTrainingSteps)
+      GameAssessment.learn(self.minTrainingSteps, self.incTrainingSteps)
       PlayerAssessment.learn(self.minTrainingSteps, self.incTrainingSteps)
 
   def classifyMoves(self, playerAnalyses):
