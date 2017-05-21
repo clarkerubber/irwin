@@ -5,6 +5,7 @@ from modules.irwin.writeCSV import writeClassifiedMovesCSV, writeClassifiedMoveC
 from modules.irwin.MoveAssessment import MoveAssessment
 from modules.irwin.ChunkAssessment import ChunkAssessment
 from modules.irwin.GameAssessment import GameAssessment
+from modules.irwin.PlayerAssessment import PlayerAssessment
 
 class TrainNetworks(threading.Thread):
   def __init__(self, api, playerAnalysisDB, minTrainingSteps, incTrainingSteps, updateAll, trainOnly):
@@ -25,9 +26,11 @@ class TrainNetworks(threading.Thread):
       #self.classifyMoves(sortedUsers)
       #self.classifyMoveChunks(sortedUsers)
       #self.classifyGames(sortedUsers)
+      #self.classifyPlayers(sortedUsers)
       #MoveAssessment.learn(self.minTrainingSteps, self.incTrainingSteps)
       #ChunkAssessment.learn(self.minTrainingSteps, self.incTrainingSteps)
-      GameAssessment.learn(self.minTrainingSteps, self.incTrainingSteps)
+      #GameAssessment.learn(self.minTrainingSteps, self.incTrainingSteps)
+      PlayerAssessment.learn(self.minTrainingSteps, self.incTrainingSteps)
 
   def classifyMoves(self, playerAnalyses):
     entries = []

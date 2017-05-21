@@ -62,10 +62,11 @@ class GameAnalyses:
   def binnedGameActivations(self):
     bins = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0] # 10 bins representing 0-10%, 10-20%, etc...
     assessedGames = [gameAnalysis for gameAnalysis in self.gameAnalyses if gameAnalysis.activation is not None]
-    proportion = 100 / len(assessedGames)
-    for assessedGame in assessedGames:
-      bins[min(9, max(0, int(assessedGame.activation/10)))] += proportion # this is a density distribution
-    bins = [int(i) for i in bins]
+    if len(assessedGames) > 0:
+      proportion = 100 / len(assessedGames)
+      for assessedGame in assessedGames:
+        bins[min(9, max(0, int(assessedGame.activation/10)))] += proportion # this is a density distribution
+      bins = [int(i) for i in bins]
     return bins
 
   def reportDicts(self):
@@ -97,4 +98,4 @@ class GameAnalyses:
     return activations
 
   def gameActivations(self):
-    return [gameAnalysis.activation for gameAnalysis in self.gameAnalyses is gameAnalysis.activation is not None]
+    return [gameAnalysis.activation for gameAnalysis in self.gameAnalyses if gameAnalysis.activation is not None]

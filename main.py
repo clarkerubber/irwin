@@ -106,11 +106,7 @@ while True and not settings.noanalyse and not settings.testonly and not settings
       gamesPlayed = playerData['assessment']['user']['games'],
       closedReports = sum(int(r.get('processedBy', None) is not None) for r in playerData['history'] if r['type'] == 'report' and r['data']['reason'] == 'cheat'),
       gameAnalyses = gameAnalyses,
-      PVAssessment = None,
-      PVDrawAssessment = None,
-      PVLosingAssessment = None,
-      PVOverallAssessment = None,
-      overallAssessment = None))
+      activation = None))
 
   env.playerAnalysisDB.write(playerAnalysis)
   if not settings.noreport:

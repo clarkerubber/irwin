@@ -48,7 +48,7 @@ class GameAnalysis:
   def reportDict(self):
     return {
       'gameId': self.gameId,
-      'activation': self.assessmentAverage(),
+      'activation': self.activation,
       'moves': self.movesReportDict()
     }
 
