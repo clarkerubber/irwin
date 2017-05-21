@@ -1,14 +1,10 @@
 import threading
 
 from modules.irwin.updatePlayerEngineStatus import updatePlayerEngineStatus
-from modules.irwin.writeCSV import writeClassifiedMovesCSV, writeClassifiedMoveChunksCSV, writeClassifiedPVsCSV, writeClassifiedPVsDrawishCSV, writeClassifiedPVsLosingCSV, writeClassifiedPVsOverallCSV, writeClassifiedOverallAssessmentCSV
+from modules.irwin.writeCSV import writeClassifiedMovesCSV, writeClassifiedMoveChunksCSV, writeClassifiedGamesCSV, writeClassifiedPlayersCSV
 from modules.irwin.MoveAssessment import MoveAssessment
 from modules.irwin.ChunkAssessment import ChunkAssessment
-from modules.irwin.PVAssessment import PVAssessment
-from modules.irwin.PVDrawAssessment import PVDrawAssessment
-from modules.irwin.PVLosingAssessment import PVLosingAssessment
-from modules.irwin.PVOverallAssessment import PVOverallAssessment
-from modules.irwin.OverallAssessment import OverallAssessment
+from modules.irwin.GameAssessment import GameAssessment
 
 class TrainNetworks(threading.Thread):
   def __init__(self, api, playerAnalysisDB, minTrainingSteps, incTrainingSteps, updateAll, trainOnly):
@@ -24,22 +20,14 @@ class TrainNetworks(threading.Thread):
     if self.trainOnly and self.updateAll:
       updatePlayerEngineStatus(self.api, self.playerAnalysisDB, self.updateAll)
     if not self.trainOnly:
-      updatePlayerEngineStatus(self.api, self.playerAnalysisDB, self.updateAll)
-      sortedUsers = self.playerAnalysisDB.balancedSorted()
-      self.classifyMoves(sortedUsers)
-      self.classifyMoveChunks(sortedUsers)
-      self.classifyPVs(sortedUsers)
-      self.classifyPVsDrawish(sortedUsers)
-      self.classifyPVsLosing(sortedUsers)
-      self.classifyPVsOverall(sortedUsers)
-      self.classifyOverallAssessment(sortedUsers)
-      MoveAssessment.learn(self.minTrainingSteps, self.incTrainingSteps)
-      ChunkAssessment.learn(self.minTrainingSteps, self.incTrainingSteps)
-      PVAssessment.learn(self.minTrainingSteps, self.incTrainingSteps)
-      PVDrawAssessment.learn(self.minTrainingSteps, self.incTrainingSteps)
-      PVLosingAssessment.learn(self.minTrainingSteps, self.incTrainingSteps)
-      PVOverallAssessment.learn(self.minTrainingSteps, self.incTrainingSteps)
-      OverallAssessment.learn(self.minTrainingSteps, self.incTrainingSteps)
+      #updatePlayerEngineStatus(self.api, self.playerAnalysisDB, self.updateAll)
+      #sortedUsers = self.playerAnalysisDB.balancedSorted()
+      #self.classifyMoves(sortedUsers)
+      #self.classifyMoveChunks(sortedUsers)
+      #self.classifyGames(sortedUsers)
+      #MoveAssessment.learn(self.minTrainingSteps, self.incTrainingSteps)
+      #ChunkAssessment.learn(self.minTrainingSteps, self.incTrainingSteps)
+      GameAssessment.learn(self.minTrainingSteps, self.incTrainingSteps)
 
   def classifyMoves(self, playerAnalyses):
     entries = []
@@ -51,27 +39,10 @@ class TrainNetworks(threading.Thread):
     [entries.extend(playerAnalysis.CSVChunks()) for playerAnalysis in playerAnalyses]
     writeClassifiedMoveChunksCSV(entries)
 
-  def classifyPVs(self, playerAnalyses):
+  def classifyGames(self, playerAnalyses):
     entries = []
-    [entries.append(playerAnalysis.CSVPVs()) for playerAnalysis in playerAnalyses]
-    writeClassifiedPVsCSV(entries)
+    [entries.extend(playerAnalysis.CSVGames()) for playerAnalysis in playerAnalyses]
+    writeClassifiedGamesCSV(entries)
 
-  def classifyPVsDrawish(self, playerAnalyses):
-    entries = []
-    [entries.append(playerAnalysis.CSVPVsDrawish()) for playerAnalysis in playerAnalyses]
-    writeClassifiedPVsDrawishCSV(entries)
-
-  def classifyPVsLosing(self, playerAnalyses):
-    entries = []
-    [entries.append(playerAnalysis.CSVPVsLosing()) for playerAnalysis in playerAnalyses]
-    writeClassifiedPVsLosingCSV(entries)
-
-  def classifyPVsOverall(self, playerAnalyses):
-    entries = []
-    [entries.append(playerAnalysis.CSVPVsOverall()) for playerAnalysis in playerAnalyses if playerAnalysis.CSVPVsOverall() is not None]
-    writeClassifiedPVsOverallCSV(entries)
-
-  def classifyOverallAssessment(self, playerAnalyses):
-    entries = []
-    [entries.append(playerAnalysis.CSVOverallAssessment()) for playerAnalysis in playerAnalyses if playerAnalysis.CSVOverallAssessment() is not None]
-    writeClassifiedOverallAssessmentCSV(entries)
+  def classifyPlayers(self, playerAnalyses):
+    writeClassifiedPlayersCSV([playerAnalysis.CSVPlayer() for playerAnalysis in playerAnalyses])

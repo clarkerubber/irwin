@@ -6,9 +6,7 @@ import random
 import numpy
 
 class PlayerAnalysis(namedtuple('PlayerAnalysis', [
-  'id', 'titled', 'engine', 'gamesPlayed', 'closedReports', 'gameAnalyses',
-  'PVAssessment', 'PVDrawAssessment', 'PVLosingAssessment', 'PVOverallAssessment',
-  'overallAssessment'])): # id = userId, engine = (True | False | None)
+  'id', 'titled', 'engine', 'gamesPlayed', 'closedReports', 'gameAnalyses', 'activation'])): # id = userId, engine = (True | False | None)
   def setEngine(self, engine):
     return PlayerAnalysis(
       id = self.id,
@@ -17,11 +15,7 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', [
       gamesPlayed = self.gamesPlayed,
       closedReports = self.closedReports,
       gameAnalyses = self.gameAnalyses,
-      PVAssessment = self.PVAssessment,
-      PVDrawAssessment = self.PVDrawAssessment,
-      PVLosingAssessment = self.PVLosingAssessment,
-      PVOverallAssessment = self.PVOverallAssessment,
-      overallAssessment = self.overallAssessment)
+      activation = self.activation)
 
   def tensorInputMoves(self):
     return self.gameAnalyses.tensorInputMoves()
@@ -29,35 +23,33 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', [
   def tensorInputChunks(self):
     return self.gameAnalyses.tensorInputChunks()
 
+  def tensorInputGames(self):
+    return self.gameAnalyses.tensorInputGames()
+
   def tensorInputPVsDraw(self):
     return self.gameAnalyses.tensorInputPVsDraw()
 
   def tensorInputPVsLosing(self):
     return self.gameAnalyses.tensorInputPVsLosing()
 
-  def tensorInputPVs(self):
+  def tensorInputPV0ByAmbiguity(self):
     pvs = self.gameAnalyses.pv0ByAmbiguityStats()
     for i, pv in enumerate(pvs):
       if pv is None:
         pvs[i] = 0
-    return pvs # should be a list of ints 5 items long
+    return pvs # list of ints 5 items long
 
-  def tensorInputOverallAssessment(self):
-    if self.PVOverallAssessment is not None:
-      return [int(self.anoaActivation()), int(self.PVOverallAssessment)]
-    return None
-
-  def tensorInputPVsOverall(self):
-    pvs = [self.PVAssessment, self.PVDrawAssessment, self.PVLosingAssessment]
-    if all(a is not None for a in pvs):
-      return pvs
-    return None
+  def tensorInputPlayer(self):
+    return self.tensorInputPV0ByAmbiguity() + self.tensorInputPVsDraw() + self.tensorInputPVsLosing() + self.binnedGameActivations() # list of 25 ints
 
   def moveActivations(self):
     return self.gameAnalyses.moveActivations()
 
   def chunkActivations(self):
     return self.gameAnalyses.chunkActivations()
+
+  def binnedGameActivations(self):
+    return self.gameAnalyses.binnedGameActivations()
 
   def CSVMoves(self):
     moves = []
@@ -69,61 +61,42 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', [
     [chunks.append([int(self.engine)] + chunk) for chunk in self.tensorInputChunks()]
     return chunks
 
-  def CSVPVs(self):
-    return [int(self.engine)] + self.tensorInputPVs()
+  def CSVGames(self):
+    games = []
+    [games.append([int(self.engine)] + game) for game in self.tensorInputGames()]
+    return games
 
-  def CSVPVsDrawish(self):
-    return [int(self.engine)] + self.tensorInputPVsDraw()
-
-  def CSVPVsLosing(self):
-    return [int(self.engine)] + self.tensorInputPVsLosing()
-
-  def CSVPVsOverall(self):
-    if self.tensorInputPVsOverall() is not None:
-      return [int(self.engine)] + self.tensorInputPVsOverall()
-    return None
-
-  def CSVOverallAssessment(self):
-    if self.tensorInputOverallAssessment() is not None:
-      return [int(self.engine)] + self.tensorInputOverallAssessment()
-    return None
-
-  def anoaActivation(self):
-    anoa = sorted(self.gameAnalyses.assessmentNoOutlierAverages(), reverse=True)
-    retained = anoa[:max(1, int(0.3*len(anoa)))]
-    if len(retained) > 0:
-      return numpy.mean(retained)
-    return 0
+  def CSVPlayer(self):
+    return [int(self.engine)] + self.tensorInputPlayer()
 
   def report(self, thresholds):
     return {
       'userId': self.id,
       'isLegit': self.isLegit(thresholds),
-      'activation': int(self.overallAssessment),
+      'activation': int(self.activation),
       'pv0ByAmbiguity': self.gameAnalyses.pv0ByAmbiguityStats(),
       'games': self.gameAnalyses.reportDicts()
     }
 
   def isLegit(self, thresholds):
-    if self.overallAssessment is not None:
+    if self.activation is not None:
       gamesAnalysed = len(self.gameAnalyses.gameAnalyses)
 
-      noOutlierAverages = self.gameAnalyses.assessmentNoOutlierAverages()
+      gameActivations = self.gameAnalyses.gameActivations()
 
-      moderateGames = sum([int(a > thresholds['averages']['moderate']) for a in noOutlierAverages])
-      susGames = sum([int(a > thresholds['averages']['suspicious']) for a in noOutlierAverages])
-      verySusGames = sum([int(a > thresholds['averages']['verysuspicious']) for a in noOutlierAverages])
-      exceptionalGames = sum([int(a > thresholds['averages']['exceptional']) for a in noOutlierAverages])
+      moderateGames = sum([int(a > thresholds['averages']['moderate']) for a in gameActivations])
+      susGames = sum([int(a > thresholds['averages']['suspicious']) for a in gameActivations])
+      verySusGames = sum([int(a > thresholds['averages']['verysuspicious']) for a in gameActivations])
+      exceptionalGames = sum([int(a > thresholds['averages']['exceptional']) for a in gameActivations])
 
-      legitGames = sum([int(a < thresholds['averages']['legit']) for a in noOutlierAverages])
+      legitGames = sum([int(a < thresholds['averages']['legit']) for a in gameActivations])
 
-      if not self.titled and self.overallAssessment > thresholds['overall']['engine'] and (
+      if not self.titled and self.activation > thresholds['overall']['engine'] and (
         (exceptionalGames >= (1/10)*gamesAnalysed and exceptionalGames > 0)
         or (verySusGames >= (1/10)*gamesAnalysed and verySusGames > 1)
-        or (susGames >= (3/10)*gamesAnalysed and susGames > 2)
-        or (moderateGames >= (4/10)*gamesAnalysed and moderateGames > 4)):
+        or (susGames >= (3/10)*gamesAnalysed and susGames > 2)):
         return False
-      elif self.overallAssessment < thresholds['overall']['legit'] and susGames == 0 and gamesAnalysed > 4:
+      elif self.activation < thresholds['overall']['legit'] and susGames == 0 and gamesAnalysed > 4:
         return True # Player is legit
     return None # Player falls into a grey area
 
@@ -137,11 +110,7 @@ class PlayerAnalysisBSONHandler:
       gamesPlayed = bson['gamesPlayed'],
       closedReports = bson['closedReports'],
       gameAnalyses = gameAnalyses,
-      PVAssessment = bson.get('PVAssessment', None),
-      PVDrawAssessment = bson.get('PVDrawAssessment', None),
-      PVLosingAssessment = bson.get('PVLosingAssessment', None),
-      PVOverallAssessment = bson.get('PVOverallAssessment', None),
-      overallAssessment = bson.get('overallAssessment', None))
+      activation = bson.get('activation', None))
 
   @staticmethod
   def writes(playerAnalysis):
@@ -151,11 +120,7 @@ class PlayerAnalysisBSONHandler:
       'engine': playerAnalysis.engine,
       'gamesPlayed': playerAnalysis.gamesPlayed,
       'closedReports': playerAnalysis.closedReports,
-      'PVAssessment': playerAnalysis.PVAssessment,
-      'PVDrawAssessment': playerAnalysis.PVDrawAssessment,
-      'PVLosingAssessment': playerAnalysis.PVLosingAssessment,
-      'PVOverallAssessment': playerAnalysis.PVOverallAssessment,
-      'overallAssessment': playerAnalysis.overallAssessment,
+      'activation': playerAnalysis.activation,
       'date': datetime.datetime.utcnow()
     }
 

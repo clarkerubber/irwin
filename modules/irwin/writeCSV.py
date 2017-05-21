@@ -26,37 +26,20 @@ def writeClassifiedMoveChunksCSV(entries):
     shuffle(entries)
     [writer.writerow(entry) for entry in entries]
 
-def writeClassifiedPVsCSV(entries):
-  with open('data/classified-pvs.csv', 'w') as fh:
+def writeClassifiedGamesCSV(entries):
+  with open('data/classified-games.csv', 'w') as fh:
     writer = csv.writer(fh, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-    writer.writerow(['engine', 'amb1', 'amb2', 'amb3', 'amb4', 'amb5'])
+    writer.writerow(['engine', 'move1', 'move2', 'move3', 'move4', 'move5', 'move6', 'move7', 'move8', 'move9', 'move10',
+      'chunk1', 'chunk2', 'chunk3', 'chunk4', 'chunk5', 'chunk6', 'chunk7', 'chunk8', 'chunk9', 'chunk10',
+      'td1', 'td2', 'td3', 'td4', 'td5', 'tl1', 'tl2', 'tl3', 'tl4', 'tl5'])
     shuffle(entries)
     [writer.writerow(entry) for entry in entries]
 
-def writeClassifiedPVsDrawishCSV(entries):
-  with open('data/classified-pvs-drawish.csv', 'w') as fh:
+def writeClassifiedMovesCSV(entries):
+  with open('data/classified-players.csv', 'w') as fh:
     writer = csv.writer(fh, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-    writer.writerow(['engine', 'T1', 'T2', 'T3', 'T4', 'T5'])
+    writer.writerow(['engine', 'pv01', 'pv02', 'pv03', 'pv04', 'pv05',
+      'td1', 'td2', 'td3', 'td4', 'td5', 'tl1', 'tl2', 'tl3', 'tl4', 'tl5',
+      'game1', 'game2', 'game3', 'game4', 'game5', 'game6', 'game7', 'game8', 'game9', 'game10'])
     shuffle(entries)
-    [writer.writerow(entry) for entry in entries]
-
-def writeClassifiedPVsLosingCSV(entries):
-  with open('data/classified-pvs-losing.csv', 'w') as fh:
-    writer = csv.writer(fh, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-    writer.writerow(['engine', 'T1', 'T2', 'T3', 'T4', 'T5'])
-    shuffle(entries)
-    [writer.writerow(entry) for entry in entries]
-
-def writeClassifiedPVsOverallCSV(entries):
-  with open('data/classified-pvs-overall.csv', 'w') as fh:
-    writer = csv.writer(fh, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-    writer.writerow(['engine', 'PV', 'PVDraw', 'PVLosing'])
-    shuffle(entries)
-    [writer.writerow(entry) for entry in entries]
-
-def writeClassifiedOverallAssessmentCSV(entries):
-  with open('data/classified-overall-assessment.csv', 'w') as fh:
-    writer = csv.writer(fh, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-    writer.writerow(['engine', 'ANOA', 'PV'])
-    shuffle(entries)
-    [writer.writerow(entry) for entry in entries]
+    [writer.writerow(entry) for entry in entries]     

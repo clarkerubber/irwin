@@ -93,7 +93,7 @@ while True and not settings.noanalyse and not settings.testonly and not settings
 
   for g in games.games:
     if playerAssessments.hasGameId(g.id):
-      gameAnalyses.append(GameAnalysis(g, playerAssessments.byGameId(g.id), [], [], []))
+      gameAnalyses.append(GameAnalysis(g, playerAssessments.byGameId(g.id), [], [], [], None))
 
   gameAnalyses.analyse(env.engine, env.infoHandler, config['stockfish']['nodes'])
   env.gameAnalysisDB.lazyWriteGames(gameAnalyses)

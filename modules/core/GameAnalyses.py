@@ -30,6 +30,11 @@ class GameAnalyses:
     [chunks.extend(gameAnalysis.tensorInputChunks()) for gameAnalysis in self.gameAnalyses]
     return chunks
 
+  def tensorInputGames(self):
+    games = []
+    [games.append(gameAnalysis.tensorInputGame()) for gameAnalysis in self.gameAnalyses]
+    return games
+
   def tensorInputPVsDraw(self): # borrowing from the PGN spy approach a little bit
     pvs = [] # all of the PV ranks for positions that match
     ts = [0, 0, 0, 0, 0] # counted PVs
@@ -54,8 +59,14 @@ class GameAnalyses:
       output[r] = int(100 * t / max(1, len(pvs)))
     return output
 
-  def assessmentNoOutlierAverages(self):
-    return [gameAnalysis.assessmentNoOutlierAverage() for gameAnalysis in self.gameAnalyses]
+  def binnedGameActivations(self):
+    bins = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0] # 10 bins representing 0-10%, 10-20%, etc...
+    assessedGames = [gameAnalysis for gameAnalysis in self.gameAnalyses if gameAnalysis.activation is not None]
+    proportion = 100 / len(assessedGames)
+    for assessedGame in assessedGames:
+      bins[min(9, max(0, int(assessedGame.activation/10)))] += proportion # this is a density distribution
+    bins = [int(i) for i in bins]
+    return bins
 
   def reportDicts(self):
     return [gameAnalysis.reportDict() for gameAnalysis in self.gameAnalyses]
@@ -75,11 +86,6 @@ class GameAnalyses:
         outputStats[i] = None
     return outputStats
 
-  def broadAmbiguities(self):
-    ambiguities = []
-    [ambiguities.extend(gameAnalysis.broadAmbiguities()) for gameAnalysis in self.gameAnalyses]
-    return ambiguities
-
   def moveActivations(self):
     activations = []
     [activations.extend(gameAnalysis.moveActivations()) for gameAnalysis in self.gameAnalyses]
@@ -89,3 +95,6 @@ class GameAnalyses:
     activations = []
     [activations.extend(gameAnalysis.chunkActivations()) for gameAnalysis in self.gameAnalyses]
     return activations
+
+  def gameActivations(self):
+    return [gameAnalysis.activation for gameAnalysis in self.gameAnalyses is gameAnalysis.activation is not None]

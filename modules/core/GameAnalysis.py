@@ -17,7 +17,7 @@ from modules.irwin.IrwinReport import IrwinReportBSONHandler
 from collections import namedtuple
 
 class GameAnalysis:
-  def __init__(self, game, playerAssessment, analysedMoves, assessedMoves, assessedChunks):
+  def __init__(self, game, playerAssessment, analysedMoves, assessedMoves, assessedChunks, activation):
     try:
       from StringIO import StringIO
     except ImportError:
@@ -32,16 +32,18 @@ class GameAnalysis:
     self.analysedMoves = analysedMoves # List[AnalysedMove] (Analysed by Stockfish)
     self.assessedMoves = assessedMoves # List[IrwinReport] (Assessed by Irwin/TensorFlow)
     self.assessedChunks = assessedChunks # List[IrwinReport] (groups of 10 moves assessed by Irwin/TensorFlow)
+
+    self.activation = activation
     
     self.analysed = len(self.analysedMoves) > 0
-    self.assessed = len(self.assessedMoves) > 0
+    self.assessed = len(self.assessedMoves) > 0 and len(self.assessedChunks) > 0
 
     self.playableGame = chess.pgn.read_game(StringIO(game.pgn))
     self.white = self.playerAssessment.white
 
   def __str__(self):
-    return 'GameAnalysis({}, analysedMoves: {}, assessedMoves: {}, assessedChunks: {})'.format(
-      self.id, len(self.analysedMoves), len(self.assessedMoves), len(self.assessedChunks))
+    return 'GameAnalysis({}, analysedMoves: {}, assessedMoves: {}, assessedChunks: {}, activation: {})'.format(
+      self.id, len(self.analysedMoves), len(self.assessedMoves), len(self.assessedChunks), self.activation)
 
   def reportDict(self):
     return {
@@ -108,54 +110,62 @@ class GameAnalysis:
       int(100*(analysedMove.rank()+1)/analysedMove.ambiguity()),
       int(1 if analysedMove.onlyMove() else -1)] for analysedMove in self.analysedMoves]
 
+  def tensorInputGame(self):
+    return self.binnedMoveActivations() + self.binnedChunkActivations() + self.tStatsDraw() + self.tStatsLosing() # Should be a list of 30 ints
+
   @staticmethod
   def averageChunks(assessedChunks):
     if len(assessedChunks) > 0:
       return numpy.mean([chunk.activation for chunk in assessedChunks])
     return 0
 
+  def binnedMoveActivations(self):
+    bins = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0] # 10 bins representing 0-10%, 10-20%, etc...
+    if self.assessed:
+      proportion = 100 / len(self.assessedMoves)
+      for assessedMove in self.assessedMoves:
+        bins[min(9, max(0, int(assessedMove.activation/10)))] += proportion # this is a density distribution
+      bins = [int(i) for i in bins]
+    return bins
+
+  def binnedChunkActivations(self):
+    bins = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0] # 10 bins representing 0-10%, 10-20%, etc...
+    if self.assessed:
+      proportion = 100 / len(self.assessedChunks)
+      for assessedChunk in self.assessedChunks:
+        bins[min(9, max(0, int(assessedChunk.activation/10)))] += proportion # this is a density distribution
+      bins = [int(i) for i in bins]
+    return bins
+
+  def tStatsDraw(self): # borrowing from the PGN spy approach a little bit
+    ts = [0, 0, 0, 0, 0] # counted PVs
+    pvsDraw = self.pvsDraw()
+    for r in pvsDraw:
+      if r in range(1, 6):
+        ts[r - 1] += 1 # Count how often each ranked PV appears
+    output = [0, 0, 0, 0, 0]
+    for r, t in enumerate(ts):
+      output[r] = int(100 * t / max(1, len(pvsDraw))) # normalised
+    return output
+
+  def tStatsLosing(self):
+    ts = [0, 0, 0, 0, 0] # counted PVs
+    pvsLosing = self.pvsLosing()
+    for r in pvsLosing:
+      if r in range(1, 6):
+        ts[r - 1] += 1 # Count how often each ranked PV appears
+    output = [0, 0, 0, 0, 0]
+    for r, t in enumerate(ts):
+      output[r] = int(100 * t / max(1, len(pvsLosing))) # normalised
+    return output
+
   def normalisedAssessedMoves(self):
-    if self.assessed: # bear with me here. Average of the move (40%) and all the chunks that cover it (60%).
+    if self.assessed: # bear with me here. Average of the move (50%) and all the chunks that cover it (50%).
       return [(
-        0.30 * assessedMove.activation + 
-        0.70 * GameAnalysis.averageChunks(self.assessedChunks[max(0,move-10):min(len(self.assessedChunks),move+1)])
+        0.50 * assessedMove.activation + 
+        0.50 * GameAnalysis.averageChunks(self.assessedChunks[max(0,move-10):min(len(self.assessedChunks),move+1)])
       ) for move, assessedMove in enumerate(self.assessedMoves)]
     return []
-
-  def assessmentOutlierAverage(self):
-    if self.assessed:
-      norm = sorted(self.normalisedAssessedMoves())
-      top20Percent = norm[-int(0.2*len(norm)):]
-      if len(top20Percent) > 0:
-        mean = numpy.mean(top20Percent)
-      else:
-        mean = 0
-      if not numpy.isnan(mean):
-        return int(mean)
-    return 0
-
-  def assessmentNoOutlierAverage(self):
-    if self.assessed:
-      norm = sorted(self.normalisedAssessedMoves())
-      top80Percent = norm[-int(0.8*len(norm)):]
-      if len(top80Percent) > 0:
-        mean = numpy.mean(top80Percent)
-      else:
-        mean = 0
-      if not numpy.isnan(mean):
-        return int(mean)
-    return 0
-
-  def assessmentAverage(self):
-    if self.assessed:
-      norm = self.normalisedAssessedMoves()
-      if len(norm) > 0:
-        mean = numpy.mean(norm)
-      else:
-        mean = 0
-      if not numpy.isnan(mean):
-        return int(mean)
-    return 0
 
   def pv0ByAmbiguity(self, ambiguity):
     return sum(int(analysedMove.trueRank() == 1) for analysedMove in self.analysedMoves if analysedMove.ambiguity() == ambiguity)
@@ -177,13 +187,14 @@ def gameAnalysisId(gameId, white):
 
 class GameAnalysisBSONHandler:
   @staticmethod
-  def reads(game, playerAssessment, analysedMovesBSON, assessedMovesBSON, assessedChunksBSON):
+  def reads(game, playerAssessment, analysedMovesBSON, assessedMovesBSON, assessedChunksBSON, activation):
     return GameAnalysis(
       game = game,
       playerAssessment = playerAssessment,
       analysedMoves = [AnalysedMoveBSONHandler.reads(am) for am in analysedMovesBSON],
       assessedMoves = [IrwinReportBSONHandler.reads(am) for am in assessedMovesBSON],
-      assessedChunks = [IrwinReportBSONHandler.reads(ac) for ac in assessedChunksBSON])
+      assessedChunks = [IrwinReportBSONHandler.reads(ac) for ac in assessedChunksBSON],
+      activation = activation)
 
   @staticmethod
   def writes(gameAnalysis):
@@ -193,7 +204,8 @@ class GameAnalysisBSONHandler:
       'userId': gameAnalysis.userId,
       'analysedMoves': [AnalysedMoveBSONHandler.writes(am) for am in gameAnalysis.analysedMoves],
       'assessedMoves': [IrwinReportBSONHandler.writes(am) for am in gameAnalysis.assessedMoves],
-      'assessedChunks': [IrwinReportBSONHandler.writes(am) for am in gameAnalysis.assessedChunks]
+      'assessedChunks': [IrwinReportBSONHandler.writes(am) for am in gameAnalysis.assessedChunks],
+      'activation': gameAnalysis.activation
     }
 
 class GameAnalysisDB(namedtuple('GameAnalysisDB', ['gameAnalysisColl', 'gameDB', 'playerAssessmentDB'])):
@@ -213,7 +225,8 @@ class GameAnalysisDB(namedtuple('GameAnalysisDB', ['gameAnalysisColl', 'gameDB',
           playerAssessments.byGameId(ga['gameId']),
           ga.get('analysedMoves', []),
           ga.get('assessedMoves', []),
-          ga.get('assessedChunks', [])))
+          ga.get('assessedChunks', []),
+          ga.get('activation', None)))
     return gameAnalyses
 
   def byUserIds(self, userIds):
