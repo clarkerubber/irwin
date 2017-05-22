@@ -9,7 +9,9 @@ from modules.irwin.TrainNetworks import TrainNetworks
 from modules.irwin.MoveAssessment import MoveAssessment
 from modules.irwin.ChunkAssessment import ChunkAssessment
 from modules.irwin.GameAssessment import GameAssessment
+from modules.irwin.GamePVAssessment import GamePVAssessment
 from modules.irwin.PlayerAssessment import PlayerAssessment
+
 from modules.irwin.TrainingStats import TrainingStats, Accuracy, Sample
 from modules.irwin.FalseReports import FalseReport, FalseReports
 from modules.core.PlayerAnalysis import PlayerAnalysis
@@ -25,7 +27,8 @@ class Irwin(namedtuple('Irwin', ['api', 'learner', 'trainingStatsDB', 'playerAna
   def assessGame(gameAnalysis):
     gameAnalysis.assessedMoves = MoveAssessment.applyNet(gameAnalysis.tensorInputMoves())
     gameAnalysis.assessedChunks = ChunkAssessment.applyNet(gameAnalysis.tensorInputChunks())
-    gameAnalysis.activation = GameAssessment.applyNet([gameAnalysis.tensorInputGame()])[0].activation
+    gameAnalysis.PVactivation = GamePVAssessment.applyNet([gameAnalysis.tensorInputGamePVs()])[0].activation
+    gameAnalysis.moveChunkActivation = GameAssessment.applyNet([gameAnalysis.tensorInputGame()])[0].activation
     gameAnalysis.assessed = True
     return gameAnalysis
 
@@ -59,14 +62,18 @@ class Irwin(namedtuple('Irwin', ['api', 'learner', 'trainingStatsDB', 'playerAna
   def assessPlayers(playerAnalyses): # fast and ugly mode
     moves = []
     chunks = []
+    pvs = []
     for playerAnalysis in playerAnalyses:
       moves.extend(Irwin.flatten([gameAnalysis.tensorInputMoves() for gameAnalysis in playerAnalysis.gameAnalyses.gameAnalyses]))
       chunks.extend(Irwin.flatten([gameAnalysis.tensorInputChunks() for gameAnalysis in playerAnalysis.gameAnalyses.gameAnalyses]))
+      pvs.extend([gameAnalysis.tensorInputGamePVs() for gameAnalysis in playerAnalysis.gameAnalyses.gameAnalyses])
 
     assessedMoves = MoveAssessment.applyNet(moves)
     assessedChunks = ChunkAssessment.applyNet(chunks)
+    assessedPVs = GamePVAssessment.applyNet(pvs)
     moveHeader = 0
     chunkHeader = 0
+    pvHeader = 0
     playerAnalyses1 = []
 
     gameAnalyses1 = GameAnalyses([])
@@ -76,15 +83,17 @@ class Irwin(namedtuple('Irwin', ['api', 'learner', 'trainingStatsDB', 'playerAna
         lenC = len(gameAnalysis.tensorInputChunks())
         gameAnalysis.assessedMoves = assessedMoves[moveHeader:moveHeader+lenM]
         gameAnalysis.assessedChunks = assessedChunks[chunkHeader:chunkHeader+lenC]
+        gameAnalysis.PVActivation = assessedPVs[pvHeader].activation
         moveHeader += lenM
         chunkHeader += lenC
+        pvHeader += 1
         gameAnalyses1.append(gameAnalysis)
 
     assessedGames = GameAssessment.applyNet([gameAnalysis.tensorInputGame() for gameAnalysis in gameAnalyses1.gameAnalyses])
 
     gameAnalyses2 = GameAnalyses([])
     for gameAnalysis, gameIrwinReport in zip(gameAnalyses1.gameAnalyses, assessedGames):
-      gameAnalysis.activation = gameIrwinReport.activation
+      gameAnalysis.moveChunkActivation = gameIrwinReport.activation
       gameAnalysis.assessed = True
       gameAnalyses2.append(gameAnalysis)
 

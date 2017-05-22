@@ -30,9 +30,14 @@ class GameAnalyses:
     [chunks.extend(gameAnalysis.tensorInputChunks()) for gameAnalysis in self.gameAnalyses]
     return chunks
 
-  def tensorInputGames(self):
+  def tensorInputMoveChunks(self):
     games = []
-    [games.append(gameAnalysis.tensorInputGame()) for gameAnalysis in self.gameAnalyses]
+    [games.append(gameAnalysis.tensorInputMoveChunks()) for gameAnalysis in self.gameAnalyses]
+    return games
+
+  def tensorInputGamePVs(self):
+    games = []
+    [games.append(gameAnalysis.tensorInputGamePVs()) for gameAnalysis in self.gameAnalyses]
     return games
 
   def tensorInputPVsDraw(self): # borrowing from the PGN spy approach a little bit
@@ -60,12 +65,12 @@ class GameAnalyses:
     return output
 
   def binnedGameActivations(self):
-    bins = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0] # 10 bins representing 0-10%, 10-20%, etc...
+    bins = [0, 0, 0, 0, 0] # 10 bins representing 0-20%, 20-30%, etc...
     assessedGames = [gameAnalysis for gameAnalysis in self.gameAnalyses if gameAnalysis.activation is not None]
     if len(assessedGames) > 0:
       proportion = 100 / len(assessedGames)
       for assessedGame in assessedGames:
-        bins[min(9, max(0, int(assessedGame.activation/10)))] += proportion # this is a density distribution
+        bins[min(4, max(0, int(assessedGame.activation()/20)))] += proportion # this is a density distribution
       bins = [int(i) for i in bins]
     return bins
 
@@ -98,4 +103,4 @@ class GameAnalyses:
     return activations
 
   def gameActivations(self):
-    return [gameAnalysis.activation for gameAnalysis in self.gameAnalyses if gameAnalysis.activation is not None]
+    return [gameAnalysis.activation() for gameAnalysis in self.gameAnalyses if gameAnalysis.activation is not None]

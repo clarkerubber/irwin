@@ -6,7 +6,7 @@ import random
 import numpy
 
 class PlayerAnalysis(namedtuple('PlayerAnalysis', [
-  'id', 'titled', 'engine', 'gamesPlayed', 'closedReports', 'gameAnalyses', 'activation'])): # id = userId, engine = (True | False | None)
+  'id', 'titled', 'engine', 'gamesPlayed', 'closedReports', 'gameAnalyses', 'gamesActivation' 'PVActivation'])): # id = userId, engine = (True | False | None)
   def setEngine(self, engine):
     return PlayerAnalysis(
       id = self.id,
@@ -15,7 +15,8 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', [
       gamesPlayed = self.gamesPlayed,
       closedReports = self.closedReports,
       gameAnalyses = self.gameAnalyses,
-      activation = self.activation)
+      gamesActivation = self.gamesActivation,
+      PVActivation = self.PVActivation)
 
   def tensorInputMoves(self):
     return self.gameAnalyses.tensorInputMoves()
@@ -23,8 +24,11 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', [
   def tensorInputChunks(self):
     return self.gameAnalyses.tensorInputChunks()
 
-  def tensorInputGames(self):
-    return self.gameAnalyses.tensorInputGames()
+  def tensorInputMoveChunks(self):
+    return self.gameAnalyses.tensorInputMoveChunks()
+
+  def tensorInputGamePVs(self):
+    return self.gameAnalyses.tensorInputGamePVs()
 
   def tensorInputPVsDraw(self):
     return self.gameAnalyses.tensorInputPVsDraw()
@@ -39,8 +43,11 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', [
         pvs[i] = 0
     return pvs # list of ints 5 items long
 
-  def tensorInputPlayer(self):
-    return self.tensorInputPV0ByAmbiguity() + self.tensorInputPVsDraw() + self.tensorInputPVsLosing() + self.binnedGameActivations() # list of 25 ints
+  def tensorInputPlayerPVs(self):
+    return self.tensorInputPV0ByAmbiguity() + self.tensorInputPVsDraw() + self.tensorInputPVsLosing() # 15 ints
+
+  def tensorInputGames(self):
+    return self.binnedGameActivations() # list of 5 ints
 
   def moveActivations(self):
     return self.gameAnalyses.moveActivations()
@@ -61,13 +68,21 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', [
     [chunks.append([int(self.engine)] + chunk) for chunk in self.tensorInputChunks()]
     return chunks
 
-  def CSVGames(self):
+  def CSVMoveChunks(self):
     games = []
-    [games.append([int(self.engine)] + game) for game in self.tensorInputGames()]
+    [games.append([int(self.engine)] + game) for game in self.tensorInputMoveChunks()]
     return games
 
-  def CSVPlayer(self):
-    return [int(self.engine)] + self.tensorInputPlayer()
+  def CSVGamePVs(self):
+    games = []
+    [games.append([int(self.engine)] + game) for game in self.tensorInputGamePVs()]
+    return games
+
+  def CSVPlayerPVs(self):
+    return [int(self.engine)] + self.tensorInputPlayerPVs()
+
+  def CSVGames(self):
+    return [int(self.engine)] + self.tensorInputGames()
 
   def report(self, thresholds):
     return {
@@ -107,7 +122,8 @@ class PlayerAnalysisBSONHandler:
       gamesPlayed = bson['gamesPlayed'],
       closedReports = bson['closedReports'],
       gameAnalyses = gameAnalyses,
-      activation = bson.get('activation', None))
+      gamesActivation = bson.get('gamesActivation', None),
+      PVActivation = bson.get('PVActivation', None))
 
   @staticmethod
   def writes(playerAnalysis):
@@ -117,7 +133,8 @@ class PlayerAnalysisBSONHandler:
       'engine': playerAnalysis.engine,
       'gamesPlayed': playerAnalysis.gamesPlayed,
       'closedReports': playerAnalysis.closedReports,
-      'activation': playerAnalysis.activation,
+      'gamesActivation': playerAnalysis.gamesActivation,
+      'PVActivation': PlayerAnalysis.PVActivation,
       'date': datetime.datetime.utcnow()
     }
 

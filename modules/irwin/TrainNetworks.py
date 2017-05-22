@@ -1,10 +1,12 @@
 import threading
+import logging
 
 from modules.irwin.updatePlayerEngineStatus import updatePlayerEngineStatus
-from modules.irwin.writeCSV import writeClassifiedMovesCSV, writeClassifiedMoveChunksCSV, writeClassifiedGamesCSV, writeClassifiedPlayersCSV
+from modules.irwin.writeCSV import writeClassifiedMovesCSV, writeClassifiedChunksCSV, writeClassifiedMoveChunksCSV, writeClassifiedGamePVsCSV, writeClassifiedPlayerPVs, writeClassifiedGames
 from modules.irwin.MoveAssessment import MoveAssessment
 from modules.irwin.ChunkAssessment import ChunkAssessment
 from modules.irwin.GameAssessment import GameAssessment
+from modules.irwin.GamePVAssessment import GamePVAssessment
 from modules.irwin.PlayerAssessment import PlayerAssessment
 
 class TrainNetworks(threading.Thread):
@@ -22,14 +24,19 @@ class TrainNetworks(threading.Thread):
       updatePlayerEngineStatus(self.api, self.playerAnalysisDB, self.updateAll)
     if not self.trainOnly:
       updatePlayerEngineStatus(self.api, self.playerAnalysisDB, self.updateAll)
+      logging.warning("Importing users for CSV dumps")
       sortedUsers = self.playerAnalysisDB.balancedSorted()
-      self.classifyMoves(sortedUsers)
-      self.classifyMoveChunks(sortedUsers)
+      logging.warning("Dumping stats to CSV")
+      #self.classifyMoves(sortedUsers)
+      #self.classifyChunks(sortedUsers)
+      #self.classifyMoveChunks(sortedUsers)
+      #self.classifyGamePVs(sortedUsers)
+      self.classifyPlayerPVs(sortedUsers)
       self.classifyGames(sortedUsers)
-      self.classifyPlayers(sortedUsers)
-      MoveAssessment.learn(self.minTrainingSteps, self.incTrainingSteps)
-      ChunkAssessment.learn(self.minTrainingSteps, self.incTrainingSteps)
-      GameAssessment.learn(self.minTrainingSteps, self.incTrainingSteps)
+      #MoveAssessment.learn(self.minTrainingSteps, self.incTrainingSteps)
+      #ChunkAssessment.learn(self.minTrainingSteps, self.incTrainingSteps)
+      #GameAssessment.learn(self.minTrainingSteps, self.incTrainingSteps)
+      GamePVAssessment.learn(self.minTrainingSteps, self.incTrainingSteps)
       PlayerAssessment.learn(self.minTrainingSteps, self.incTrainingSteps)
 
   def classifyMoves(self, playerAnalyses):
@@ -37,15 +44,23 @@ class TrainNetworks(threading.Thread):
     [entries.extend(playerAnalysis.CSVMoves()) for playerAnalysis in playerAnalyses]
     writeClassifiedMovesCSV(entries)
 
-  def classifyMoveChunks(self, playerAnalyses):
+  def classifyChunks(self, playerAnalyses):
     entries = []
     [entries.extend(playerAnalysis.CSVChunks()) for playerAnalysis in playerAnalyses]
+    writeClassifiedChunksCSV(entries)
+
+  def classifyMoveChunks(self, playerAnalyses):
+    entries = []
+    [entries.extend(playerAnalysis.CSVMoveChunks()) for playerAnalysis in playerAnalyses]
     writeClassifiedMoveChunksCSV(entries)
 
-  def classifyGames(self, playerAnalyses):
+  def classifyGamePVs(self, playerAnalyses):
     entries = []
-    [entries.extend(playerAnalysis.CSVGames()) for playerAnalysis in playerAnalyses]
-    writeClassifiedGamesCSV(entries)
+    [entries.extend(playerAnalysis.CSVGamePVs()) for playerAnalysis in playerAnalyses]
+    writeClassifiedGamePVsCSV(entries)
 
-  def classifyPlayers(self, playerAnalyses):
-    writeClassifiedPlayersCSV([playerAnalysis.CSVPlayer() for playerAnalysis in playerAnalyses])
+  def classifyPlayerPVs(self, playerAnalyses):
+    writeClassifiedPlayerPVsCSV([playerAnalysis.CSVPlayerPVs() for playerAnalysis in playerAnalyses])
+
+  def classifyGames(self, playerAnalyses):
+    writeClassifiedGamesCSV([playerAnalysis.CSVGames() for playerAnalysis in playerAnalyses])
