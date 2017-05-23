@@ -54,7 +54,8 @@ class Irwin(namedtuple('Irwin', ['api', 'learner', 'trainingStatsDB', 'playerAna
       gamesPlayed = playerAnalysis1.gamesPlayed,
       closedReports = playerAnalysis1.closedReports,
       gameAnalyses = playerAnalysis1.gameAnalyses,
-      gamesActivation = GamesAssessment.applyNet([playerAnalysis1.tensorInputGames()])[0].activation,
+      gamesActivation = None,
+      #gamesActivation = GamesAssessment.applyNet([playerAnalysis1.tensorInputGames()])[0].activation,
       pvActivation = PlayerPVAssessment.applyNet([playerAnalyses1.tensorInputPlayerPVs()])[0].activation
     )
 
@@ -123,9 +124,10 @@ class Irwin(namedtuple('Irwin', ['api', 'learner', 'trainingStatsDB', 'playerAna
       gameHeader += lenG
 
     playerAnalyses2 = []
-    gameIrwinReports = GamesAssessment.applyNet(tensorInputGames)
+    #gameIrwinReports = GamesAssessment.applyNet(tensorInputGames)
     playerPVIrwinReports = PlayerPVAssessment.applyNet(tensorInputPlayerPVs)
-    for playerAnalysis, gameIrwinReport, playerPVIrwinReport in zip(playerAnalyses1, gameIrwinReports, playerPVIrwinReports):
+    #for playerAnalysis, gameIrwinReport, playerPVIrwinReport in zip(playerAnalyses1, gameIrwinReports, playerPVIrwinReports):
+    for playerAnalysis, playerPVIrwinReport in zip(playerAnalyses1, playerPVIrwinReports):
       playerAnalyses2.append(PlayerAnalysis(
         id = playerAnalysis.id,
         titled = playerAnalysis.titled, 
@@ -133,7 +135,8 @@ class Irwin(namedtuple('Irwin', ['api', 'learner', 'trainingStatsDB', 'playerAna
         gamesPlayed = playerAnalysis.gamesPlayed,
         closedReports = playerAnalysis.closedReports,
         gameAnalyses = playerAnalysis.gameAnalyses,
-        gamesActivation = gameIrwinReport.activation,
+        gamesActivation = None,
+        #gamesActivation = gameIrwinReport.activation,
         pvActivation = playerPVIrwinReport.activation))
 
     return playerAnalyses2
