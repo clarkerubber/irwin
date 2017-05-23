@@ -39,7 +39,7 @@ class TrainNetworks(threading.Thread):
       MoveChunkAssessment.learn(self.minTrainingSteps, self.incTrainingSteps)
       GamePVAssessment.learn(self.minTrainingSteps, self.incTrainingSteps)
       PlayerPVAssessment.learn(self.minTrainingSteps, self.incTrainingSteps)
-      #GamesAssessment.learn(self.minTrainingSteps, self.incTrainingSteps)
+      GamesAssessment.learn(self.minTrainingSteps, self.incTrainingSteps)
 
   def classifyMoves(self, playerAnalyses):
     entries = []
