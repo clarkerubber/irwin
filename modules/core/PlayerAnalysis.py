@@ -6,7 +6,7 @@ import random
 import numpy
 
 class PlayerAnalysis(namedtuple('PlayerAnalysis', [
-  'id', 'titled', 'engine', 'gamesPlayed', 'closedReports', 'gameAnalyses', 'gamesActivation' 'PVActivation'])): # id = userId, engine = (True | False | None)
+  'id', 'titled', 'engine', 'gamesPlayed', 'closedReports', 'gameAnalyses', 'gamesActivation', 'pvActivation'])): # id = userId, engine = (True | False | None)
   def setEngine(self, engine):
     return PlayerAnalysis(
       id = self.id,
@@ -16,7 +16,10 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', [
       closedReports = self.closedReports,
       gameAnalyses = self.gameAnalyses,
       gamesActivation = self.gamesActivation,
-      PVActivation = self.PVActivation)
+      pvActivation = self.pvActivation)
+
+  def activation(self):
+    return int((self.gamesActivation + self.pvActivation) / 2)
 
   def tensorInputMoves(self):
     return self.gameAnalyses.tensorInputMoves()
@@ -94,7 +97,7 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', [
     }
 
   def isLegit(self, thresholds):
-    if self.activation is not None:
+    if self.activation() is not None:
       gamesAnalysed = len(self.gameAnalyses.gameAnalyses)
 
       gameActivations = self.gameAnalyses.gameActivations()
@@ -104,11 +107,11 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', [
 
       legitGames = sum([int(a < thresholds['averages']['legit']) for a in gameActivations])
 
-      if (not self.titled and self.activation > thresholds['overall']['engine']
+      if (not self.titled and self.activation() > thresholds['overall']['engine']
         and exceptionalGames >= (2/10)*gamesAnalysed and exceptionalGames > 1
         and gamesAnalysed > 4):
         return False
-      elif self.activation < thresholds['overall']['legit'] and moderateGames == 0 and gamesAnalysed > 4:
+      elif self.activation() < thresholds['overall']['legit'] and moderateGames == 0 and gamesAnalysed > 4:
         return True # Player is legit
     return None # Player falls into a grey area
 
@@ -123,7 +126,7 @@ class PlayerAnalysisBSONHandler:
       closedReports = bson['closedReports'],
       gameAnalyses = gameAnalyses,
       gamesActivation = bson.get('gamesActivation', None),
-      PVActivation = bson.get('PVActivation', None))
+      pvActivation = bson.get('pvActivation', None))
 
   @staticmethod
   def writes(playerAnalysis):
@@ -134,7 +137,7 @@ class PlayerAnalysisBSONHandler:
       'gamesPlayed': playerAnalysis.gamesPlayed,
       'closedReports': playerAnalysis.closedReports,
       'gamesActivation': playerAnalysis.gamesActivation,
-      'PVActivation': PlayerAnalysis.PVActivation,
+      'pvActivation': playerAnalysis.pvActivation,
       'date': datetime.datetime.utcnow()
     }
 

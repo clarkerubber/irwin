@@ -4,19 +4,19 @@ import logging
 from modules.irwin.TrainingStats import Accuracy
 from modules.irwin.IrwinReport import IrwinReport
 
-class PlayerAssessment():
+class GamesAssessment():
   @staticmethod
   def combineInputs(X):
-    playerandgamesfnn = tf.contrib.layers.stack(X, tf.contrib.layers.fully_connected, [25, 8, 4, 2], scope="mainnetwork")
+    playerandgamesfnn = tf.contrib.layers.stack(X, tf.contrib.layers.fully_connected, [8, 4, 2], scope="mainnetwork")
     return tf.reshape(playerandgamesfnn, [-1, 2])
 
   @staticmethod
   def inference(X):
-    return tf.nn.softmax(PlayerAssessment.combineInputs(X))
+    return tf.nn.softmax(GamesAssessment.combineInputs(X))
 
   @staticmethod
   def loss(X, Y):
-    comb = PlayerAssessment.combineInputs(X)
+    comb = GamesAssessment.combineInputs(X)
     entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=comb, labels=Y))
     predicted = tf.round(tf.nn.softmax(comb))
     evaluation = tf.reduce_mean(tf.cast(tf.equal(predicted, Y), tf.float32))
@@ -24,7 +24,7 @@ class PlayerAssessment():
 
   @staticmethod
   def inputs():
-    inputList = PlayerAssessment.readCSV(800, [[0.0]]*21)
+    inputList = GamesAssessment.readCSV(800, [[0.0]]*6)
     features = tf.transpose(tf.stack(inputList[1:]))
     cheat = tf.to_float(tf.equal(inputList[0], [1]))
     legit = tf.to_float(tf.equal(inputList[0], [0]))
@@ -44,7 +44,7 @@ class PlayerAssessment():
 
   @staticmethod
   def readCSV(batchSize, recordDefaults):
-    filename_queue = tf.train.string_input_producer(['data/classified-players.csv'])
+    filename_queue = tf.train.string_input_producer(['data/classified-games.csv'])
     reader = tf.TextLineReader(skip_header_lines=1)
     key, value = reader.read(filename_queue)
     decoded = tf.decode_csv(value, record_defaults=recordDefaults)
@@ -59,10 +59,10 @@ class PlayerAssessment():
     graph = tf.Graph()
     with graph.as_default():
       with tf.Session(graph=graph) as sess:
-        X, Y = PlayerAssessment.inputs()
+        X, Y = GamesAssessment.inputs()
         ## initliase graph for running
-        totalLoss, evaluation, comp = PlayerAssessment.loss(X, Y)
-        trainOp = PlayerAssessment.train(totalLoss)
+        totalLoss, evaluation, comp = GamesAssessment.loss(X, Y)
+        trainOp = GamesAssessment.train(totalLoss)
         initOp = tf.global_variables_initializer()
         saver = tf.train.Saver()
         coord = tf.train.Coordinator()
@@ -70,7 +70,7 @@ class PlayerAssessment():
 
         initialStep = 0
 
-        ckpt = tf.train.get_checkpoint_state('modules/irwin/models/players')
+        ckpt = tf.train.get_checkpoint_state('modules/irwin/models/games')
         if ckpt and ckpt.model_checkpoint_path:
           saver.restore(sess, ckpt.model_checkpoint_path)
           initialStep = int(ckpt.model_checkpoint_path.rsplit('-', 1)[1])
@@ -82,7 +82,7 @@ class PlayerAssessment():
         else: 
           trainingSteps = minTrainingSteps
 
-        logging.warning("training players to: "+str(trainingSteps))
+        logging.warning("training games to: "+str(trainingSteps))
 
         for step in range(initialStep, trainingSteps):
           sess.run(trainOp)
@@ -119,10 +119,10 @@ class PlayerAssessment():
             logging.debug("Indecise: " + str(100*indecise/800) + "% (" + str(indecise) + ")")
             logging.debug("loss: " + str(tloss))
             logging.debug("eval: " + str(eva) + "\n")
-            saver.save(sess, 'modules/irwin/models/players/model', global_step=step)
+            saver.save(sess, 'modules/irwin/models/games/model', global_step=step)
         coord.request_stop()
         coord.join(threads)
-        saver.save(sess, 'modules/irwin/models/players/model', global_step=trainingSteps)
+        saver.save(sess, 'modules/irwin/models/games/model', global_step=trainingSteps)
         saver = tf.train.Saver(sharded=True)
         sess.close()
 
@@ -131,8 +131,8 @@ class PlayerAssessment():
     graph = tf.Graph()
     with graph.as_default():
       with tf.Session(graph=graph) as sess:
-        a = tf.placeholder(tf.float32, shape=[None, 20])
-        infer = PlayerAssessment.inference(a)
+        a = tf.placeholder(tf.float32, shape=[None, 5])
+        infer = GamesAssessment.inference(a)
         feedDict = {a: batch}
         ## initliase graph for running
         with tf.name_scope("global_ops"):
@@ -141,7 +141,7 @@ class PlayerAssessment():
           coord = tf.train.Coordinator()
           threads = tf.train.start_queue_runners(sess=sess, coord=coord)
 
-        ckpt = tf.train.get_checkpoint_state('modules/irwin/models/players')
+        ckpt = tf.train.get_checkpoint_state('modules/irwin/models/games')
         if ckpt and ckpt.model_checkpoint_path:
           saver.restore(sess, ckpt.model_checkpoint_path)
 

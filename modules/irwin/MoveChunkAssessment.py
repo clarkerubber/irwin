@@ -4,19 +4,19 @@ import logging
 from modules.irwin.TrainingStats import Accuracy
 from modules.irwin.IrwinReport import IrwinReport
 
-class ChunkAssessment():
+class MoveChunkAssessment():
   @staticmethod
   def combineInputs(X):
-    playerandgamesfnn = tf.contrib.layers.stack(X, tf.contrib.layers.fully_connected, [150, 140, 90, 40, 10, 2], scope="mainnetwork")
+    playerandgamesfnn = tf.contrib.layers.stack(X, tf.contrib.layers.fully_connected, [15, 10, 2], scope="mainnetwork")
     return tf.reshape(playerandgamesfnn, [-1, 2])
 
   @staticmethod
   def inference(X):
-    return tf.nn.softmax(ChunkAssessment.combineInputs(X))
+    return tf.nn.softmax(MoveChunkAssessment.combineInputs(X))
 
   @staticmethod
   def loss(X, Y):
-    comb = ChunkAssessment.combineInputs(X)
+    comb = MoveChunkAssessment.combineInputs(X)
     entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=comb, labels=Y))
     predicted = tf.round(tf.nn.softmax(comb))
     evaluation = tf.reduce_mean(tf.cast(tf.equal(predicted, Y), tf.float32))
@@ -24,7 +24,7 @@ class ChunkAssessment():
 
   @staticmethod
   def inputs():
-    inputList = ChunkAssessment.readCSV(800, [[0.0]]*82)
+    inputList = MoveChunkAssessment.readCSV(800, [[0.0]]*11)
     features = tf.transpose(tf.stack(inputList[1:]))
     cheat = tf.to_float(tf.equal(inputList[0], [1]))
     legit = tf.to_float(tf.equal(inputList[0], [0]))
@@ -44,7 +44,7 @@ class ChunkAssessment():
 
   @staticmethod
   def readCSV(batchSize, recordDefaults):
-    filename_queue = tf.train.string_input_producer(['data/classified-chunks.csv'])
+    filename_queue = tf.train.string_input_producer(['data/classified-move-chunks.csv'])
     reader = tf.TextLineReader(skip_header_lines=1)
     key, value = reader.read(filename_queue)
     decoded = tf.decode_csv(value, record_defaults=recordDefaults)
@@ -59,10 +59,10 @@ class ChunkAssessment():
     graph = tf.Graph()
     with graph.as_default():
       with tf.Session(graph=graph) as sess:
-        X, Y = ChunkAssessment.inputs()
+        X, Y = MoveChunkAssessment.inputs()
         ## initliase graph for running
-        totalLoss, evaluation, comp = ChunkAssessment.loss(X, Y)
-        trainOp = ChunkAssessment.train(totalLoss)
+        totalLoss, evaluation, comp = MoveChunkAssessment.loss(X, Y)
+        trainOp = MoveChunkAssessment.train(totalLoss)
         initOp = tf.global_variables_initializer()
         saver = tf.train.Saver()
         coord = tf.train.Coordinator()
@@ -70,7 +70,7 @@ class ChunkAssessment():
 
         initialStep = 0
 
-        ckpt = tf.train.get_checkpoint_state('modules/irwin/models/chunks')
+        ckpt = tf.train.get_checkpoint_state('modules/irwin/models/move-chunks')
         if ckpt and ckpt.model_checkpoint_path:
           saver.restore(sess, ckpt.model_checkpoint_path)
           initialStep = int(ckpt.model_checkpoint_path.rsplit('-', 1)[1])
@@ -82,7 +82,7 @@ class ChunkAssessment():
         else: 
           trainingSteps = minTrainingSteps
 
-        logging.warning("training chunks to: "+str(trainingSteps))
+        logging.warning("training move-chunks to: "+str(trainingSteps))
 
         for step in range(initialStep, trainingSteps):
           sess.run(trainOp)
@@ -119,10 +119,10 @@ class ChunkAssessment():
             logging.debug("Indecise: " + str(100*indecise/800) + "% (" + str(indecise) + ")")
             logging.debug("loss: " + str(tloss))
             logging.debug("eval: " + str(eva) + "\n")
-            saver.save(sess, 'modules/irwin/models/chunks/model', global_step=step)
+            saver.save(sess, 'modules/irwin/models/move-chunks/model', global_step=step)
         coord.request_stop()
         coord.join(threads)
-        saver.save(sess, 'modules/irwin/models/chunks/model', global_step=trainingSteps)
+        saver.save(sess, 'modules/irwin/models/move-chunks/model', global_step=trainingSteps)
         saver = tf.train.Saver(sharded=True)
         sess.close()
 
@@ -131,8 +131,8 @@ class ChunkAssessment():
     graph = tf.Graph()
     with graph.as_default():
       with tf.Session(graph=graph) as sess:
-        a = tf.placeholder(tf.float32, shape=[None, 81])
-        infer = ChunkAssessment.inference(a)
+        a = tf.placeholder(tf.float32, shape=[None, 10])
+        infer = MoveChunkAssessment.inference(a)
         feedDict = {a: batch}
         ## initliase graph for running
         with tf.name_scope("global_ops"):
@@ -141,7 +141,7 @@ class ChunkAssessment():
           coord = tf.train.Coordinator()
           threads = tf.train.start_queue_runners(sess=sess, coord=coord)
 
-        ckpt = tf.train.get_checkpoint_state('modules/irwin/models/chunks')
+        ckpt = tf.train.get_checkpoint_state('modules/irwin/models/move-chunks')
         if ckpt and ckpt.model_checkpoint_path:
           saver.restore(sess, ckpt.model_checkpoint_path)
 
