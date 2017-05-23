@@ -19,7 +19,9 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', [
       pvActivation = self.pvActivation)
 
   def activation(self):
-    return int((self.gamesActivation + self.pvActivation) / 2)
+    if self.gamesActivation is not None and self.pvActivation is not None:
+      return int((self.gamesActivation + self.pvActivation) / 2)
+    return 0
 
   def tensorInputMoves(self):
     return self.gameAnalyses.tensorInputMoves()

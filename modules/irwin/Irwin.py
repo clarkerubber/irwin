@@ -29,7 +29,7 @@ class Irwin(namedtuple('Irwin', ['api', 'learner', 'trainingStatsDB', 'playerAna
   def assessGame(gameAnalysis):
     gameAnalysis.assessedMoves = MoveAssessment.applyNet(gameAnalysis.tensorInputMoves())
     gameAnalysis.assessedChunks = ChunkAssessment.applyNet(gameAnalysis.tensorInputChunks())
-    gameAnalysis.PVactivation = GamePVAssessment.applyNet([gameAnalysis.tensorInputGamePVs()])[0].activation
+    gameAnalysis.pvActivation = GamePVAssessment.applyNet([gameAnalysis.tensorInputGamePVs()])[0].activation
     gameAnalysis.moveChunkActivation = MoveChunkAssessment.applyNet([gameAnalysis.tensorInputMoveChunks()])[0].activation
     gameAnalysis.assessed = True
     return gameAnalysis
@@ -87,7 +87,7 @@ class Irwin(namedtuple('Irwin', ['api', 'learner', 'trainingStatsDB', 'playerAna
         lenC = len(gameAnalysis.tensorInputChunks())
         gameAnalysis.assessedMoves = assessedMoves[moveHeader:moveHeader+lenM]
         gameAnalysis.assessedChunks = assessedChunks[chunkHeader:chunkHeader+lenC]
-        gameAnalysis.PVActivation = assessedPVs[pvHeader].activation
+        gameAnalysis.pvActivation = assessedPVs[pvHeader].activation
         moveHeader += lenM
         chunkHeader += lenC
         pvHeader += 1
