@@ -67,7 +67,7 @@ class GameAnalysis:
   def activation(self):
     if self.moveChunkActivation is not None and self.pvActivation is not None:
       return int((self.moveChunkActivation + self.pvActivation) / 2)
-    else return 0
+    return 0
 
   def rankedMoves(self): # Moves where the played move is in top 5
     return [am for am in self.analysedMoves if am.inAnalyses()]
