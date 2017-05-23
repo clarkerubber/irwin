@@ -55,7 +55,7 @@ class Irwin(namedtuple('Irwin', ['api', 'learner', 'trainingStatsDB', 'playerAna
       closedReports = playerAnalysis1.closedReports,
       gameAnalyses = playerAnalysis1.gameAnalyses,
       gamesActivation = GamesAssessment.applyNet([playerAnalysis1.tensorInputGames()])[0].activation,
-      pvActivation = PlayerPVAssessment.applyNet([playerAnalyses1.tensorInputPlayerPVs()])[0].activation
+      pvActivation = PlayerPVAssessment.applyNet([playerAnalysis1.tensorInputPlayerPVs()])[0].activation
     )
 
   @staticmethod
