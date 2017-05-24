@@ -6,6 +6,7 @@ from modules.irwin.writeCSV import writeClassifiedMovesCSV, writeClassifiedChunk
 from modules.irwin.MoveAssessment import MoveAssessment
 from modules.irwin.ChunkAssessment import ChunkAssessment
 from modules.irwin.MoveChunkAssessment import MoveChunkAssessment
+from modules.irwin.GamesAssessment import GamesAssessment
 from modules.irwin.PlayerPVAssessment import PlayerPVAssessment
 from modules.irwin.PlayerAssessment import PlayerAssessment
 
@@ -27,16 +28,16 @@ class TrainNetworks(threading.Thread):
       logging.warning("Importing users for CSV dumps")
       sortedUsers = self.playerAnalysisDB.balancedSorted()
       logging.warning("Dumping stats to CSV")
-      self.classifyMoves(sortedUsers)
-      self.classifyChunks(sortedUsers)
-      self.classifyMoveChunks(sortedUsers)
-      self.classifyPlayerPVs(sortedUsers)
+      #self.classifyMoves(sortedUsers)
+      #self.classifyChunks(sortedUsers)
+      #self.classifyMoveChunks(sortedUsers)
+      #self.classifyPlayerPVs(sortedUsers)
       self.classifyGames(sortedUsers)
       self.classifyPlayers(sortedUsers)
-      MoveAssessment.learn(self.minTrainingSteps, self.incTrainingSteps)
-      ChunkAssessment.learn(self.minTrainingSteps, self.incTrainingSteps)
-      MoveChunkAssessment.learn(self.minTrainingSteps, self.incTrainingSteps)
-      PlayerPVAssessment.learn(self.minTrainingSteps, self.incTrainingSteps)
+      #MoveAssessment.learn(self.minTrainingSteps, self.incTrainingSteps)
+      #ChunkAssessment.learn(self.minTrainingSteps, self.incTrainingSteps)
+      #MoveChunkAssessment.learn(self.minTrainingSteps, self.incTrainingSteps)
+      #PlayerPVAssessment.learn(self.minTrainingSteps, self.incTrainingSteps)
       GamesAssessment.learn(self.minTrainingSteps, self.incTrainingSteps)
       PlayerAssessment.learn(self.minTrainingSteps, self.incTrainingSteps)
 
