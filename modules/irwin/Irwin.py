@@ -99,7 +99,6 @@ class Irwin(namedtuple('Irwin', ['api', 'learner', 'trainingStatsDB', 'playerAna
         gameAnalysis.assessed = True
         moveHeader += lenM
         chunkHeader += lenC
-        pvHeader += 1
         gameAnalyses1.append(gameAnalysis)
 
     assessedMoveChunks = MoveChunkAssessment.applyNet([gameAnalysis.tensorInputMoveChunks() for gameAnalysis in gameAnalyses1.gameAnalyses])
