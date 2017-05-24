@@ -6,7 +6,7 @@ import random
 import numpy
 
 class PlayerAnalysis(namedtuple('PlayerAnalysis', [
-  'id', 'titled', 'engine', 'gamesPlayed', 'closedReports', 'gameAnalyses', 'gamesActivation', 'pvActivation'])): # id = userId, engine = (True | False | None)
+  'id', 'titled', 'engine', 'gamesPlayed', 'closedReports', 'gameAnalyses', 'gamesActivation', 'pvActivation', 'activation'])): # id = userId, engine = (True | False | None)
   def setEngine(self, engine):
     return PlayerAnalysis(
       id = self.id,
@@ -16,12 +16,8 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', [
       closedReports = self.closedReports,
       gameAnalyses = self.gameAnalyses,
       gamesActivation = self.gamesActivation,
-      pvActivation = self.pvActivation)
-
-  def activation(self):
-    if self.gamesActivation is not None and self.pvActivation is not None:
-      return int((self.gamesActivation + self.pvActivation) / 2)
-    return 0
+      pvActivation = self.pvActivation,
+      activation = self.activation)
 
   def tensorInputMoves(self):
     return self.gameAnalyses.tensorInputMoves()
@@ -51,8 +47,16 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', [
   def tensorInputPlayerPVs(self):
     return self.tensorInputPV0ByAmbiguity() + self.tensorInputPVsDraw() + self.tensorInputPVsLosing() # 15 ints
 
+  def tensorInputGamesCombined(self):
+    return self.gameAnalyses.tensorInputGamesCombined()
+
   def tensorInputGames(self):
     return self.binnedGameActivations() # list of 5 ints
+
+  def tensorInputPlayer(self):
+    a = self.gamesActivation if self.gamesActivation is not None else 0
+    b = self.pvActivation if self.pvActivation is not None else 0
+    return [a, b]
 
   def moveActivations(self):
     return self.gameAnalyses.moveActivations()
@@ -64,24 +68,19 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', [
     return self.gameAnalyses.binnedGameActivations()
 
   def CSVMoves(self):
-    moves = []
-    [moves.append([int(self.engine)] + move) for move in self.tensorInputMoves()]
-    return moves
+    return [[int(self.engine)] + move for move in self.tensorInputMoves()]
 
   def CSVChunks(self):
-    chunks = []
-    [chunks.append([int(self.engine)] + chunk) for chunk in self.tensorInputChunks()]
-    return chunks
+    return [[int(self.engine)] + chunk for chunk in self.tensorInputChunks()]
 
   def CSVMoveChunks(self):
-    games = []
-    [games.append([int(self.engine)] + game) for game in self.tensorInputMoveChunks()]
-    return games
+    return [[int(self.engine)] + game for game in self.tensorInputMoveChunks()]
 
   def CSVGamePVs(self):
-    games = []
-    [games.append([int(self.engine)] + game) for game in self.tensorInputGamePVs()]
-    return games
+    return [[int(self.engine)] + game for game in self.tensorInputGamePVs()]
+
+  def CSVGamesCombined(self):
+    return [[int(self.engine)] + game for game in self.tensorInputGamesCombined()]
 
   def CSVPlayerPVs(self):
     return [int(self.engine)] + self.tensorInputPlayerPVs()
@@ -89,17 +88,20 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', [
   def CSVGames(self):
     return [int(self.engine)] + self.tensorInputGames()
 
+  def CSVPlayer(self):
+    return [int(self.engine)] + self.tensorInputPlayer()
+
   def report(self, thresholds):
     return {
       'userId': self.id,
       'isLegit': self.isLegit(thresholds),
-      'activation': int(self.activation()),
+      'activation': int(self.activation),
       'pv0ByAmbiguity': self.gameAnalyses.pv0ByAmbiguityStats(),
       'games': self.gameAnalyses.reportDicts()
     }
 
   def isLegit(self, thresholds):
-    if self.activation() is not None:
+    if self.activation is not None:
       gamesAnalysed = len(self.gameAnalyses.gameAnalyses)
 
       gameActivations = self.gameAnalyses.gameActivations()
@@ -109,11 +111,11 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', [
 
       legitGames = sum([int(a < thresholds['averages']['legit']) for a in gameActivations])
 
-      if (not self.titled and self.activation() > thresholds['overall']['engine']
+      if (not self.titled and self.activation > thresholds['overall']['engine']
         and exceptionalGames >= (2/10)*gamesAnalysed and exceptionalGames > 1
         and gamesAnalysed > 4):
         return False
-      elif self.activation() < thresholds['overall']['legit'] and moderateGames == 0 and gamesAnalysed > 4:
+      elif self.activation < thresholds['overall']['legit'] and moderateGames == 0 and gamesAnalysed > 4:
         return True # Player is legit
     return None # Player falls into a grey area
 
@@ -128,7 +130,8 @@ class PlayerAnalysisBSONHandler:
       closedReports = bson['closedReports'],
       gameAnalyses = gameAnalyses,
       gamesActivation = bson.get('gamesActivation', None),
-      pvActivation = bson.get('pvActivation', None))
+      pvActivation = bson.get('pvActivation', None),
+      activation = bson.get('activation', None))
 
   @staticmethod
   def writes(playerAnalysis):
@@ -140,6 +143,7 @@ class PlayerAnalysisBSONHandler:
       'closedReports': playerAnalysis.closedReports,
       'gamesActivation': playerAnalysis.gamesActivation,
       'pvActivation': playerAnalysis.pvActivation,
+      'activation': playerAnalysis.activation,
       'date': datetime.datetime.utcnow()
     }
 

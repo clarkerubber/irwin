@@ -93,7 +93,7 @@ while True and not settings.noanalyse and not settings.testonly and not settings
 
   for g in games.games:
     if playerAssessments.hasGameId(g.id):
-      gameAnalyses.append(GameAnalysis(g, playerAssessments.byGameId(g.id), [], [], [], None, None))
+      gameAnalyses.append(GameAnalysis(g, playerAssessments.byGameId(g.id), [], [], [], None, None, None))
 
   gameAnalyses.analyse(env.engine, env.infoHandler, config['stockfish']['nodes'])
   env.gameAnalysisDB.lazyWriteGames(gameAnalyses)
@@ -107,7 +107,8 @@ while True and not settings.noanalyse and not settings.testonly and not settings
       closedReports = sum(int(r.get('processedBy', None) is not None) for r in playerData['history'] if r['type'] == 'report' and r['data']['reason'] == 'cheat'),
       gameAnalyses = gameAnalyses,
       gamesActivation = None,
-      pvActivation = None))
+      pvActivation = None,
+      activation = None))
 
   env.playerAnalysisDB.write(playerAnalysis)
   if not settings.noreport:

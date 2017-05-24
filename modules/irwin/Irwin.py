@@ -13,6 +13,8 @@ from modules.irwin.MoveChunkAssessment import MoveChunkAssessment
 from modules.irwin.GamePVAssessment import GamePVAssessment
 from modules.irwin.PlayerPVAssessment import PlayerPVAssessment
 from modules.irwin.GamesAssessment import GamesAssessment
+from modules.irwin.GameCombinedAssessment import GameCombinedAssessment
+from modules.irwin.PlayerAssessment import PlayerAssessment
 
 from modules.irwin.TrainingStats import TrainingStats, Accuracy, Sample
 from modules.irwin.FalseReports import FalseReport, FalseReports
@@ -31,6 +33,7 @@ class Irwin(namedtuple('Irwin', ['api', 'learner', 'trainingStatsDB', 'playerAna
     gameAnalysis.assessedChunks = ChunkAssessment.applyNet(gameAnalysis.tensorInputChunks())
     gameAnalysis.pvActivation = GamePVAssessment.applyNet([gameAnalysis.tensorInputGamePVs()])[0].activation
     gameAnalysis.moveChunkActivation = MoveChunkAssessment.applyNet([gameAnalysis.tensorInputMoveChunks()])[0].activation
+    gameAnalysis.activation = GameCombinedAssessment.applyNet([gameAnalysis.tensorInputGameCombined()])[0].activation
     gameAnalysis.assessed = True
     return gameAnalysis
 
@@ -44,7 +47,32 @@ class Irwin(namedtuple('Irwin', ['api', 'learner', 'trainingStatsDB', 'playerAna
       closedReports = playerAnalysis.closedReports,
       gameAnalyses = GameAnalyses([Irwin.assessGame(gameAnalysis) for gameAnalysis in playerAnalysis.gameAnalyses.gameAnalyses]),
       gamesActivation = None,
-      pvActivation = None
+      pvActivation = None,
+      activation = None,
+    )
+
+    playerAnalysis2 = PlayerAnalysis(
+      id = playerAnalysis1.id,
+      titled = playerAnalysis1.titled,
+      engine = playerAnalysis1.engine,
+      gamesPlayed = playerAnalysis1.gamesPlayed,
+      closedReports = playerAnalysis1.closedReports,
+      gameAnalyses = playerAnalysis1.gameAnalyses,
+      gamesActivation = GamesAssessment.applyNet([playerAnalysis1.tensorInputGames()])[0].activation,
+      pvActivation = PlayerPVAssessment.applyNet([playerAnalysis1.tensorInputPlayerPVs()])[0].activation,
+      activation = None
+    )
+
+    playerAnalysis3 = PlayerAnalysis(
+      id = playerAnalysis1.id,
+      titled = playerAnalysis1.titled,
+      engine = playerAnalysis1.engine,
+      gamesPlayed = playerAnalysis1.gamesPlayed,
+      closedReports = playerAnalysis1.closedReports,
+      gameAnalyses = playerAnalysis1.gameAnalyses,
+      gamesActivation = playerAnalysis2.gamesActivation,
+      pvActivation = playerAnalysis2.pvActivation,
+      activation = None
     )
 
     return PlayerAnalysis(
@@ -54,8 +82,9 @@ class Irwin(namedtuple('Irwin', ['api', 'learner', 'trainingStatsDB', 'playerAna
       gamesPlayed = playerAnalysis1.gamesPlayed,
       closedReports = playerAnalysis1.closedReports,
       gameAnalyses = playerAnalysis1.gameAnalyses,
-      gamesActivation = GamesAssessment.applyNet([playerAnalysis1.tensorInputGames()])[0].activation,
-      pvActivation = PlayerPVAssessment.applyNet([playerAnalysis1.tensorInputPlayerPVs()])[0].activation
+      gamesActivation = playerAnalysis2.gamesActivation,
+      pvActivation = playerAnalysis2.pvActivation,
+      activation = PlayerAssessment.applyNet([playerAnalysis3.tensorInputPlayer()])[0].activation
     )
 
   @staticmethod
@@ -115,7 +144,8 @@ class Irwin(namedtuple('Irwin', ['api', 'learner', 'trainingStatsDB', 'playerAna
         closedReports = playerAnalysis.closedReports,
         gameAnalyses = GameAnalyses(gameAnalyses2.gameAnalyses[gameHeader:gameHeader+lenG]),
         gamesActivation = None,
-        pvActivation = None
+        pvActivation = None,
+        activation = None
       )
       playerAnalyses1.append(pa)
       tensorInputGames.append(pa.tensorInputGames())
@@ -125,7 +155,8 @@ class Irwin(namedtuple('Irwin', ['api', 'learner', 'trainingStatsDB', 'playerAna
     playerAnalyses2 = []
     gameIrwinReports = GamesAssessment.applyNet(tensorInputGames)
     playerPVIrwinReports = PlayerPVAssessment.applyNet(tensorInputPlayerPVs)
-    for playerAnalysis, gameIrwinReport, playerPVIrwinReport in zip(playerAnalyses1, gameIrwinReports, playerPVIrwinReports):
+    playerIrwinReports = PlayerAssessment.applyNet([[a.activation, b.activation] for a, b in zip(gameIrwinReports, playerPVIrwinReports)])
+    for playerAnalysis, gameIrwinReport, playerPVIrwinReport, playerIrwinReport in zip(playerAnalyses1, gameIrwinReports, playerPVIrwinReports, playerIrwinReports):
       playerAnalyses2.append(PlayerAnalysis(
         id = playerAnalysis.id,
         titled = playerAnalysis.titled, 
@@ -134,7 +165,8 @@ class Irwin(namedtuple('Irwin', ['api', 'learner', 'trainingStatsDB', 'playerAna
         closedReports = playerAnalysis.closedReports,
         gameAnalyses = playerAnalysis.gameAnalyses,
         gamesActivation = gameIrwinReport.activation,
-        pvActivation = playerPVIrwinReport.activation))
+        pvActivation = playerPVIrwinReport.activation,
+        activation = playerIrwinReport.activation))
 
     return playerAnalyses2
 
@@ -175,7 +207,7 @@ class TrainAndEvaluate(threading.Thread):
             self.playerAnalysisDB.lazyWriteMany(engines)
           truePositives += len([1 for p in engines if p.isLegit(self.settings['thresholds']) == False])
           indeciseEngines += len([1 for p in engines if p.isLegit(self.settings['thresholds']) is None])
-          falseNegatives.extend([FalseReport(fn.id, fn.activation()) for fn in engines if fn.isLegit(self.settings['thresholds']) == True])
+          falseNegatives.extend([FalseReport(fn.id, fn.activation) for fn in engines if fn.isLegit(self.settings['thresholds']) == True])
 
           page += 1
           engines = self.playerAnalysisDB.enginesPaginated(page)
@@ -194,7 +226,7 @@ class TrainAndEvaluate(threading.Thread):
             self.playerAnalysisDB.lazyWriteMany(legits)
           trueNegatives += len([1 for p in legits if p.isLegit(self.settings['thresholds']) == True])
           indeciseLegits += len([1 for p in legits if p.isLegit(self.settings['thresholds']) is None])
-          falsePositives.extend([FalseReport(fp.id, fp.activation()) for fp in legits if fp.isLegit(self.settings['thresholds']) == False])
+          falsePositives.extend([FalseReport(fp.id, fp.activation) for fp in legits if fp.isLegit(self.settings['thresholds']) == False])
 
           page += 1
           legits = self.playerAnalysisDB.legitsPaginated(page)
