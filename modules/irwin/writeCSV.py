@@ -34,22 +34,6 @@ def writeClassifiedMoveChunksCSV(entries):
     shuffle(entries)
     [writer.writerow(entry) for entry in entries]
 
-def writeClassifiedGamePVsCSV(entries):
-  with open('data/classified-game-pvs.csv', 'w') as fh:
-    writer = csv.writer(fh, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-    writer.writerow(['engine', 'draw1', 'draw2', 'draw3', 'draw4', 'draw5',
-      'lose1', 'lose2', 'lose3', 'lose4', 'lose5',
-      'pv01', 'pv02', 'pv03', 'pv04', 'pv05'])
-    shuffle(entries)
-    [writer.writerow(entry) for entry in entries]
-
-def writeClassifiedGamesCombinedCSV(entries):
-  with open('data/classified-games-combined.csv', 'w') as fh:
-    writer = csv.writer(fh, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-    writer.writerow(['engine', 'moveChunk', 'pv'])
-    shuffle(entries)
-    [writer.writerow(entry) for entry in entries]
-
 def writeClassifiedPlayerPVsCSV(entries):
   with open('data/classified-player-pvs.csv', 'w') as fh:
     writer = csv.writer(fh, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)

@@ -28,9 +28,6 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', [
   def tensorInputMoveChunks(self):
     return self.gameAnalyses.tensorInputMoveChunks()
 
-  def tensorInputGamePVs(self):
-    return self.gameAnalyses.tensorInputGamePVs()
-
   def tensorInputPVsDraw(self):
     return self.gameAnalyses.tensorInputPVsDraw()
 
@@ -46,9 +43,6 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', [
 
   def tensorInputPlayerPVs(self):
     return self.tensorInputPV0ByAmbiguity() + self.tensorInputPVsDraw() + self.tensorInputPVsLosing() # 15 ints
-
-  def tensorInputGamesCombined(self):
-    return self.gameAnalyses.tensorInputGamesCombined()
 
   def tensorInputGames(self):
     return self.binnedGameActivations() # list of 5 ints
@@ -75,12 +69,6 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', [
 
   def CSVMoveChunks(self):
     return [[int(self.engine)] + game for game in self.tensorInputMoveChunks()]
-
-  def CSVGamePVs(self):
-    return [[int(self.engine)] + game for game in self.tensorInputGamePVs()]
-
-  def CSVGamesCombined(self):
-    return [[int(self.engine)] + game for game in self.tensorInputGamesCombined()]
 
   def CSVPlayerPVs(self):
     return [int(self.engine)] + self.tensorInputPlayerPVs()

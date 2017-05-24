@@ -35,11 +35,6 @@ class GameAnalyses:
     [games.append(gameAnalysis.tensorInputMoveChunks()) for gameAnalysis in self.gameAnalyses]
     return games
 
-  def tensorInputGamePVs(self):
-    games = []
-    [games.append(gameAnalysis.tensorInputGamePVs()) for gameAnalysis in self.gameAnalyses]
-    return games
-
   def tensorInputPVsDraw(self): # borrowing from the PGN spy approach a little bit
     pvs = [] # all of the PV ranks for positions that match
     ts = [0, 0, 0, 0, 0] # counted PVs
@@ -63,9 +58,6 @@ class GameAnalyses:
     for r, t in enumerate(ts):
       output[r] = int(100 * t / max(1, len(pvs)))
     return output
-
-  def tensorInputGamesCombined(self):
-    return [gameAnalysis.tensorInputGameCombined() for gameAnalysis in self.gameAnalyses]
 
   def binnedGameActivations(self):
     bins = [0, 0, 0, 0, 0] # 10 bins representing 0-20%, 20-30%, etc...
