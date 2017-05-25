@@ -94,16 +94,16 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', [
 
       gameActivations = self.gameAnalyses.gameActivations()
 
-      moderateGames = sum([int(a > thresholds['averages']['moderate']) for a in gameActivations])
+      suspiciousGames = sum([int(a > thresholds['averages']['suspicious']) for a in gameActivations])
       exceptionalGames = sum([int(a > thresholds['averages']['exceptional']) for a in gameActivations])
 
       legitGames = sum([int(a < thresholds['averages']['legit']) for a in gameActivations])
 
       if (not self.titled and self.activation > thresholds['overall']['engine']
-        and exceptionalGames >= (2/10)*gamesAnalysed and exceptionalGames > 1
+        and exceptionalGames >= (2/10)*gamesAnalysed and exceptionalGames > 2
         and gamesAnalysed > 4):
         return False
-      elif self.activation < thresholds['overall']['legit'] and moderateGames == 0 and gamesAnalysed > 4:
+      elif self.activation < thresholds['overall']['legit'] and suspiciousGames == 0 and gamesAnalysed > 4:
         return True # Player is legit
     return None # Player falls into a grey area
 
