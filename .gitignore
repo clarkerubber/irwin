@@ -101,3 +101,6 @@ stockfish*
 
 # Config
 conf/
+
+# Deployment Scripts
+deploymodels.sh

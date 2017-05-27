@@ -7,7 +7,7 @@ from modules.irwin.IrwinReport import IrwinReport
 class GamesAssessment():
   @staticmethod
   def combineInputs(X):
-    playerandgamesfnn = tf.contrib.layers.stack(X, tf.contrib.layers.fully_connected, [8, 4, 2], scope="mainnetwork")
+    playerandgamesfnn = tf.contrib.layers.stack(X, tf.contrib.layers.fully_connected, [20, 15, 4, 2], scope="mainnetwork")
     return tf.reshape(playerandgamesfnn, [-1, 2])
 
   @staticmethod
@@ -24,7 +24,7 @@ class GamesAssessment():
 
   @staticmethod
   def inputs():
-    inputList = GamesAssessment.readCSV(800, [[0.0]]*6)
+    inputList = GamesAssessment.readCSV(800, [[0.0]]*11)
     features = tf.transpose(tf.stack(inputList[1:]))
     cheat = tf.to_float(tf.equal(inputList[0], [1]))
     legit = tf.to_float(tf.equal(inputList[0], [0]))
@@ -131,7 +131,7 @@ class GamesAssessment():
     graph = tf.Graph()
     with graph.as_default():
       with tf.Session(graph=graph) as sess:
-        a = tf.placeholder(tf.float32, shape=[None, 5])
+        a = tf.placeholder(tf.float32, shape=[None, 10])
         infer = GamesAssessment.inference(a)
         feedDict = {a: batch}
         ## initliase graph for running

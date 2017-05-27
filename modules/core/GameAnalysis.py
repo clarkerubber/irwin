@@ -111,10 +111,23 @@ class GameAnalysis:
       int(1 if analysedMove.onlyMove() else -1)] for analysedMove in self.analysedMoves]
 
   def tensorInputMoveChunks(self):
-    return self.binnedMoveActivations() + self.binnedChunkActivations() # list of 10 ints
+    return self.binnedMoveActivations() + self.binnedChunkActivations() + [int(self.hasHotStreak())] # list of 11 ints
 
   def tensorInputGamePVs(self):
     return self.tStatsDraw() + self.tStatsLosing() + self.pv0ByAmbiguityDensity() # list of 15 ints
+
+  def hasHotStreak(self):
+    hotNams = [nam > 80 for nam in self.normalisedAssessedMoves()]
+    maxCount = 0
+    count = 0
+    for i in hotNams:
+      if i:
+        count += 1
+        if count > maxCount:
+          maxCount = count
+      else:
+        count = 0
+    return maxCount > 5
 
   @staticmethod
   def averageChunks(assessedChunks):

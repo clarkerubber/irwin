@@ -60,12 +60,12 @@ class GameAnalyses:
     return output
 
   def binnedGameActivations(self):
-    bins = [0, 0, 0, 0, 0] # 10 bins representing 0-20%, 20-30%, etc...
+    bins = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0] # 10 bins representing 0-20%, 20-30%, etc...
     assessedGames = [gameAnalysis for gameAnalysis in self.gameAnalyses if gameAnalysis.moveChunkActivation is not None]
     if len(assessedGames) > 0:
       proportion = 100 / len(assessedGames)
       for assessedGame in assessedGames:
-        bins[min(4, max(0, int(assessedGame.moveChunkActivation/20)))] += proportion # this is a density distribution
+        bins[min(4, max(0, int(assessedGame.moveChunkActivation/10)))] += proportion # this is a density distribution
       bins = [int(i) for i in bins]
     return bins
 
@@ -99,3 +99,6 @@ class GameAnalyses:
 
   def gameActivations(self):
     return [gameAnalysis.moveChunkActivation for gameAnalysis in self.gameAnalyses if gameAnalysis.moveChunkActivation is not None]
+
+  def gamesWithHotStreaks(self):
+    return len([i for i in self.gameAnalyses if i.hasHotStreak()])

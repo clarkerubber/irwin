@@ -45,7 +45,7 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', [
     return self.tensorInputPV0ByAmbiguity() + self.tensorInputPVsDraw() + self.tensorInputPVsLosing() # 15 ints
 
   def tensorInputGames(self):
-    return self.binnedGameActivations() # list of 5 ints
+    return self.binnedGameActivations() # list of 10 ints
 
   def tensorInputPlayer(self):
     a = self.gamesActivation if self.gamesActivation is not None else 0
@@ -99,7 +99,7 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', [
 
       legitGames = sum([int(a < thresholds['averages']['legit']) for a in gameActivations])
 
-      if (not self.titled and self.activation > thresholds['overall']['engine']
+      if (not self.titled and self.activation > thresholds['overall']['engine'] and self.gameAnalyses.gamesWithHotStreaks() > 2
         and exceptionalGames >= (2/10)*gamesAnalysed and exceptionalGames > 2
         and gamesAnalysed > 4):
         return False
