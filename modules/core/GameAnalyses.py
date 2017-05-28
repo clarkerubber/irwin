@@ -1,4 +1,5 @@
 from modules.core.analyse import analyse
+import numpy
 
 class GameAnalyses:
   def __init__(self, gameAnalyses):
@@ -69,6 +70,18 @@ class GameAnalyses:
       bins = [int(i) for i in bins]
     return bins
 
+  def averageStreakBrackets(self):
+    bins = [[], [], []]
+    output = [0, 0, 0]
+    for gameAnalysis in self.gameAnalyses:
+      gbins = gameAnalysis.streakBrackets()
+      for i, b in enumerate(gbins):
+        bins[i].append(b)
+    for i in range(3):
+      if len(bins[i]) > 0:
+        output[i] = int(10*numpy.mean(bins[i]))
+    return output
+
   def reportDicts(self):
     return [gameAnalysis.reportDict() for gameAnalysis in self.gameAnalyses]
 
@@ -101,4 +114,4 @@ class GameAnalyses:
     return [gameAnalysis.moveChunkActivation for gameAnalysis in self.gameAnalyses if gameAnalysis.moveChunkActivation is not None]
 
   def gamesWithHotStreaks(self):
-    return len([i for i in self.gameAnalyses if i.hasHotStreak()])
+    return len([i for i in self.gameAnalyses if i.maxStreak(80) > 5])

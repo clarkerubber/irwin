@@ -111,13 +111,13 @@ class GameAnalysis:
       int(1 if analysedMove.onlyMove() else -1)] for analysedMove in self.analysedMoves]
 
   def tensorInputMoveChunks(self):
-    return self.binnedMoveActivations() + self.binnedChunkActivations() + [int(self.hasHotStreak())] # list of 11 ints
+    return self.binnedMoveActivations() + self.binnedChunkActivations() + self.streakBrackets() # list of 11 ints
 
   def tensorInputGamePVs(self):
     return self.tStatsDraw() + self.tStatsLosing() + self.pv0ByAmbiguityDensity() # list of 15 ints
 
-  def hasHotStreak(self):
-    hotNams = [nam > 80 for nam in self.normalisedAssessedMoves()]
+  def maxStreak(self, threshold):
+    hotNams = [nam > threshold for nam in self.normalisedAssessedMoves()]
     maxCount = 0
     count = 0
     for i in hotNams:
@@ -127,7 +127,27 @@ class GameAnalysis:
           maxCount = count
       else:
         count = 0
-    return maxCount > 5
+    return maxCount
+
+  def maxStreakBracket(self, minim, maxim):
+    hotNams = [nam > minim and nam <= maxim for nam in self.normalisedAssessedMoves()]
+    maxCount = 0
+    count = 0
+    for i in hotNams:
+      if i:
+        count += 1
+        if count > maxCount:
+          maxCount = count
+      else:
+        count = 0
+    return maxCount
+
+  def streakBrackets(self):
+    brackets = [(60, 75), (70, 85), (80, 100)]
+    bins = [0, 0, 0]
+    for i, b in enumerate(brackets):
+      bins[i] = self.maxStreakBracket(*b)
+    return bins
 
   @staticmethod
   def averageChunks(assessedChunks):

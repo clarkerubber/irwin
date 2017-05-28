@@ -45,7 +45,7 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', [
     return self.tensorInputPV0ByAmbiguity() + self.tensorInputPVsDraw() + self.tensorInputPVsLosing() # 15 ints
 
   def tensorInputGames(self):
-    return self.binnedGameActivations() # list of 10 ints
+    return self.binnedGameActivations() + self.gameAnalyses.averageStreakBrackets() # list of 13 ints
 
   def tensorInputPlayer(self):
     a = self.gamesActivation if self.gamesActivation is not None else 0
@@ -83,7 +83,7 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', [
     return {
       'userId': self.id,
       'isLegit': self.isLegit(thresholds),
-      'activation': int(self.activation),
+      'activation': int(self.gamesActivation),
       'pv0ByAmbiguity': self.gameAnalyses.pv0ByAmbiguityStats(),
       'games': self.gameAnalyses.reportDicts()
     }
