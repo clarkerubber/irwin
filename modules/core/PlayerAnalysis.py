@@ -83,7 +83,7 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', [
     return {
       'userId': self.id,
       'isLegit': self.isLegit(thresholds),
-      'activation': int(self.gamesActivation),
+      'activation': int(self.activation),
       'pv0ByAmbiguity': self.gameAnalyses.pv0ByAmbiguityStats(),
       'games': self.gameAnalyses.reportDicts()
     }
@@ -96,8 +96,6 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', [
 
       suspiciousGames = sum([int(a > thresholds['averages']['suspicious']) for a in gameActivations])
       exceptionalGames = sum([int(a > thresholds['averages']['exceptional']) for a in gameActivations])
-
-      legitGames = sum([int(a < thresholds['averages']['legit']) for a in gameActivations])
 
       if (not self.titled and self.activation > thresholds['overall']['engine'] and self.gameAnalyses.gamesWithHotStreaks() > 2
         and exceptionalGames >= (2/10)*gamesAnalysed and exceptionalGames > 2

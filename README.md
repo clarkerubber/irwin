@@ -49,15 +49,12 @@ pip3 install matplotlib
     },
     "thresholds": {
       "averages": {
-        "suspicious": 65,
-        "verysuspicious": 75,
-        "exceptional": 85,
-        "legit": 35
+        "suspicious": 50,
+        "exceptional": 90
       },
       "overall": {
-        "engine": 80,
-        "unlikelycheating": 40,
-        "legit": 10
+        "engine": 95,
+        "legit": 30
       }
     }
   }
