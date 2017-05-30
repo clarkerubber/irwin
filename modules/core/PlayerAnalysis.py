@@ -83,7 +83,7 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', [
     return {
       'userId': self.id,
       'isLegit': self.isLegit(thresholds),
-      'activation': int(self.activation),
+      'activation': int(self.gamesActivation),
       'pv0ByAmbiguity': self.gameAnalyses.pv0ByAmbiguityStats(),
       'games': self.gameAnalyses.reportDicts()
     }
