@@ -45,7 +45,7 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', [
     return self.tensorInputPV0ByAmbiguity() + self.tensorInputPVsDraw() + self.tensorInputPVsLosing() # 15 ints
 
   def tensorInputGames(self):
-    return self.binnedGameActivations() + self.gameAnalyses.averageStreakBrackets() # list of 13 ints
+    return self.gameAnalyses.binnedGameActivations() + self.gameAnalyses.proportionalBinnedGameActivations() + self.gameAnalyses.averageStreaksBinned() # list of 11 ints
 
   def tensorInputPlayer(self):
     a = self.gamesActivation if self.gamesActivation is not None else 0
@@ -57,9 +57,6 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', [
 
   def chunkActivations(self):
     return self.gameAnalyses.chunkActivations()
-
-  def binnedGameActivations(self):
-    return self.gameAnalyses.binnedGameActivations()
 
   def CSVMoves(self):
     return [[int(self.engine)] + move for move in self.tensorInputMoves()]
@@ -97,8 +94,8 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', [
       suspiciousGames = sum([int(a > thresholds['averages']['suspicious']) for a in gameActivations])
       exceptionalGames = sum([int(a > thresholds['averages']['exceptional']) for a in gameActivations])
 
-      if (not self.titled and self.activation > thresholds['overall']['engine'] and self.gameAnalyses.gamesWithHotStreaks() > 2
-        and exceptionalGames >= (2/10)*gamesAnalysed and exceptionalGames > 2
+      if (not self.titled and self.gamesActivation > thresholds['overall']['engine'] and self.gameAnalyses.gamesWithHotStreaks() > 1
+        and exceptionalGames >= (2/10)*gamesAnalysed and exceptionalGames > 1
         and gamesAnalysed > 4):
         return False
       elif self.activation < thresholds['overall']['legit'] and suspiciousGames == 0 and gamesAnalysed > 4:

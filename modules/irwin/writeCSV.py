@@ -45,7 +45,7 @@ def writeClassifiedPlayerPVsCSV(entries):
 def writeClassifiedGamesCSV(entries):
   with open('data/classified-games.csv', 'w') as fh:
     writer = csv.writer(fh, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-    writer.writerow(['engine', 'g1', 'g2', 'g3', 'g4', 'g5', 'g6', 'g7', 'g8', 'g9', 'g10', 's1', 's2', 's3'])
+    writer.writerow(['engine', 'gb1', 'gb2', 'gb3', 'gb4', 'gp1', 'gp2', 'gp3', 'gp4', 's1', 's2', 's3'])
     shuffle(entries)
     [writer.writerow(entry) for entry in entries]
 

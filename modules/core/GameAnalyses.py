@@ -61,22 +61,30 @@ class GameAnalyses:
     return output
 
   def binnedGameActivations(self):
-    bins = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0] # 10 bins representing 0-20%, 20-30%, etc...
-    assessedGames = [gameAnalysis for gameAnalysis in self.gameAnalyses if gameAnalysis.moveChunkActivation is not None]
-    if len(assessedGames) > 0:
-      proportion = 100 / len(assessedGames)
-      for assessedGame in assessedGames:
-        bins[min(4, max(0, int(assessedGame.moveChunkActivation/10)))] += proportion # this is a density distribution
-      bins = [int(i) for i in bins]
+    bins = [0, 0, 0, 0] # 4 bins representing 90-100%, 80-100%, 50-100%, 0-50%
+    brackets = [(90, 100), (80, 100), (50, 100), (0, 49)]
+    activations = [gameAnalysis.moveChunkActivation for gameAnalysis in self.gameAnalyses if gameAnalysis.moveChunkActivation is not None]
+    for i, b in enumerate(brackets):
+      bins[i] = sum([a >= b[0] and a <= b[1] for a in activations])
     return bins
 
-  def averageStreakBrackets(self):
+  def proportionalBinnedGameActivations(self):
+    bins = [0, 0, 0, 0]
+    bgActivations = self.binnedGameActivations()
+    s = sum(bgActivations)
+    if s > 0:
+      for i, b in enumerate(bgActivations):
+        bins[i] = int(100*b/s)
+    return bins
+
+  def averageStreaksBinned(self):
     bins = [[], [], []]
     output = [0, 0, 0]
     for gameAnalysis in self.gameAnalyses:
-      gbins = gameAnalysis.streakBrackets()
-      for i, b in enumerate(gbins):
-        bins[i].append(b)
+      if gameAnalysis.moveChunkActivation > 75:
+        gbins = gameAnalysis.streaksBinned()
+        for i, b in enumerate(gbins):
+          bins[i].append(b)
     for i in range(3):
       if len(bins[i]) > 0:
         output[i] = int(10*numpy.mean(bins[i]))
