@@ -45,10 +45,13 @@ class GameAnalysis:
     return 'GameAnalysis({}, analysedMoves: {}, assessedMoves: {}, assessedChunks: {}, moveChunkActivation: {})'.format(
       self.id, len(self.analysedMoves), len(self.assessedMoves), len(self.assessedChunks), self.moveChunkActivation)
 
+  def activation(self):
+    return min(self.moveChunkActivation, set.top3Average())
+
   def reportDict(self):
     return {
       'gameId': self.gameId,
-      'activation': self.moveChunkActivation,
+      'activation': self.activation(),
       'moves': self.movesReportDict()
     }
 
@@ -135,6 +138,12 @@ class GameAnalysis:
     for i, b in enumerate(brackets):
       bins[i] = self.maxStreak(b)
     return bins
+
+  def top3Average(self):
+    top3 = sorted(self.normalisedAssessedMoves())[-3:]
+    if len(top3) > 0:
+      return numpy.mean(top3)
+    return 0
 
   @staticmethod
   def averageChunks(assessedChunks):

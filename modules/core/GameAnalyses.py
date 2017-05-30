@@ -63,7 +63,7 @@ class GameAnalyses:
   def binnedGameActivations(self):
     bins = [0, 0, 0, 0] # 4 bins representing 90-100%, 80-100%, 50-100%, 0-50%
     brackets = [(90, 100), (80, 100), (50, 100), (0, 49)]
-    activations = [gameAnalysis.moveChunkActivation for gameAnalysis in self.gameAnalyses if gameAnalysis.moveChunkActivation is not None]
+    activations = [gameAnalysis.activation() for gameAnalysis in self.gameAnalyses if gameAnalysis.activation() is not None]
     for i, b in enumerate(brackets):
       bins[i] = sum([a >= b[0] and a <= b[1] for a in activations])
     return bins
@@ -81,7 +81,7 @@ class GameAnalyses:
     bins = [[], [], []]
     output = [0, 0, 0]
     for gameAnalysis in self.gameAnalyses:
-      if gameAnalysis.moveChunkActivation > 75:
+      if gameAnalysis.activation() > 75:
         gbins = gameAnalysis.streaksBinned()
         for i, b in enumerate(gbins):
           bins[i].append(b)
@@ -107,6 +107,12 @@ class GameAnalyses:
       else:
         outputStats[i] = None
     return outputStats
+
+  def top3average(self):
+    top3 = sorted([a.activation() for a in self.gameAnalyses])[-3:]
+    if len(top3) > 0:
+      return numpy.mean(top3)
+    return 0
 
   def moveActivations(self):
     activations = []
