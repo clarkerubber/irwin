@@ -46,7 +46,7 @@ class GameAnalysis:
       self.id, len(self.analysedMoves), len(self.assessedMoves), len(self.assessedChunks), self.moveChunkActivation)
 
   def activation(self):
-    return min(self.moveChunkActivation, set.top3Average())
+    return min(self.moveChunkActivation, self.top3Average())
 
   def reportDict(self):
     return {
