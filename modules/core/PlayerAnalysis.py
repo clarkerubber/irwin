@@ -6,7 +6,7 @@ import random
 import numpy
 
 class PlayerAnalysis(namedtuple('PlayerAnalysis', [
-  'id', 'titled', 'engine', 'gamesPlayed', 'closedReports', 'gameAnalyses', 'gamesActivation', 'pvActivation', 'activation'])): # id = userId, engine = (True | False | None)
+  'id', 'titled', 'engine', 'gamesPlayed', 'closedReports', 'gameAnalyses', 'gamesActivation'])): # id = userId, engine = (True | False | None)
   def setEngine(self, engine):
     return PlayerAnalysis(
       id = self.id,
@@ -15,9 +15,7 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', [
       gamesPlayed = self.gamesPlayed,
       closedReports = self.closedReports,
       gameAnalyses = self.gameAnalyses,
-      gamesActivation = self.gamesActivation,
-      pvActivation = self.pvActivation,
-      activation = self.activation)
+      gamesActivation = self.gamesActivation)
 
   def tensorInputMoves(self):
     return self.gameAnalyses.tensorInputMoves()
@@ -28,29 +26,8 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', [
   def tensorInputMoveChunks(self):
     return self.gameAnalyses.tensorInputMoveChunks()
 
-  def tensorInputPVsDraw(self):
-    return self.gameAnalyses.tensorInputPVsDraw()
-
-  def tensorInputPVsLosing(self):
-    return self.gameAnalyses.tensorInputPVsLosing()
-
-  def tensorInputPV0ByAmbiguity(self):
-    pvs = self.gameAnalyses.pv0ByAmbiguityStats()
-    for i, pv in enumerate(pvs):
-      if pv is None:
-        pvs[i] = 0
-    return pvs # list of ints 5 items long
-
-  def tensorInputPlayerPVs(self):
-    return self.tensorInputPV0ByAmbiguity() + self.tensorInputPVsDraw() + self.tensorInputPVsLosing() # 15 ints
-
   def tensorInputGames(self):
     return self.gameAnalyses.binnedGameActivations() + self.gameAnalyses.proportionalBinnedGameActivations() + self.gameAnalyses.averageStreaksBinned() # list of 11 ints
-
-  def tensorInputPlayer(self):
-    a = self.gamesActivation if self.gamesActivation is not None else 0
-    b = self.pvActivation if self.pvActivation is not None else 0
-    return [a, b]
 
   def moveActivations(self):
     return self.gameAnalyses.moveActivations()
@@ -67,23 +44,20 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', [
   def CSVMoveChunks(self):
     return [[int(self.engine)] + game for game in self.tensorInputMoveChunks()]
 
-  def CSVPlayerPVs(self):
-    return [int(self.engine)] + self.tensorInputPlayerPVs()
-
   def CSVGames(self):
     return [int(self.engine)] + self.tensorInputGames()
-
-  def CSVPlayer(self):
-    return [int(self.engine)] + self.tensorInputPlayer()
 
   def report(self, thresholds):
     return {
       'userId': self.id,
       'isLegit': self.isLegit(thresholds),
-      'activation': min(int(self.gamesActivation), self.gameAnalyses.top3average()),
+      'activation': self.activation(),
       'pv0ByAmbiguity': self.gameAnalyses.pv0ByAmbiguityStats(),
       'games': self.gameAnalyses.reportDicts()
     }
+
+  def activation(self):
+    return max(min(int(self.gamesActivation), self.gameAnalyses.top3average()), self.gameAnalyses.bottom3average())
 
   def isLegit(self, thresholds):
     if self.activation is not None:
@@ -98,7 +72,7 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', [
         and exceptionalGames >= (2/10)*gamesAnalysed and exceptionalGames > 1
         and gamesAnalysed > 4):
         return False
-      elif self.activation < thresholds['overall']['legit'] and suspiciousGames == 0 and gamesAnalysed > 4:
+      elif self.gamesActivation < thresholds['overall']['legit'] and suspiciousGames == 0 and gamesAnalysed > 4:
         return True # Player is legit
     return None # Player falls into a grey area
 
@@ -112,9 +86,7 @@ class PlayerAnalysisBSONHandler:
       gamesPlayed = bson['gamesPlayed'],
       closedReports = bson['closedReports'],
       gameAnalyses = gameAnalyses,
-      gamesActivation = bson.get('gamesActivation', None),
-      pvActivation = bson.get('pvActivation', None),
-      activation = bson.get('activation', None))
+      gamesActivation = bson.get('gamesActivation', None))
 
   @staticmethod
   def writes(playerAnalysis):
@@ -125,8 +97,6 @@ class PlayerAnalysisBSONHandler:
       'gamesPlayed': playerAnalysis.gamesPlayed,
       'closedReports': playerAnalysis.closedReports,
       'gamesActivation': playerAnalysis.gamesActivation,
-      'pvActivation': playerAnalysis.pvActivation,
-      'activation': playerAnalysis.activation,
       'date': datetime.datetime.utcnow()
     }
 

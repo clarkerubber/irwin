@@ -2,13 +2,11 @@ import threading
 import logging
 
 from modules.irwin.updatePlayerEngineStatus import updatePlayerEngineStatus
-from modules.irwin.writeCSV import writeClassifiedMovesCSV, writeClassifiedChunksCSV, writeClassifiedMoveChunksCSV, writeClassifiedPlayerPVsCSV, writeClassifiedGamesCSV, writeClassifiedPlayersCSV
+from modules.irwin.writeCSV import writeClassifiedMovesCSV, writeClassifiedChunksCSV, writeClassifiedMoveChunksCSV, writeClassifiedGamesCSV
 from modules.irwin.MoveAssessment import MoveAssessment
 from modules.irwin.ChunkAssessment import ChunkAssessment
 from modules.irwin.MoveChunkAssessment import MoveChunkAssessment
 from modules.irwin.GamesAssessment import GamesAssessment
-from modules.irwin.PlayerPVAssessment import PlayerPVAssessment
-from modules.irwin.PlayerAssessment import PlayerAssessment
 
 class TrainNetworks(threading.Thread):
   def __init__(self, api, playerAnalysisDB, minTrainingSteps, incTrainingSteps, updateAll, trainOnly):
@@ -31,15 +29,11 @@ class TrainNetworks(threading.Thread):
       self.classifyMoves(sortedUsers)
       self.classifyChunks(sortedUsers)
       self.classifyMoveChunks(sortedUsers)
-      self.classifyPlayerPVs(sortedUsers)
       self.classifyGames(sortedUsers)
-      self.classifyPlayers(sortedUsers)
       MoveAssessment.learn(self.minTrainingSteps, self.incTrainingSteps)
       ChunkAssessment.learn(self.minTrainingSteps, self.incTrainingSteps)
       MoveChunkAssessment.learn(self.minTrainingSteps, self.incTrainingSteps)
-      PlayerPVAssessment.learn(self.minTrainingSteps, self.incTrainingSteps)
       GamesAssessment.learn(self.minTrainingSteps, self.incTrainingSteps)
-      PlayerAssessment.learn(self.minTrainingSteps, self.incTrainingSteps)
 
   def classifyMoves(self, playerAnalyses):
     entries = []
@@ -56,11 +50,5 @@ class TrainNetworks(threading.Thread):
     [entries.extend(playerAnalysis.CSVMoveChunks()) for playerAnalysis in playerAnalyses]
     writeClassifiedMoveChunksCSV(entries)
 
-  def classifyPlayerPVs(self, playerAnalyses):
-    writeClassifiedPlayerPVsCSV([playerAnalysis.CSVPlayerPVs() for playerAnalysis in playerAnalyses])
-
   def classifyGames(self, playerAnalyses):
     writeClassifiedGamesCSV([playerAnalysis.CSVGames() for playerAnalysis in playerAnalyses])
-
-  def classifyPlayers(self, playerAnalyses):
-    writeClassifiedPlayersCSV([playerAnaysis.CSVPlayer() for playerAnaysis in playerAnalyses])

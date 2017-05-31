@@ -116,9 +116,6 @@ class GameAnalysis:
   def tensorInputMoveChunks(self):
     return self.binnedMoveActivations() + self.binnedChunkActivations() + self.streaksBinned() # list of 11 ints
 
-  def tensorInputGamePVs(self):
-    return self.tStatsDraw() + self.tStatsLosing() + self.pv0ByAmbiguityDensity() # list of 15 ints
-
   def maxStreak(self, threshold):
     hotNams = [nam > threshold for nam in self.normalisedAssessedMoves()]
     maxCount = 0
@@ -169,28 +166,6 @@ class GameAnalysis:
       bins = [int(i) for i in bins]
     return bins
 
-  def tStatsDraw(self): # borrowing from the PGN spy approach a little bit
-    ts = [0, 0, 0, 0, 0] # counted PVs
-    pvsDraw = self.pvsDraw()
-    for r in pvsDraw:
-      if r in range(1, 6):
-        ts[r - 1] += 1 # Count how often each ranked PV appears
-    output = [0, 0, 0, 0, 0]
-    for r, t in enumerate(ts):
-      output[r] = int(100 * t / max(1, len(pvsDraw))) # normalised
-    return output
-
-  def tStatsLosing(self):
-    ts = [0, 0, 0, 0, 0] # counted PVs
-    pvsLosing = self.pvsLosing()
-    for r in pvsLosing:
-      if r in range(1, 6):
-        ts[r - 1] += 1 # Count how often each ranked PV appears
-    output = [0, 0, 0, 0, 0]
-    for r, t in enumerate(ts):
-      output[r] = int(100 * t / max(1, len(pvsLosing))) # normalised
-    return output
-
   def normalisedAssessedMoves(self):
     if self.assessed: # bear with me here. Average of the move (50%) and all the chunks that cover it (50%).
       return [(
@@ -207,15 +182,6 @@ class GameAnalysis:
 
   def pv0ByAmbiguityStats(self): # [{sum of pv0 moves given X ambiguity, amount of positions with X ambiguity}]
     return [(self.pv0ByAmbiguity(ambiguity), self.ambiguitySum(ambiguity)) for ambiguity in range (1, 6)]
-
-  def pv0ByAmbiguityDensity(self):
-    return [int(100 * x[0] / x[1] if x[1] != 0 else 0) for x in self.pv0ByAmbiguityStats()]
-
-  def pvsDraw(self):
-    return [analysedMove.trueRank() for analysedMove in self.analysedMoves if analysedMove.drawish() and not analysedMove.onlyMove()]
-
-  def pvsLosing(self):
-    return [analysedMove.trueRank() for analysedMove in self.analysedMoves if analysedMove.losing() and not analysedMove.onlyMove()]
 
 def gameAnalysisId(gameId, white):
   return gameId + '/' + ('white' if white else 'black')

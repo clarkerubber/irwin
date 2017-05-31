@@ -36,30 +36,6 @@ class GameAnalyses:
     [games.append(gameAnalysis.tensorInputMoveChunks()) for gameAnalysis in self.gameAnalyses]
     return games
 
-  def tensorInputPVsDraw(self): # borrowing from the PGN spy approach a little bit
-    pvs = [] # all of the PV ranks for positions that match
-    ts = [0, 0, 0, 0, 0] # counted PVs
-    [pvs.extend(gameAnalysis.pvsDraw()) for gameAnalysis in self.gameAnalyses]
-    for r in pvs:
-      if r in range(1, 6):
-        ts[r - 1] += 1 # Count how often each ranked PV appears
-    output = [0, 0, 0, 0, 0]
-    for r, t in enumerate(ts):
-      output[r] = int(100 * t / max(1, len(pvs)))
-    return output
-
-  def tensorInputPVsLosing(self):
-    pvs = [] # all of the PV ranks for positions that match
-    ts = [0, 0, 0, 0, 0] # counted PVs
-    [pvs.extend(gameAnalysis.pvsLosing()) for gameAnalysis in self.gameAnalyses]
-    for r in pvs:
-      if r in range(1, 6):
-        ts[r - 1] += 1 # Count how often each ranked PV appears
-    output = [0, 0, 0, 0, 0]
-    for r, t in enumerate(ts):
-      output[r] = int(100 * t / max(1, len(pvs)))
-    return output
-
   def binnedGameActivations(self):
     bins = [0, 0, 0, 0] # 4 bins representing 90-100%, 80-100%, 50-100%, 0-50%
     brackets = [(90, 100), (80, 100), (50, 100), (0, 49)]
@@ -112,6 +88,12 @@ class GameAnalyses:
     top3 = sorted([a.activation() for a in self.gameAnalyses])[-3:]
     if len(top3) > 0:
       return int(numpy.mean(top3))
+    return 0
+
+  def bottom3average(self):
+    bot3 = sorted([a.activation() for a in self.gameAnalyses])[:3]
+    if len(bot3) > 0:
+      return int(numpy.mean(bot3))
     return 0
 
   def moveActivations(self):

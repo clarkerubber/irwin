@@ -34,24 +34,9 @@ def writeClassifiedMoveChunksCSV(entries):
     shuffle(entries)
     [writer.writerow(entry) for entry in entries]
 
-def writeClassifiedPlayerPVsCSV(entries):
-  with open('data/classified-player-pvs.csv', 'w') as fh:
-    writer = csv.writer(fh, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-    writer.writerow(['engine', 'pv01', 'pv02', 'pv03', 'pv04', 'pv05',
-      'td1', 'td2', 'td3', 'td4', 'td5', 'tl1', 'tl2', 'tl3', 'tl4', 'tl5'])
-    shuffle(entries)
-    [writer.writerow(entry) for entry in entries]     
-
 def writeClassifiedGamesCSV(entries):
   with open('data/classified-games.csv', 'w') as fh:
     writer = csv.writer(fh, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
     writer.writerow(['engine', 'gb1', 'gb2', 'gb3', 'gb4', 'gp1', 'gp2', 'gp3', 'gp4', 's1', 's2', 's3'])
-    shuffle(entries)
-    [writer.writerow(entry) for entry in entries]
-
-def writeClassifiedPlayersCSV(entries):
-  with open('data/classified-players.csv', 'w') as fh:
-    writer = csv.writer(fh, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-    writer.writerow(['engine', 'games', 'pv'])
     shuffle(entries)
     [writer.writerow(entry) for entry in entries]
