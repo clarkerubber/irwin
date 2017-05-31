@@ -111,7 +111,7 @@ class GameAnalyses:
   def top3average(self):
     top3 = sorted([a.activation() for a in self.gameAnalyses])[-3:]
     if len(top3) > 0:
-      return numpy.mean(top3)
+      return int(numpy.mean(top3))
     return 0
 
   def moveActivations(self):

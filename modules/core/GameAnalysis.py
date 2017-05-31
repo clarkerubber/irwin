@@ -142,7 +142,7 @@ class GameAnalysis:
   def top3Average(self):
     top3 = sorted(self.normalisedAssessedMoves())[-3:]
     if len(top3) > 0:
-      return numpy.mean(top3)
+      return int(numpy.mean(top3))
     return 0
 
   @staticmethod
