@@ -7,8 +7,15 @@ from modules.irwin.IrwinReport import IrwinReport
 class ChunkAssessment():
   @staticmethod
   def combineInputs(X):
-    playerandgamesfnn = tf.contrib.layers.stack(X, tf.contrib.layers.fully_connected, [150, 140, 90, 40, 10, 2], scope="mainnetwork")
-    return tf.reshape(playerandgamesfnn, [-1, 2])
+    layer1 = tf.contrib.layers.fully_connected(X, 128)
+    layer2 = tf.contrib.layers.fully_connected(layer1, 64)
+    layer3 = tf.contrib.layers.fully_connected(layer2, 64, activation_fn=tf.nn.sigmoid)
+    layer4 = tf.contrib.layers.fully_connected(layer3, 64, activation_fn=tf.nn.sigmoid)
+    layer5 = tf.contrib.layers.fully_connected(layer4, 32, activation_fn=tf.nn.sigmoid)
+    layer6 = tf.contrib.layers.fully_connected(layer5, 16)
+    output = tf.contrib.layers.fully_connected(layer6, 2)
+    #playerandgamesfnn = tf.contrib.layers.stack(X, tf.contrib.layers.fully_connected, [150, 140, 90, 40, 10, 2], scope="mainnetwork")
+    return tf.reshape(output, [-1, 2])
 
   @staticmethod
   def inference(X):

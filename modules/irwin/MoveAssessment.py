@@ -7,8 +7,13 @@ from modules.irwin.IrwinReport import IrwinReport
 class MoveAssessment():
   @staticmethod
   def combineInputs(X):
-    playerandgamesfnn = tf.contrib.layers.stack(X, tf.contrib.layers.fully_connected, [45, 20, 15, 10, 2], scope="mainnetwork")
-    return tf.reshape(playerandgamesfnn, [-1, 2])
+    layer1 = tf.contrib.layers.fully_connected(X, 16)
+    layer2 = tf.contrib.layers.fully_connected(layer1, 8, activation_fn=tf.nn.sigmoid)
+    layer3 = tf.contrib.layers.fully_connected(layer2, 8, activation_fn=tf.nn.sigmoid)
+    layer4 = tf.contrib.layers.fully_connected(layer3, 4)
+    output = tf.contrib.layers.fully_connected(layer4, 2)
+    #playerandgamesfnn = tf.contrib.layers.stack(X, tf.contrib.layers.fully_connected, [45, 20, 15, 10, 2], scope="mainnetwork")
+    return tf.reshape(output, [-1, 2])
 
   @staticmethod
   def inference(X):

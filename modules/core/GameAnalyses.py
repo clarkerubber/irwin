@@ -47,7 +47,7 @@ class GameAnalyses:
   def proportionalBinnedGameActivations(self):
     bins = [0, 0, 0, 0]
     bgActivations = self.binnedGameActivations()
-    s = sum(bgActivations)
+    s = len(self.gameAnalyses)
     if s > 0:
       for i, b in enumerate(bgActivations):
         bins[i] = int(100*b/s)

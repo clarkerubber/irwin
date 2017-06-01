@@ -114,7 +114,13 @@ class GameAnalysis:
       int(1 if analysedMove.onlyMove() else -1)] for analysedMove in self.analysedMoves]
 
   def tensorInputMoveChunks(self):
-    return self.binnedMoveActivations() + self.binnedChunkActivations() + self.streaksBinned() # list of 11 ints
+    return self.binnedMoveActivations() + self.binnedChunkActivations() + self.proportionalBinnedMoveActivations() + self.proportionalBinnedChunkActivations() + self.streaksBinned() + [self.winningIndex()] # list of 20 ints
+
+  def winningIndex(self): # move number where the player has > 50% winning chances
+    try:
+      return [m.winning() for m in self.analysedMoves].index(True)
+    except ValueError:
+      return 0
 
   def maxStreak(self, threshold):
     hotNams = [nam > threshold for nam in self.normalisedAssessedMoves()]
@@ -149,21 +155,37 @@ class GameAnalysis:
     return 0
 
   def binnedMoveActivations(self):
-    bins = [0, 0, 0, 0, 0] # 10 bins representing 0-10%, 10-20%, etc...
-    if self.assessed:
-      proportion = 100 / len(self.assessedMoves)
-      for assessedMove in self.assessedMoves:
-        bins[min(4, max(0, int(assessedMove.activation/20)))] += proportion # this is a density distribution
-      bins = [int(i) for i in bins]
+    bins = [0, 0, 0, 0] # 4 bins representing 90-100%, 80-100%, 50-100%, 0-50%
+    brackets = [(90, 100), (80, 100), (50, 100), (0, 49)]
+    activations = [assessedMove.activation for assessedMove in self.assessedMoves]
+    for i, b in enumerate(brackets):
+      bins[i] = sum([a >= b[0] and a <= b[1] for a in activations])
+    return bins
+
+  def proportionalBinnedMoveActivations(self):
+    bins = [0, 0, 0, 0]
+    bgActivations = self.binnedMoveActivations()
+    s = len(self.assessedMoves)
+    if s > 0:
+      for i, b in enumerate(bgActivations):
+        bins[i] = int(100*b/s)
     return bins
 
   def binnedChunkActivations(self):
-    bins = [0, 0, 0, 0, 0] # 5 bins representing 0-10%, 10-20%, etc...
-    if self.assessed:
-      proportion = 100 / len(self.assessedChunks)
-      for assessedChunk in self.assessedChunks:
-        bins[min(4, max(0, int(assessedChunk.activation/20)))] += proportion # this is a density distribution
-      bins = [int(i) for i in bins]
+    bins = [0, 0, 0, 0] # 4 bins representing 90-100%, 80-100%, 50-100%, 0-50%
+    brackets = [(90, 100), (80, 100), (50, 100), (0, 49)]
+    activations = [assessedChunk.activation for assessedChunk in self.assessedChunks]
+    for i, b in enumerate(brackets):
+      bins[i] = sum([a >= b[0] and a <= b[1] for a in activations])
+    return bins
+
+  def proportionalBinnedChunkActivations(self):
+    bins = [0, 0, 0, 0]
+    bgActivations = self.binnedChunkActivations()
+    s = len(self.assessedChunks)
+    if s > 0:
+      for i, b in enumerate(bgActivations):
+        bins[i] = int(100*b/s)
     return bins
 
   def normalisedAssessedMoves(self):

@@ -61,6 +61,11 @@ class AnalysedMove(namedtuple('AnalysedMove', ['uci', 'move', 'emt', 'score', 'a
       return True
     return False
 
+  def winning(self):
+    if winningChances(self.top().score) > 0.5:
+      return True
+    return False
+
   def blunder(self):
     return self.winningChancesLoss() > 0.2 # Loses more than 20% adv
 

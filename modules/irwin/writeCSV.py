@@ -29,8 +29,9 @@ def writeClassifiedChunksCSV(entries):
 def writeClassifiedMoveChunksCSV(entries):
   with open('data/classified-move-chunks.csv', 'w') as fh:
     writer = csv.writer(fh, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-    writer.writerow(['engine', 'move1', 'move2', 'move3', 'move4', 'move5',
-      'chunk1', 'chunk2', 'chunk3', 'chunk4', 'chunk5', 'streak1', 'streak2', 'streak3'])
+    writer.writerow(['engine', 'move1', 'move2', 'move3', 'move4',
+      'chunk1', 'chunk2', 'chunk3', 'chunk4', 'pmove1', 'pmove2', 'pmove3', 'pvmove4',
+      'pchunk1', 'pchunk2', 'pchunk3', 'pchunk4', 'streak1', 'streak2', 'streak3', 'winningIndex'])
     shuffle(entries)
     [writer.writerow(entry) for entry in entries]
 
