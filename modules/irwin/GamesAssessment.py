@@ -29,7 +29,7 @@ class GamesAssessment():
 
   @staticmethod
   def inputs():
-    inputList = GamesAssessment.readCSV(800, [[0.0]]*12)
+    inputList = GamesAssessment.readCSV(800, [[0.0]]*17)
     features = tf.transpose(tf.stack(inputList[1:]))
     cheat = tf.to_float(tf.equal(inputList[0], [1]))
     legit = tf.to_float(tf.equal(inputList[0], [0]))
@@ -136,7 +136,7 @@ class GamesAssessment():
     graph = tf.Graph()
     with graph.as_default():
       with tf.Session(graph=graph) as sess:
-        a = tf.placeholder(tf.float32, shape=[None, 11])
+        a = tf.placeholder(tf.float32, shape=[None, 16])
         infer = GamesAssessment.inference(a)
         feedDict = {a: batch}
         ## initliase graph for running

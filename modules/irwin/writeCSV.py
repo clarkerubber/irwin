@@ -31,13 +31,14 @@ def writeClassifiedMoveChunksCSV(entries):
     writer = csv.writer(fh, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
     writer.writerow(['engine', 'move1', 'move2', 'move3', 'move4',
       'chunk1', 'chunk2', 'chunk3', 'chunk4', 'pmove1', 'pmove2', 'pmove3', 'pvmove4',
-      'pchunk1', 'pchunk2', 'pchunk3', 'pchunk4', 'streak1', 'streak2', 'streak3', 'winningIndex'])
+      'pchunk1', 'pchunk2', 'pchunk3', 'pchunk4', 'streak1', 'streak2', 'streak3', 'streak4',
+      'pstreak1', 'pstreak2', 'pstreak3', 'pstreak4', 'winningIndex'])
     shuffle(entries)
     [writer.writerow(entry) for entry in entries]
 
 def writeClassifiedGamesCSV(entries):
   with open('data/classified-games.csv', 'w') as fh:
     writer = csv.writer(fh, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-    writer.writerow(['engine', 'gb1', 'gb2', 'gb3', 'gb4', 'gp1', 'gp2', 'gp3', 'gp4', 's1', 's2', 's3'])
+    writer.writerow(['engine', 'gb1', 'gb2', 'gb3', 'gb4', 'gp1', 'gp2', 'gp3', 'gp4', 's1', 's2', 's3', 's4', 'sp1', 'sp2', 'sp3', 'sp4'])
     shuffle(entries)
     [writer.writerow(entry) for entry in entries]

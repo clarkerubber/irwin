@@ -57,7 +57,7 @@ class GameAnalyses:
     bins = [[], [], []]
     output = [0, 0, 0]
     for gameAnalysis in self.gameAnalyses:
-      if gameAnalysis.activation() > 75:
+      if gameAnalysis.activation() > 70:
         gbins = gameAnalysis.streaksBinned()
         for i, b in enumerate(gbins):
           bins[i].append(b)
@@ -65,6 +65,23 @@ class GameAnalyses:
       if len(bins[i]) > 0:
         output[i] = int(10*numpy.mean(bins[i]))
     return output
+
+  def streaks(self):
+    bins = [0, 0, 0, 0]
+    gStreaks = [gameAnalysis.streaks() for gameAnalysis in self.gameAnalyses]
+    for s in gStreaks:
+      for i, x in enumerate(s):
+        bins[i] += x
+    return bins
+
+  def proportionalStreaks(self):
+    bins = [0, 0, 0, 0]
+    gStreaks = self.streaks()
+    s = sum(gStreaks)
+    if s > 0:
+      for i, x in enumerate(gStreaks):
+        bins[i] = int(100 * x / s)
+    return bins
 
   def reportDicts(self):
     return [gameAnalysis.reportDict() for gameAnalysis in self.gameAnalyses]
@@ -108,6 +125,3 @@ class GameAnalyses:
 
   def gameActivations(self):
     return [gameAnalysis.moveChunkActivation for gameAnalysis in self.gameAnalyses if gameAnalysis.moveChunkActivation is not None]
-
-  def gamesWithHotStreaks(self):
-    return len([i for i in self.gameAnalyses if i.maxStreak(80) > 5])

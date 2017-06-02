@@ -114,7 +114,9 @@ class GameAnalysis:
       int(1 if analysedMove.onlyMove() else -1)] for analysedMove in self.analysedMoves]
 
   def tensorInputMoveChunks(self):
-    return self.binnedMoveActivations() + self.binnedChunkActivations() + self.proportionalBinnedMoveActivations() + self.proportionalBinnedChunkActivations() + self.streaksBinned() + [self.winningIndex()] # list of 20 ints
+    return (self.binnedMoveActivations() + self.binnedChunkActivations() +
+      self.proportionalBinnedMoveActivations() + self.proportionalBinnedChunkActivations() +
+      self.streaks() + self.proportionalStreaks() + [self.winningIndex()]) # list of 25 ints
 
   def winningIndex(self): # move number where the player has > 50% winning chances
     try:
@@ -122,24 +124,39 @@ class GameAnalysis:
     except ValueError:
       return 0
 
-  def maxStreak(self, threshold):
-    hotNams = [nam > threshold for nam in self.normalisedAssessedMoves()]
-    maxCount = 0
+  def streaks(self, threshold = 80):
+    hotNams = [nam > threshold for nam in self.normalisedAssessedMoves()] 
+    bins = [0, 0, 0, 0] # Sum of streaks with len: 1-2, 3-4, 5-9, 10+
     count = 0
     for i in hotNams:
       if i:
         count += 1
-        if count > maxCount:
-          maxCount = count
-      else:
+      elif count > 0:
+        if count <= 2:
+          bins[0] += 1
+        elif count <= 4:
+          bins[1] += 1
+        elif count <= 9:
+          bins[2] += 1
+        else:
+          bins[3] +=1
         count = 0
-    return maxCount
+    return bins
+
+  def proportionalStreaks(self, threshold = 80):
+    streaks = self.streaks(threshold)
+    s = sum(streaks)
+    bins = [0, 0, 0, 0]
+    if s > 0:
+      for i, x in enumerate(streaks):
+        bins[i] = int(100 * x / s)
+    return bins
 
   def streaksBinned(self):
     brackets = [60, 70, 80]
     bins = [0, 0, 0]
     for i, b in enumerate(brackets):
-      bins[i] = self.maxStreak(b)
+      bins[i] = self.streaks(b)
     return bins
 
   def top3Average(self):

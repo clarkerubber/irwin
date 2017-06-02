@@ -27,7 +27,7 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', [
     return self.gameAnalyses.tensorInputMoveChunks()
 
   def tensorInputGames(self):
-    return self.gameAnalyses.binnedGameActivations() + self.gameAnalyses.proportionalBinnedGameActivations() + self.gameAnalyses.averageStreaksBinned() # list of 11 ints
+    return self.gameAnalyses.binnedGameActivations() + self.gameAnalyses.proportionalBinnedGameActivations() + self.gameAnalyses.streaks() + self.gameAnalyses.proportionalStreaks() # list of 16 ints
 
   def moveActivations(self):
     return self.gameAnalyses.moveActivations()
@@ -68,8 +68,8 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', [
       suspiciousGames = sum([int(a > thresholds['averages']['suspicious']) for a in gameActivations])
       exceptionalGames = sum([int(a > thresholds['averages']['exceptional']) for a in gameActivations])
 
-      if (not self.titled and self.activation() > thresholds['overall']['engine'] and self.gameAnalyses.gamesWithHotStreaks() > 1
-        and exceptionalGames >= (2/10)*gamesAnalysed and exceptionalGames > 1):
+      if (not self.titled and self.activation() > thresholds['overall']['engine']
+        and gamesAnalysed > 3):
         return False
       elif self.activation() < thresholds['overall']['legit'] and suspiciousGames == 0 and gamesAnalysed > 4:
         return True # Player is legit

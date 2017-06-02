@@ -30,7 +30,7 @@ class MoveChunkAssessment():
 
   @staticmethod
   def inputs():
-    inputList = MoveChunkAssessment.readCSV(800, [[0.0]]*21)
+    inputList = MoveChunkAssessment.readCSV(800, [[0.0]]*26)
     features = tf.transpose(tf.stack(inputList[1:]))
     cheat = tf.to_float(tf.equal(inputList[0], [1]))
     legit = tf.to_float(tf.equal(inputList[0], [0]))
@@ -137,7 +137,7 @@ class MoveChunkAssessment():
     graph = tf.Graph()
     with graph.as_default():
       with tf.Session(graph=graph) as sess:
-        a = tf.placeholder(tf.float32, shape=[None, 20])
+        a = tf.placeholder(tf.float32, shape=[None, 25])
         infer = MoveChunkAssessment.inference(a)
         feedDict = {a: batch}
         ## initliase graph for running
