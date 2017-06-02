@@ -113,6 +113,12 @@ class GameAnalyses:
       return int(numpy.mean(bot3))
     return 0
 
+  def averageActivation(self):
+    activations = [a.activation() for a in self.gameAnalyses]
+    if len(activations) > 0:
+      return int(numpy.mean(activations))
+    return 0
+
   def moveActivations(self):
     activations = []
     [activations.extend(gameAnalysis.moveActivations()) for gameAnalysis in self.gameAnalyses]

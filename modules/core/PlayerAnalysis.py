@@ -57,7 +57,7 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', [
     }
 
   def activation(self):
-    return max(min(int(self.gamesActivation), self.gameAnalyses.top3average()), self.gameAnalyses.bottom3average())
+    return max(min(int(self.gamesActivation), self.gameAnalyses.top3average()), self.gameAnalyses.averageActivation())
 
   def isLegit(self, thresholds):
     if self.activation is not None:
@@ -66,7 +66,7 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', [
       gameActivations = self.gameAnalyses.gameActivations()
 
       suspiciousGames = sum([int(a > thresholds['averages']['suspicious']) for a in gameActivations])
-      exceptionalGames = sum([int(a > thresholds['averages']['exceptional']) for a in gameActivations])
+      #exceptionalGames = sum([int(a > thresholds['averages']['exceptional']) for a in gameActivations])
 
       if (not self.titled and self.activation() > thresholds['overall']['engine']
         and gamesAnalysed > 3):
