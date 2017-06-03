@@ -116,7 +116,9 @@ class GameAnalysis:
   def tensorInputMoveChunks(self):
     return (self.binnedMoveActivations() + self.binnedChunkActivations() +
       self.proportionalBinnedMoveActivations() + self.proportionalBinnedChunkActivations() +
-      self.streaks() + self.proportionalStreaks() + [self.winningIndex()]) # list of 25 ints
+      self.streaks(60) + self.proportionalStreaks(60) +
+      self.streaks(75) + self.proportionalStreaks(75) +
+      self.streaks(80) + self.proportionalStreaks(80) + [self.winningIndex()]) # list of 47 ints
 
   def winningIndex(self): # move number where the player has > 50% winning chances
     try:
@@ -124,29 +126,31 @@ class GameAnalysis:
     except ValueError:
       return 0
 
-  def streaks(self, threshold = 80):
-    hotNams = [nam > threshold for nam in self.normalisedAssessedMoves()] 
-    bins = [0, 0, 0, 0] # Sum of streaks with len: 1-2, 3-4, 5-9, 10+
+  def streaks(self, threshold = 75):
+    hotNams = [nam > threshold for nam in self.normalisedChunks()] 
+    bins = [0, 0, 0, 0, 0] # Sum of streaks with len: 1-2, 3-4, 5-9, 10+
     count = 0
     for i in hotNams:
       if i:
         count += 1
       elif count > 0:
         if count <= 2:
-          bins[0] += 1
-        elif count <= 4:
           bins[1] += 1
-        elif count <= 9:
+        elif count <= 4:
           bins[2] += 1
+        elif count <= 9:
+          bins[3] += 1
         else:
-          bins[3] +=1
+          bins[4] +=1
         count = 0
+      else:
+        bins[0] += 1
     return bins
 
-  def proportionalStreaks(self, threshold = 80):
+  def proportionalStreaks(self, threshold = 75):
     streaks = self.streaks(threshold)
     s = sum(streaks)
-    bins = [0, 0, 0, 0]
+    bins = [0, 0, 0, 0, 0]
     if s > 0:
       for i, x in enumerate(streaks):
         bins[i] = int(100 * x / s)
@@ -160,7 +164,7 @@ class GameAnalysis:
     return bins
 
   def top3Average(self):
-    top3 = sorted(self.normalisedAssessedMoves())[-3:]
+    top3 = sorted(self.normalisedChunks())[-3:]
     if len(top3) > 0:
       return int(numpy.mean(top3))
     return 0
@@ -211,6 +215,11 @@ class GameAnalysis:
         0.50 * assessedMove.activation + 
         0.50 * GameAnalysis.averageChunks(self.assessedChunks[max(0,move-10):min(len(self.assessedChunks),move+1)])
       ) for move, assessedMove in enumerate(self.assessedMoves)]
+    return []
+
+  def normalisedChunks(self):
+    if self.assessed:
+      return [GameAnalysis.averageChunks(self.assessedChunks[max(0,move-10):min(len(self.assessedChunks), move+1)]) for move in range(len(self.assessedChunks))]
     return []
 
   def pv0ByAmbiguity(self, ambiguity):

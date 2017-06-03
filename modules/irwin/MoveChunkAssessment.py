@@ -7,9 +7,9 @@ from modules.irwin.IrwinReport import IrwinReport
 class MoveChunkAssessment():
   @staticmethod
   def combineInputs(X):
-    layer1 = tf.contrib.layers.fully_connected(X, 64)
-    layer2 = tf.contrib.layers.fully_connected(layer1, 32)
-    layer3 = tf.contrib.layers.fully_connected(layer2, 32, activation_fn=tf.nn.sigmoid)
+    layer1 = tf.contrib.layers.fully_connected(X, 128)
+    layer2 = tf.contrib.layers.fully_connected(layer1, 64)
+    layer3 = tf.contrib.layers.fully_connected(layer2, 64, activation_fn=tf.nn.sigmoid)
     layer4 = tf.contrib.layers.fully_connected(layer3, 32, activation_fn=tf.nn.sigmoid)
     layer5 = tf.contrib.layers.fully_connected(layer4, 16)
     output = tf.contrib.layers.fully_connected(layer5, 2)
@@ -30,7 +30,7 @@ class MoveChunkAssessment():
 
   @staticmethod
   def inputs():
-    inputList = MoveChunkAssessment.readCSV(800, [[0.0]]*26)
+    inputList = MoveChunkAssessment.readCSV(800, [[0.0]]*48)
     features = tf.transpose(tf.stack(inputList[1:]))
     cheat = tf.to_float(tf.equal(inputList[0], [1]))
     legit = tf.to_float(tf.equal(inputList[0], [0]))
@@ -137,7 +137,7 @@ class MoveChunkAssessment():
     graph = tf.Graph()
     with graph.as_default():
       with tf.Session(graph=graph) as sess:
-        a = tf.placeholder(tf.float32, shape=[None, 25])
+        a = tf.placeholder(tf.float32, shape=[None, 47])
         infer = MoveChunkAssessment.inference(a)
         feedDict = {a: batch}
         ## initliase graph for running

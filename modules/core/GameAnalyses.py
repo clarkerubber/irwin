@@ -37,15 +37,15 @@ class GameAnalyses:
     return games
 
   def binnedGameActivations(self):
-    bins = [0, 0, 0, 0] # 4 bins representing 90-100%, 80-100%, 50-100%, 0-50%
-    brackets = [(90, 100), (80, 100), (50, 100), (0, 49)]
+    bins = [0, 0, 0, 0, 0] # 4 bins representing 90-100%, 80-100%, 50-100%, 0-50%
+    brackets = [(85, 100), (80, 85) , (75, 80), (50, 75), (0, 49)]
     activations = [gameAnalysis.activation() for gameAnalysis in self.gameAnalyses if gameAnalysis.activation() is not None]
     for i, b in enumerate(brackets):
       bins[i] = sum([a >= b[0] and a <= b[1] for a in activations])
     return bins
 
   def proportionalBinnedGameActivations(self):
-    bins = [0, 0, 0, 0]
+    bins = [0, 0, 0, 0, 0]
     bgActivations = self.binnedGameActivations()
     s = len(self.gameAnalyses)
     if s > 0:
@@ -66,17 +66,17 @@ class GameAnalyses:
         output[i] = int(10*numpy.mean(bins[i]))
     return output
 
-  def streaks(self):
-    bins = [0, 0, 0, 0]
-    gStreaks = [gameAnalysis.streaks() for gameAnalysis in self.gameAnalyses]
+  def streaks(self, threshold = 80):
+    bins = [0, 0, 0, 0, 0]
+    gStreaks = [gameAnalysis.streaks(threshold) for gameAnalysis in self.gameAnalyses]
     for s in gStreaks:
       for i, x in enumerate(s):
         bins[i] += x
     return bins
 
-  def proportionalStreaks(self):
-    bins = [0, 0, 0, 0]
-    gStreaks = self.streaks()
+  def proportionalStreaks(self, threshold = 80):
+    bins = [0, 0, 0, 0, 0]
+    gStreaks = self.streaks(threshold)
     s = sum(gStreaks)
     if s > 0:
       for i, x in enumerate(gStreaks):
