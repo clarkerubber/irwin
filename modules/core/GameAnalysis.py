@@ -117,8 +117,9 @@ class GameAnalysis:
     return (self.binnedMoveActivations() + self.binnedChunkActivations() +
       self.proportionalBinnedMoveActivations() + self.proportionalBinnedChunkActivations() +
       self.streaks(60) + self.proportionalStreaks(60) +
-      self.streaks(75) + self.proportionalStreaks(75) +
-      self.streaks(80) + self.proportionalStreaks(80) + [self.winningIndex()]) # list of 47 ints
+      self.streaks(70) + self.proportionalStreaks(70) +
+      self.streaks(80) + self.proportionalStreaks(80) +
+      self.streaks(90) + self.proportionalStreaks(90) + [self.winningIndex()]) # list of 57 ints
 
   def winningIndex(self): # move number where the player has > 50% winning chances
     try:

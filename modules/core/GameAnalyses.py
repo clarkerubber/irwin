@@ -38,7 +38,7 @@ class GameAnalyses:
 
   def binnedGameActivations(self):
     bins = [0, 0, 0, 0, 0] # 4 bins representing 90-100%, 80-100%, 50-100%, 0-50%
-    brackets = [(85, 100), (80, 85) , (75, 80), (50, 75), (0, 49)]
+    brackets = [(90, 100), (80, 90) , (70, 80), (50, 70), (0, 49)]
     activations = [gameAnalysis.activation() for gameAnalysis in self.gameAnalyses if gameAnalysis.activation() is not None]
     for i, b in enumerate(brackets):
       bins[i] = sum([a >= b[0] and a <= b[1] for a in activations])

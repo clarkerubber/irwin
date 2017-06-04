@@ -29,8 +29,9 @@ class PlayerAnalysis(namedtuple('PlayerAnalysis', [
   def tensorInputGames(self):
     return (self.gameAnalyses.binnedGameActivations() + self.gameAnalyses.proportionalBinnedGameActivations() +
       self.gameAnalyses.streaks(60) + self.gameAnalyses.proportionalStreaks(60) +
-      self.gameAnalyses.streaks(75) + self.gameAnalyses.proportionalStreaks(75) +
-      self.gameAnalyses.streaks(80) + self.gameAnalyses.proportionalStreaks(80)) # list of 38 ints
+      self.gameAnalyses.streaks(70) + self.gameAnalyses.proportionalStreaks(70) +
+      self.gameAnalyses.streaks(80) + self.gameAnalyses.proportionalStreaks(80) +
+      self.gameAnalyses.streaks(90) + self.gameAnalyses.proportionalStreaks(90)) # list of 48 ints
 
   def moveActivations(self):
     return self.gameAnalyses.moveActivations()
