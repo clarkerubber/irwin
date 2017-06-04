@@ -58,11 +58,11 @@ class GameAnalysis:
   def movesReportDict(self):
     if self.analysed:
       return [{
-        'activation': int(nam),
-        'rank': am.trueRank(),
-        'ambiguity': am.ambiguity(),
-        'odds': int(100*am.advantage()),
-        'loss': int(100*am.winningChancesLoss())
+        'a': int(nam),
+        'r': am.trueRank(),
+        'm': am.ambiguity(),
+        'o': int(100*am.advantage()),
+        'l': int(100*am.winningChancesLoss())
       } for nam, am in zip(self.normalisedAssessedMoves(), self.analysedMoves)]
     return []
 
