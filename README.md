@@ -1,6 +1,8 @@
 # irwin
 irwin is the AI that learns cheating patterns, marks cheaters, and assists moderators in assessing potential cheaters.
 
+![screenshot of Irwin report](http://i.imgur.com/UcVlDK3.png)
+
 ## Dependencies
 Compatible with Python 3.x
 
@@ -24,7 +26,7 @@ pip3 install matplotlib
 ```javascript
 {
   "api": {
-    "url": "https://en.lichess.org/",
+    "url": "https://lichess.org/",
     "token": "token"
   },
   "stockfish": {
@@ -49,12 +51,12 @@ pip3 install matplotlib
     },
     "thresholds": {
       "averages": {
-        "suspicious": 50,
+        "suspicious": 45,
         "exceptional": 90
       },
       "overall": {
-        "engine": 95,
-        "legit": 30
+        "engine": 90,
+        "legit": 20
       }
     }
   }
