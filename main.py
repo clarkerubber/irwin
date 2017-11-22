@@ -4,16 +4,11 @@ import logging
 import json
 
 from pprint import pprint
-from modules.bcolors.bcolors import bcolors
 
 from modules.core.Game import Game
-from modules.core.PlayerAssessment import PlayerAssessmentBSONHandler, PlayerAssessment, PlayerAssessments
 from modules.core.GameAnalysis import GameAnalysis
-from modules.core.PlayerAnalysis import PlayerAnalysis
-
-from modules.core.recentGames import recentGames
-
-from modules.irwin.updatePlayerEngineStatus import isEngine, PlayerEngineStatusBus
+from modules.core.GameAnalysisStore import GameAnalysisStore
+from modules.core.PlayerEngineStatusBus import PlayerEngineStatusBus
 
 from Env import Env
 
@@ -26,78 +21,54 @@ if config == {}:
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--learner", dest="learn", nargs="?",
                     default=False, const=True, help="does this bot learn")
-parser.add_argument("--force-train", dest="forcetrain", nargs="?",
+parser.add_argument("--train", dest="train", nargs="?",
                     default=False, const=True, help="force training to start")
-parser.add_argument("--no-analyse", dest="noanalyse", nargs="?",
-                    default=False, const=True, help="disable player analysis")
-parser.add_argument("--no-assess", dest="noassess", nargs="?",
-                    default=False, const=True, help="disable player assessment (use of neural networks)")
 parser.add_argument("--no-report", dest="noreport", nargs="?",
                     default=False, const=True, help="disable posting of player reports")
-parser.add_argument("--update-all", dest="updateall", nargs="?",
-                    default=False, const=True, help="update the engine status for all players in the db")
-parser.add_argument("--test-only", dest="testonly", nargs="?",
+parser.add_argument("--test", dest="test", nargs="?",
                     default=False, const=True, help="only test the neural networks performance")
-parser.add_argument("--fast-test", dest="fasttest", nargs="?",
-                    default=False, const=True, help="test networks without re-assessing")
 parser.add_argument("--quiet", dest="loglevel",
                     default=logging.DEBUG, action="store_const", const=logging.INFO,
-                    help="substantially reduce the number of logged messages")
+                    help="reduce the number of logged messages")
 settings = parser.parse_args()
 
 config['irwin']['learn'] = settings.learn
-
-try:
-  # Optionally fix colors on Windows and in journals if the colorama module
-  # is available.
-  import colorama
-  wrapper = colorama.AnsiToWin32(sys.stdout)
-  if wrapper.should_wrap():
-    sys.stdout = wrapper.stream
-except ImportError:
-  pass
 
 logging.basicConfig(format="%(message)s", level=settings.loglevel, stream=sys.stdout)
 logging.getLogger("requests.packages.urllib3").setLevel(logging.WARNING)
 logging.getLogger("chess.uci").setLevel(logging.WARNING)
 
 env = Env(config)
-env.irwin.train(settings.forcetrain, settings.updateall, settings.testonly, settings.fasttest)
+while True:
+  env.irwin.train()
 
-PlayerEngineStatusBus(env.playerAnalysisDB, config, settings.learn).start()
+PlayerEngineStatusBus(env.playerDB, config, settings.learn).start()
 
-while True and not settings.noanalyse and not settings.testonly and not settings.fasttest:
+while True and not settings.test:
   # Get player data
-  userId = env.api.getPlayerId()
+  #userId = env.api.getNextPlayerId()
+  userId = 'clarkey'
   playerData = env.api.getPlayerData(userId)
+
+  # pull what we already have on the player
+  gameAnalysisStore = GameAnalysisStore([], [])
+  gameAnalysisStore.addGames(env.gameDB.byUserId(userId))
+  gameAnalysisStore.addGameAnalyses(env.gameAnalysisDB.byUserId(userId))
 
   # Filter games and assessments for relevant info
   try:
-    pas = list([PlayerAssessmentBSONHandler.reads(pa) for pa in playerData['assessment']['playerAssessments']])
-    playerAssessments = PlayerAssessments(pas)
-    games = recentGames(playerAssessments, playerData['games'])
-    playerAssessments = playerAssessments.addNulls(userId, games, playerData['games'])
+    gameAnalysisStore.addGames([Game.fromDict(gid, userId, g) for gid, g in playerData['games'].items()])
   except KeyError:
-    continue # if either of these don't gather any useful data, skip them
+    continue # if this doesn't gather any useful data, skip
 
-  # Write stuff to mongo
-  env.playerAssessmentDB.lazyWriteMany(playerAssessments)
-  env.gameDB.lazyWriteGames(games)
+  env.gameDB.lazyWriteGames(gameAnalysisStore.games)
 
-  # Pull everything from mongo that we have on the player
-  playerAssessments = env.playerAssessmentDB.byUserId(userId)
-  games = env.gameDB.byIds(playerAssessments.gameIds())
-  gameAnalyses = env.gameAnalysisDB.byUserId(userId)
+  logging.debug("Already Analysed: " + str(len(gameAnalysisStore.gameAnalyses)))
 
-  logging.debug("Already Analysed: " + str(len(gameAnalyses.gameAnalyses)))
+  gameAnalysisStore.addGameAnalyses([GameAnalysis.fromGame(game, env.engine, env.infoHandler, game.white == userId, config['stockfish']['nodes']) for game in gameAnalysisStore.randomGamesWithoutAnalysis()])
 
-  for g in games.games:
-    if playerAssessments.hasGameId(g.id):
-      gameAnalyses.append(GameAnalysis(g, playerAssessments.byGameId(g.id), [], [], [], None))
-
-  gameAnalyses.analyse(env.engine, env.infoHandler, config['stockfish']['nodes'])
-  env.gameAnalysisDB.lazyWriteGames(gameAnalyses)
-
+  env.gameAnalysisDB.lazyWriteGameAnalyses(gameAnalysisStore.gameAnalyses)
+"""
   if not settings.noassess:
     playerAnalysis = env.irwin.assessPlayer(PlayerAnalysis(
       id = userId,
@@ -111,3 +82,4 @@ while True and not settings.noanalyse and not settings.testonly and not settings
   env.playerAnalysisDB.write(playerAnalysis)
   if not settings.noreport:
     env.api.postReport(playerAnalysis.report(config['irwin']['thresholds']))
+"""

@@ -1,9 +1,7 @@
 import requests
-import chess
 import logging
 import time
 import json
-from modules.bcolors.bcolors import bcolors
 from collections import namedtuple
 
 class Api(namedtuple('Api', ['url', 'token'])):
@@ -55,7 +53,7 @@ class Api(namedtuple('Api', ['url', 'token'])):
     except ValueError:
       return {}
 
-  def getPlayerId(self):
+  def getNextPlayerId(self):
     logging.debug('Getting new player ID...')
     success = False
     while not success:
@@ -81,39 +79,3 @@ class Api(namedtuple('Api', ['url', 'token'])):
       return response.text
     except ValueError:
       return None
-
-  @staticmethod
-  def chunks(l, n):
-    """Yield successive n-sized chunks from l."""
-    for i in range(0, len(l), n):
-        yield l[i:i + n]
-
-  def getPlayerStatuses(self, userIds):
-    idChunks = Api.chunks(userIds, 10)
-    logging.debug('Getting player status for ' + str(len(userIds)) + ' players')
-    data = {}
-    for idChunk in idChunks:
-      ids = ','.join(idChunk)
-      success = False
-      while not success:
-        try:
-          response = requests.get(self.url+'irwin/users-mark-and-current-report?ids=' + ids + '&api_key=' + self.token)
-          if response.status_code == 200:
-            success = True
-          else:
-            logging.warning(str(response.status_code) + ': Failed get to player data')
-            logging.debug('Trying again in 60 sec')
-            time.sleep(60)
-        except requests.ConnectionError:
-          logging.warning("CONNECTION ERROR: Failed to get player data.")
-          logging.debug("Trying again in 30 sec")
-          time.sleep(30)
-        except requests.exceptions.SSLError:
-          logging.warning("SSL ERROR: Failed to get player data.")
-          logging.debug("Trying again in 30 sec")
-          time.sleep(30)
-      try:
-        data = {**data, **json.loads(response.text)}
-      except ValueError:
-        pass
-    return data

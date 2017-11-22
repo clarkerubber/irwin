@@ -1,207 +1,108 @@
 from collections import namedtuple
-import threading
-import datetime
-import time
+from pprint import pprint
+from random import shuffle
+
 import logging
-import itertools
-
-from modules.irwin.TrainNetworks import TrainNetworks
-
-from modules.irwin.MoveAssessment import MoveAssessment
-from modules.irwin.ChunkAssessment import ChunkAssessment
-from modules.irwin.MoveChunkAssessment import MoveChunkAssessment
-from modules.irwin.GamesAssessment import GamesAssessment
+import numpy as np
+import os.path
 
 from modules.irwin.TrainingStats import TrainingStats, Accuracy, Sample
-from modules.irwin.FalseReports import FalseReport, FalseReports
-from modules.core.PlayerAnalysis import PlayerAnalysis
-from modules.core.GameAnalyses import GameAnalyses
+from modules.irwin.FalseReports import FalseReport
+
+from keras.models import Sequential, load_model
+from keras.layers import Dense, Dropout, Embedding, LSTM
 
 
-class Irwin(namedtuple('Irwin', ['api', 'learner', 'trainingStatsDB', 'playerAnalysisDB', 'falseReportsDB', 'settings'])):
-  def train(self, forcetrain, updateAll, testOnly, fastTest): # runs forever
-    if self.learner or testOnly or fastTest:
-      TrainAndEvaluate(self.api, self.trainingStatsDB, self.playerAnalysisDB, self.falseReportsDB, self.settings, forcetrain, updateAll, testOnly, fastTest).start()
+class Irwin(namedtuple('Irwin', ['env', 'config'])):
+  def gameModel(self):
+    if os.path.isfile('modules/irwin/models/game.h5'):
+      print("model already exists, opening from file")
+      return load_model('modules/irwin/models/game.h5')
+    print('model does not exist, building from scratch')
+    model = Sequential()
+    model.add(LSTM(32, return_sequences=True, input_shape=(None,10)))
+    model.add(LSTM(32, return_sequences=True))
+    model.add(LSTM(32))
+    model.add(Dense(64, activation='relu'))
+    model.add(Dense(32, activation='relu'))
+    model.add(Dense(16, activation='relu'))
+    model.add(Dense(1, activation='sigmoid'))
+    model.compile(optimizer='rmsprop',
+      loss='binary_crossentropy',
+      metrics=['accuracy'])
+    return model
+
+  def saveGameModel(self, model):
+    print("saving model")
+    model.save('modules/irwin/models/game.h5')
+
+  def getDataset(self):
+    print("getting players")
+    players = self.env.playerDB.balancedSample(self.config['train']['batchSize'])
+    print("getting game analyses")
+    gameAnalyses = []
+    [gameAnalyses.extend(self.env.gameAnalysisDB.byUserId(p.id)) for p in players]
+
+    print("assigning labels")
+    gameLabels = self.assignLabels(gameAnalyses, players)
+
+    print("splitting game analyses datasets")
+    cheatGameAnalyses = gameAnalyses[:sum(gameLabels)]
+    legitGameAnalyses = gameAnalyses[sum(gameLabels):]
+
+    print("getting moveAnalysisTensors")
+    cheatGameTensors = [tga.moveAnalysisTensors() for tga in cheatGameAnalyses]
+    legitGameTensors = [tga.moveAnalysisTensors() for tga in legitGameAnalyses]
+
+    return Irwin.createBatchAndLabels(cheatGameTensors, legitGameTensors)
+
+
+  def train(self):
+    # get player sample
+    print("getting model")
+    model = self.gameModel()
+    print("getting dataset")
+    batches = self.getDataset()
+
+    print("training")
+    for b in batches:
+      print("Batch Info: Games: " + str(len(b['batch'])))
+      print("Game Len: " + str(len(b['batch'][0])))
+      model.fit(b['batch'], b['labels'], epochs=self.config['train']['cycles'], batch_size=32, validation_split=0.2)
+      self.saveGameModel(model)
+    print("complete")
 
   @staticmethod
-  def assessGame(gameAnalysis):
-    gameAnalysis.assessedMoves = MoveAssessment.applyNet(gameAnalysis.tensorInputMoves())
-    gameAnalysis.assessedChunks = ChunkAssessment.applyNet(gameAnalysis.tensorInputChunks())
-    gameAnalysis.assessed = True
-    gameAnalysis.moveChunkActivation = MoveChunkAssessment.applyNet([gameAnalysis.tensorInputMoveChunks()])[0].activation
-    return gameAnalysis
+  def getGameEngineStatus(gameAnalysis, players):
+    return any([p for p in players if gameAnalysis.userId == p.id and p.engine])
 
   @staticmethod
-  def assessPlayer(playerAnalysis):
-    playerAnalysis1 = PlayerAnalysis(
-      id = playerAnalysis.id,
-      titled = playerAnalysis.titled,
-      engine = playerAnalysis.engine,
-      gamesPlayed = playerAnalysis.gamesPlayed,
-      closedReports = playerAnalysis.closedReports,
-      gameAnalyses = GameAnalyses([Irwin.assessGame(gameAnalysis) for gameAnalysis in playerAnalysis.gameAnalyses.gameAnalyses]),
-      gamesActivation = None
-    )
-
-    return PlayerAnalysis(
-      id = playerAnalysis1.id,
-      titled = playerAnalysis1.titled,
-      engine = playerAnalysis1.engine,
-      gamesPlayed = playerAnalysis1.gamesPlayed,
-      closedReports = playerAnalysis1.closedReports,
-      gameAnalyses = playerAnalysis1.gameAnalyses,
-      gamesActivation = GamesAssessment.applyNet([playerAnalysis1.tensorInputGames()])[0].activation
-    )
+  def assignLabels(gameAnalyses, players):
+    return [int(Irwin.getGameEngineStatus(gameAnalysis, players)) for gameAnalysis in gameAnalyses]
 
   @staticmethod
-  def flatten(listOfLists):
-    return [val for sublist in listOfLists for val in sublist]
+  def createBatchAndLabels(cheatBatch, legitBatch):
+    batches = []
+    # group the dataset in to batches by the length of the dataset, because numpy needs it that way
+    for x in range(22, 34):
+      cheats = list([r for r in cheatBatch if len(r) == x])
+      legits = list([r for r in legitBatch if len(r) == x])
 
-  @staticmethod
-  def assessPlayers(playerAnalyses): # fast and ugly mode
-    moves = []
-    chunks = []
-    for playerAnalysis in playerAnalyses:
-      moves.extend(Irwin.flatten([gameAnalysis.tensorInputMoves() for gameAnalysis in playerAnalysis.gameAnalyses.gameAnalyses]))
-      chunks.extend(Irwin.flatten([gameAnalysis.tensorInputChunks() for gameAnalysis in playerAnalysis.gameAnalyses.gameAnalyses]))
+      # determine length of smallest dataset
+      mlen = min(len(cheats), len(legits))
 
-    assessedMoves = MoveAssessment.applyNet(moves)
-    assessedChunks = ChunkAssessment.applyNet(chunks)
-    moveHeader = 0
-    chunkHeader = 0
-    playerAnalyses1 = []
+      #balance the dataset
+      cheats = cheats[:mlen]
+      legits = legits[:mlen]
 
-    gameAnalyses1 = GameAnalyses([])
-    for playerAnalysis in playerAnalyses:
-      for gameAnalysis in playerAnalysis.gameAnalyses.gameAnalyses:
-        lenM = len(gameAnalysis.tensorInputMoves())
-        lenC = len(gameAnalysis.tensorInputChunks())
-        gameAnalysis.assessedMoves = assessedMoves[moveHeader:moveHeader+lenM]
-        gameAnalysis.assessedChunks = assessedChunks[chunkHeader:chunkHeader+lenC]
-        gameAnalysis.assessed = True
-        moveHeader += lenM
-        chunkHeader += lenC
-        gameAnalyses1.append(gameAnalysis)
+      print("Legits Batch Size: " + str(len(legits)))
+      print("Cheats Batch Size: " + str(len(cheats)))
 
-    assessedMoveChunks = MoveChunkAssessment.applyNet([gameAnalysis.tensorInputMoveChunks() for gameAnalysis in gameAnalyses1.gameAnalyses])
-
-    gameAnalyses2 = GameAnalyses([])
-    for gameAnalysis, moveChunkIrwinReport in zip(gameAnalyses1.gameAnalyses, assessedMoveChunks):
-      gameAnalysis.moveChunkActivation = moveChunkIrwinReport.activation
-      gameAnalyses2.append(gameAnalysis)
-
-    playerAnalyses1 = []
-    tensorInputGames = []
-    tensorInputPlayerPVs = []
-    gameHeader = 0
-    for playerAnalysis in playerAnalyses:
-      lenG = len(playerAnalysis.gameAnalyses.gameAnalyses)
-      pa = PlayerAnalysis(
-        id = playerAnalysis.id,
-        titled = playerAnalysis.titled, 
-        engine = playerAnalysis.engine, 
-        gamesPlayed = playerAnalysis.gamesPlayed,
-        closedReports = playerAnalysis.closedReports,
-        gameAnalyses = GameAnalyses(gameAnalyses2.gameAnalyses[gameHeader:gameHeader+lenG]),
-        gamesActivation = None
-      )
-      playerAnalyses1.append(pa)
-      tensorInputGames.append(pa.tensorInputGames())
-      gameHeader += lenG
-
-    playerAnalyses2 = []
-    gamesIrwinReports = GamesAssessment.applyNet(tensorInputGames)
-    for playerAnalysis, gamesIrwinReport in zip(playerAnalyses1, gamesIrwinReports):
-      playerAnalyses2.append(PlayerAnalysis(
-        id = playerAnalysis.id,
-        titled = playerAnalysis.titled, 
-        engine = playerAnalysis.engine, 
-        gamesPlayed = playerAnalysis.gamesPlayed,
-        closedReports = playerAnalysis.closedReports,
-        gameAnalyses = playerAnalysis.gameAnalyses,
-        gamesActivation = gamesIrwinReport.activation))
-
-    return playerAnalyses2
-
-class TrainAndEvaluate(threading.Thread):
-  def __init__(self, api, trainingStatsDB, playerAnalysisDB, falseReportsDB, settings, forcetrain, updateAll, testOnly, fastTest):
-    threading.Thread.__init__(self)
-    self.api = api
-    self.trainingStatsDB = trainingStatsDB
-    self.playerAnalysisDB = playerAnalysisDB
-    self.falseReportsDB = falseReportsDB
-    self.settings = settings
-    self.forcetrain = forcetrain
-    self.updateAll = updateAll
-    self.testOnly = testOnly
-    self.fastTest = fastTest
-
-  def run(self):
-    while True:
-      time.sleep(10)
-      if self.outOfDate() or self.forcetrain or self.testOnly or self.fastTest:
-        logging.warning("OUT OF DATE: UPDATING!")
-        trainer = TrainNetworks(self.api, self.playerAnalysisDB, self.settings['training']['minStep'], self.settings['training']['incStep'], self.updateAll, self.testOnly)
-        trainer.start()
-        trainer.join()
-        unsorted = self.playerAnalysisDB.countUnsorted()
-
-        # Counters for engines
-        truePositives = 0
-        indeciseEngines = 0
-        falseNegatives = []
-
-        page = 0
-        engines = self.playerAnalysisDB.enginesPaginated(page)
-        while len(engines) > 0:
-          logging.warning("Engines page: " + str(page))
-          if not self.fastTest:
-            engines = Irwin.assessPlayers(engines)
-            self.playerAnalysisDB.lazyWriteMany(engines)
-          truePositives += len([1 for p in engines if p.isLegit(self.settings['thresholds']) == False])
-          indeciseEngines += len([1 for p in engines if p.isLegit(self.settings['thresholds']) is None])
-          falseNegatives.extend([FalseReport(fn.id, fn.activation()) for fn in engines if fn.isLegit(self.settings['thresholds']) == True])
-
-          page += 1
-          engines = self.playerAnalysisDB.enginesPaginated(page)
-
-        # Counters for legits
-        trueNegatives = 0
-        indeciseLegits = 0
-        falsePositives = []
-
-        page = 0
-        legits = self.playerAnalysisDB.legitsPaginated(page)
-        while len(legits) > 0:
-          logging.warning("Legits page: " + str(page))
-          if not self.fastTest:
-            legits = Irwin.assessPlayers(legits)
-            self.playerAnalysisDB.lazyWriteMany(legits)
-          trueNegatives += len([1 for p in legits if p.isLegit(self.settings['thresholds']) == True])
-          indeciseLegits += len([1 for p in legits if p.isLegit(self.settings['thresholds']) is None])
-          falsePositives.extend([FalseReport(fp.id, fp.activation()) for fp in legits if fp.isLegit(self.settings['thresholds']) == False])
-
-          page += 1
-          legits = self.playerAnalysisDB.legitsPaginated(page)
-
-        logging.warning("Writing training stats")
-        self.trainingStatsDB.write(TrainingStats(
-          date = datetime.datetime.utcnow(),
-          sample = Sample(engines = truePositives + indeciseEngines + len(falseNegatives), legits = trueNegatives + indeciseLegits + len(falsePositives), unprocessed = unsorted),
-          accuracy = Accuracy(
-            truePositive = truePositives,
-            trueNegative = trueNegatives,
-            falsePositive = len(falsePositives),
-            falseNegative = len(falseNegatives),
-            indeciseEngines = indeciseEngines,
-            indeciseLegits = indeciseLegits)))
-        self.falseReportsDB.write(FalseReports(falsePositives = falsePositives, falseNegatives = falseNegatives))
-
-  def outOfDate(self):
-    latest = self.trainingStatsDB.latest()
-    if latest is not None:
-      if datetime.datetime.utcnow() - latest.date > datetime.timedelta(days=1): # if it has been over a day since the last training
-        return True
-    else:
-      return True
-    return False
+      # only make the batch trainable if it's big
+      if len(cheats + legits) > 32:
+        batches.append({
+          'batch': np.array(cheats + legits),
+          'labels': np.array([1]*len(cheats) + [0]*len(legits))
+        })
+    shuffle(batches)
+    return batches
