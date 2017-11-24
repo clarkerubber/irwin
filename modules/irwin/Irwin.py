@@ -10,25 +10,29 @@ from modules.irwin.TrainingStats import TrainingStats, Accuracy, Sample
 from modules.irwin.FalseReports import FalseReport
 
 from keras.models import Sequential, load_model
-from keras.layers import Conv1D, Dense, Dropout, Embedding, LSTM
+from keras.layers import Dropout, Dense, Dropout, Embedding, LSTM
+from keras.optimizers import Adam
 
 
 class Irwin(namedtuple('Irwin', ['env', 'config'])):
   def gameModel(self):
-    if os.path.isfile('modules/irwin/models/game.h5'):
-      print("model already exists, opening from file")
-      return load_model('modules/irwin/models/game.h5')
+    #if os.path.isfile('modules/irwin/models/game.h5'):
+    #  print("model already exists, opening from file")
+    #  return load_model('modules/irwin/models/game.h5')
     print('model does not exist, building from scratch')
     model = Sequential()
-    model.add(Conv1D(filters=32, kernel_size=32, padding='causal', input_shape=(None,10)))
+    model.add(LSTM(32, return_sequences=True, input_shape=(None, 30)))
+    model.add(Dropout(0.2))
     model.add(LSTM(32, return_sequences=True))
-    model.add(LSTM(32, return_sequences=True))
+    model.add(Dropout(0.2))
     model.add(LSTM(32))
+    model.add(Dropout(0.2))
     model.add(Dense(64, activation='relu'))
-    model.add(Dense(32, activation='relu'))
+    model.add(Dropout(0.2))
     model.add(Dense(16, activation='relu'))
+    model.add(Dropout(0.2))
     model.add(Dense(1, activation='sigmoid'))
-    model.compile(optimizer='rmsprop',
+    model.compile(optimizer=Adam(),
       loss='binary_crossentropy',
       metrics=['accuracy'])
     return model
@@ -56,6 +60,9 @@ class Irwin(namedtuple('Irwin', ['env', 'config'])):
     print("getting moveAnalysisTensors")
     cheatGameTensors = [tga.moveAnalysisTensors() for tga in cheatGameAnalyses]
     legitGameTensors = [tga.moveAnalysisTensors() for tga in legitGameAnalyses]
+
+    cheatGameTensors = [[Irwin.flatten(game[mi:mi+3]) for mi in range(len(game)-2)] for gi, game in enumerate(cheatGameTensors)]
+    legitGameTensors = [[Irwin.flatten(game[mi:mi+3]) for mi in range(len(game)-2)] for gi, game in enumerate(legitGameTensors)]
 
     return Irwin.createBatchAndLabels(cheatGameTensors, legitGameTensors)
 
@@ -102,3 +109,7 @@ class Irwin(namedtuple('Irwin', ['env', 'config'])):
         })
     shuffle(batches)
     return batches
+
+  @staticmethod
+  def flatten(l):
+    return [item for sublist in l for item in sublist]
