@@ -20,7 +20,8 @@ class Irwin(namedtuple('Irwin', ['env', 'config'])):
       return load_model('modules/irwin/models/game.h5')
     print('model does not exist, building from scratch')
     model = Sequential()
-    model.add(Conv1D(filters=32, kernel_size=32, padding='causal', input_shape=(None,10)))
+    model.add(Conv1D(filters=32, kernel_size=32, padding='causal',
+        activation='sigmoid', input_shape=(None,10)))
     model.add(LSTM(32, return_sequences=True))
     model.add(LSTM(32, return_sequences=True))
     model.add(LSTM(32))
