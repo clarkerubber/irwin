@@ -48,9 +48,9 @@ class AnalysedMove(namedtuple('AnalysedMove', ['uci', 'move', 'emt', 'blur', 'sc
 
 def winningChances(score):
   if score.mate is not None:
-    return 1 if score.mate > 0 else -1
+    return 1 if score.mate > 0 else 0
   else:
-    return 2 / (1 + exp(-0.004 * score.cp)) - 1
+    return 1 / (1 + exp(-0.004 * score.cp))
 
 def similarChances(c1, c2):
   return abs(c1 - c2) < 0.05
