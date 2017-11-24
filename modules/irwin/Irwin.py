@@ -16,9 +16,9 @@ from keras.optimizers import Adam
 
 class Irwin(namedtuple('Irwin', ['env', 'config'])):
   def gameModel(self):
-    #if os.path.isfile('modules/irwin/models/game.h5'):
-    #  print("model already exists, opening from file")
-    #  return load_model('modules/irwin/models/game.h5')
+    if os.path.isfile('modules/irwin/models/game.h5'):
+      print("model already exists, opening from file")
+      return load_model('modules/irwin/models/game.h5')
     print('model does not exist, building from scratch')
     model = Sequential()
     model.add(LSTM(32, return_sequences=True, input_shape=(None, 30)))
