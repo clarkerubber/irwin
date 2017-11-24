@@ -1,6 +1,6 @@
 from collections import namedtuple
 from pprint import pprint
-from random import sample, shuffle
+from random import shuffle
 
 import logging
 import numpy as np
@@ -88,18 +88,9 @@ class Irwin(namedtuple('Irwin', ['env', 'config'])):
   def createBatchAndLabels(cheatBatch, legitBatch):
     batches = []
     # group the dataset into batches by the length of the dataset, because numpy needs it that way
-    for x in range(22, 34):
+    for x in range(22, 40):
       cheats = list([r for r in cheatBatch if len(r) == x])
       legits = list([r for r in legitBatch if len(r) == x])
-
-      # determine length of smallest dataset
-      mlen = min(len(cheats), len(legits))
-
-      #balance the dataset
-      if (len(cheats) > mlen):
-        cheats = sample(cheats, mlen)
-      if (len(legits) > mlen):
-        legits = sample(legits, mlen)
 
       print("Legits Batch Size: " + str(len(legits)))
       print("Cheats Batch Size: " + str(len(cheats)))
