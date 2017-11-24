@@ -10,7 +10,7 @@ from modules.irwin.TrainingStats import TrainingStats, Accuracy, Sample
 from modules.irwin.FalseReports import FalseReport
 
 from keras.models import Sequential, load_model
-from keras.layers import Dense, Dropout, Embedding, LSTM
+from keras.layers import Conv1D, Dense, Dropout, Embedding, LSTM
 
 
 class Irwin(namedtuple('Irwin', ['env', 'config'])):
@@ -20,7 +20,8 @@ class Irwin(namedtuple('Irwin', ['env', 'config'])):
       return load_model('modules/irwin/models/game.h5')
     print('model does not exist, building from scratch')
     model = Sequential()
-    model.add(LSTM(32, return_sequences=True, input_shape=(None,10)))
+    model.add(Conv1D(filters=32, kernel_size=32, padding='causal', input_shape=(None,10)))
+    model.add(LSTM(32, return_sequences=True))
     model.add(LSTM(32, return_sequences=True))
     model.add(LSTM(32))
     model.add(Dense(64, activation='relu'))
@@ -37,11 +38,13 @@ class Irwin(namedtuple('Irwin', ['env', 'config'])):
     model.save('modules/irwin/models/game.h5')
 
   def getDataset(self):
-    print("getting players")
+    print("getting players", end="...", flush=True)
     players = self.env.playerDB.balancedSample(self.config['train']['batchSize'])
-    print("getting game analyses")
+    print(" %d" % len(players))
+    print("getting game analyses", end="...", flush=True)
     gameAnalyses = []
     [gameAnalyses.extend(self.env.gameAnalysisDB.byUserId(p.id)) for p in players]
+    print(" %d" % len(gameAnalyses))
 
     print("assigning labels")
     gameLabels = self.assignLabels(gameAnalyses, players)
@@ -83,17 +86,10 @@ class Irwin(namedtuple('Irwin', ['env', 'config'])):
   @staticmethod
   def createBatchAndLabels(cheatBatch, legitBatch):
     batches = []
-    # group the dataset in to batches by the length of the dataset, because numpy needs it that way
-    for x in range(22, 34):
+    # group the dataset into batches by the length of the dataset, because numpy needs it that way
+    for x in range(22, 40):
       cheats = list([r for r in cheatBatch if len(r) == x])
       legits = list([r for r in legitBatch if len(r) == x])
-
-      # determine length of smallest dataset
-      mlen = min(len(cheats), len(legits))
-
-      #balance the dataset
-      cheats = cheats[:mlen]
-      legits = legits[:mlen]
 
       print("Legits Batch Size: " + str(len(legits)))
       print("Cheats Batch Size: " + str(len(cheats)))
