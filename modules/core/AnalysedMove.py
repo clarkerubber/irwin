@@ -8,16 +8,37 @@ Analysis = namedtuple('Analysis', ['uci', 'score'])
 Score = namedtuple('Score', ['cp', 'mate'])
 
 class AnalysedMove(namedtuple('AnalysedMove', ['uci', 'move', 'emt', 'blur', 'score', 'analyses'])):
-  def tensor(self):
-    return [self.emt, float(self.blur), self.rank(), self.ambiguity(), self.advantage()] + self.analysesWinningChances()
+  def tensor(self, moveNumber, timeAvg):
+    return [self.analysesWinningChances() + self.analysesWinningChanceLosses(), [
+      self.rank(),
+      self.emt - timeAvg,
+      (self.emt - timeAvg) / timeAvg,
+      self.emt,
+      float(self.blur),
+      self.ambiguity(),
+      self.advantage(),
+      self.difToNextBest(),
+      self.winningChancesLoss()]]
 
   def analysesWinningChances(self):
     c = [winningChances(a.score) for a in self.analyses]
     c += [0] * (5 - len(c))
     return c
 
+  def analysesWinningChanceLosses(self):
+    return [winningChances(self.top().score) - a for a in self.analysesWinningChances()]
+
   def top(self):
     return next(iter(self.analyses or []), None)
+
+  def difToNextBest(self):
+    tr = self.trueRank()
+    if tr is not None and tr != 1:
+      return winningChances(self.analyses[tr-2].score) - self.advantage()
+    elif tr == 1:
+      return 0
+    else:
+      return winningChances(self.analyses[-1].score) - self.advantage()
 
   def winningChancesLoss(self):
     return max(0, winningChances(self.top().score) - self.advantage())
@@ -34,8 +55,11 @@ class AnalysedMove(namedtuple('AnalysedMove', ['uci', 'move', 'emt', 'blur', 'sc
   def ambiguity(self): # 1 = only one top move, 5 = all moves good
     return sum(int(similarChances(winningChances(self.top().score), winningChances(analysis.score))) for analysis in self.analyses)
 
+  def trueRank(self):
+    return next((x+1 for x, am in enumerate(self.analyses) if am.uci == self.uci), None)
+
   def rank(self):
-    return next((x for x, am in enumerate(self.analyses) if am.uci == self.uci), self.__projectedRank())
+    return next((x for x, am in enumerate(self.analyses) if am.uci == self.uci), self.__projectedRank()) + 1
 
   def __projectedRank(self):
     if len(self.analyses) == 1:

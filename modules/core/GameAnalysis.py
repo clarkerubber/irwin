@@ -8,7 +8,25 @@ from collections import namedtuple
 
 class GameAnalysis(namedtuple('GameAnalysis', ['id', 'userId', 'gameId', 'moveAnalyses'])):
   def moveAnalysisTensors(self):
-    return [ma.tensor() for ma in self.moveAnalyses]
+    return [[
+        self.emtAverage(),
+        self.emtVariance(),
+        self.acpl(),
+        self.cplVariance()
+      ], [ma.tensor(moveNo, self.emtAverage()) for moveNo, ma in enumerate(self.moveAnalyses)]]
+
+  def emtVariance(self):
+    return np.var([m.emt for m in self.moveAnalyses])
+
+  def emtAverage(self):
+    return np.average([m.emt for m in self.moveAnalyses])
+
+  def acpl(self):
+    return np.average([m.winningChancesLoss() for m in self.moveAnalyses])
+
+  def cplVariance(self):
+    return np.var([m.winningChancesLoss() for m in self.moveAnalyses])
+
   @staticmethod
   def gameAnalysisId(gameId, white):
     return gameId + '/' + ('white' if white else 'black')
