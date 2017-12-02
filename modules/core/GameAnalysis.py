@@ -1,4 +1,4 @@
-import chess.pgn
+from chess.pgn import read_game
 import logging
 import numpy as np
 
@@ -8,24 +8,10 @@ from collections import namedtuple
 
 class GameAnalysis(namedtuple('GameAnalysis', ['id', 'userId', 'gameId', 'moveAnalyses'])):
   def moveAnalysisTensors(self):
-    return [[
-        self.emtAverage(),
-        self.emtVariance(),
-        self.acpl(),
-        self.cplVariance()
-      ], [ma.tensor(moveNo, self.emtAverage()) for moveNo, ma in enumerate(self.moveAnalyses)]]
-
-  def emtVariance(self):
-    return np.var([m.emt for m in self.moveAnalyses])
+    return [ma.tensor(moveNo, self.emtAverage()) for moveNo, ma in enumerate(self.moveAnalyses)]
 
   def emtAverage(self):
     return np.average([m.emt for m in self.moveAnalyses])
-
-  def acpl(self):
-    return np.average([m.winningChancesLoss() for m in self.moveAnalyses])
-
-  def cplVariance(self):
-    return np.var([m.winningChancesLoss() for m in self.moveAnalyses])
 
   @staticmethod
   def gameAnalysisId(gameId, white):
@@ -36,20 +22,23 @@ class GameAnalysis(namedtuple('GameAnalysis', ['id', 'userId', 'gameId', 'moveAn
     return (2*(moveNumber-1)) + (0 if white else 1)
 
   @staticmethod
-  def fromGame(game, engine, infoHandler, white, nodes):
+  def fromGame(game, engine, infoHandler, white, nodes, threadId = 0):
+    if len(game.pgn) < 20 or len(game.pgn) > 60:
+      return None
     analysis = []
     try:
       from StringIO import StringIO
     except ImportError:
       from io import StringIO
 
-    playableGame = chess.pgn.read_game(StringIO(" ".join(game.pgn)))
+    try:
+      playableGame = read_game(StringIO(" ".join(game.pgn)))
+    except ValueError:
+      return None
 
     node = playableGame
 
-    logging.debug("Game ID: " + game.id)
-    logging.debug("Game Length: " + str(node.end().board().fullmove_number))
-    logging.debug("Analysing Game...")
+    logging.debug(str(threadId) + ": " +game.id + " - " + str(node.end().board().fullmove_number) + " moves")
 
     engine.ucinewgame()
 

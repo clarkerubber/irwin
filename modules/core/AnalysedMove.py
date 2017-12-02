@@ -10,15 +10,13 @@ Score = namedtuple('Score', ['cp', 'mate'])
 class AnalysedMove(namedtuple('AnalysedMove', ['uci', 'move', 'emt', 'blur', 'score', 'analyses'])):
   def tensor(self, moveNumber, timeAvg):
     return [self.analysesWinningChances() + self.analysesWinningChanceLosses(), [
-      self.rank(),
       self.emt - timeAvg,
-      (self.emt - timeAvg) / timeAvg,
+      abs(self.emt - timeAvg) / (timeAvg + 1e-8),
       self.emt,
       float(self.blur),
       self.ambiguity(),
-      self.advantage(),
       self.difToNextBest(),
-      self.winningChancesLoss()]]
+      self.winningChancesLoss()], moveNumber, self.rank(), int(40*self.advantage())]
 
   def analysesWinningChances(self):
     c = [winningChances(a.score) for a in self.analyses]
@@ -59,7 +57,7 @@ class AnalysedMove(namedtuple('AnalysedMove', ['uci', 'move', 'emt', 'blur', 'sc
     return next((x+1 for x, am in enumerate(self.analyses) if am.uci == self.uci), None)
 
   def rank(self):
-    return next((x for x, am in enumerate(self.analyses) if am.uci == self.uci), self.__projectedRank()) + 1
+    return min(15, next((x for x, am in enumerate(self.analyses) if am.uci == self.uci), self.__projectedRank()) + 1)
 
   def __projectedRank(self):
     if len(self.analyses) == 1:

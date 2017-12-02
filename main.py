@@ -2,15 +2,16 @@ import argparse
 import sys
 import logging
 import json
+import threading
+import copy
 
 from pprint import pprint
 
-from modules.core.Game import Game
-from modules.core.GameAnalysis import GameAnalysis
 from modules.core.GameAnalysisStore import GameAnalysisStore
 from modules.core.PlayerEngineStatusBus import PlayerEngineStatusBus
 
 from Env import Env
+from RequestAnalyseReportThread import RequestAnalyseReportThread
 
 config = {}
 with open('conf/config.json') as confFile:
@@ -19,67 +20,56 @@ if config == {}:
   raise Exception('Config file empty or does not exist!')
 
 parser = argparse.ArgumentParser(description=__doc__)
-parser.add_argument("--learner", dest="learn", nargs="?",
-                    default=False, const=True, help="does this bot learn")
 parser.add_argument("--train", dest="train", nargs="?",
                     default=False, const=True, help="force training to start")
+parser.add_argument("--trainforever", dest="trainforever", nargs="?",
+                    default=False, const=True, help="train forever")
 parser.add_argument("--no-report", dest="noreport", nargs="?",
                     default=False, const=True, help="disable posting of player reports")
+parser.add_argument("--eval", dest="eval", nargs="?",
+                    default=False, const=True, help="evaluate the performance of neural networks")
 parser.add_argument("--test", dest="test", nargs="?",
-                    default=False, const=True, help="only test the neural networks performance")
+                    default=False, const=True, help="test on a single player")
 parser.add_argument("--quiet", dest="loglevel",
                     default=logging.DEBUG, action="store_const", const=logging.INFO,
                     help="reduce the number of logged messages")
 settings = parser.parse_args()
 
-config['irwin']['learn'] = settings.learn
+config['irwin']['learn'] = settings.train
 
 logging.basicConfig(format="%(message)s", level=settings.loglevel, stream=sys.stdout)
 logging.getLogger("requests.packages.urllib3").setLevel(logging.WARNING)
 logging.getLogger("chess.uci").setLevel(logging.WARNING)
 
 env = Env(config)
-while True:
-  env.irwin.train()
 
-PlayerEngineStatusBus(env.playerDB, config, settings.learn).start()
-
-while True and not settings.test:
-  # Get player data
-  #userId = env.api.getNextPlayerId()
-  userId = 'clarkey'
+# test on a single user in the DB
+if settings.test:
+  userId = 'ohsusanna'
   playerData = env.api.getPlayerData(userId)
-
-  # pull what we already have on the player
-  gameAnalysisStore = GameAnalysisStore([], [])
+  pprint(playerData)
+  gameAnalysisStore = GameAnalysisStore.new()
   gameAnalysisStore.addGames(env.gameDB.byUserId(userId))
   gameAnalysisStore.addGameAnalyses(env.gameAnalysisDB.byUserId(userId))
 
-  # Filter games and assessments for relevant info
-  try:
-    gameAnalysisStore.addGames([Game.fromDict(gid, userId, g) for gid, g in playerData['games'].items()])
-  except KeyError:
-    continue # if this doesn't gather any useful data, skip
+  env.api.postReport(env.irwin.report(userId, gameAnalysisStore))
+  print("posted")
 
-  env.gameDB.lazyWriteGames(gameAnalysisStore.games)
+# train on a single batch
+if settings.train:
+  env.irwin.train()
 
-  logging.debug("Already Analysed: " + str(len(gameAnalysisStore.gameAnalyses)))
+# how good is the network?
+if settings.eval:
+  env.irwin.evaluate()
 
-  gameAnalysisStore.addGameAnalyses([GameAnalysis.fromGame(game, env.engine, env.infoHandler, game.white == userId, config['stockfish']['nodes']) for game in gameAnalysisStore.randomGamesWithoutAnalysis()])
+# train forever
+while settings.trainforever:
+  env.irwin.train()
 
-  env.gameAnalysisDB.lazyWriteGameAnalyses(gameAnalysisStore.gameAnalyses)
-"""
-  if not settings.noassess:
-    playerAnalysis = env.irwin.assessPlayer(PlayerAnalysis(
-      id = userId,
-      titled = 'title' in playerData['assessment']['user'].keys(),
-      engine = None,
-      gamesPlayed = playerData['assessment']['user']['games'],
-      closedReports = sum(int(r.get('processedBy', None) is not None) for r in playerData['history'] if r['type'] == 'report' and r['data']['reason'] == 'cheat'),
-      gameAnalyses = gameAnalyses,
-      gamesActivation = None))
+# start the bus to update player engine status
+PlayerEngineStatusBus(env.playerDB, env.settings).start()
 
-  env.playerAnalysisDB.write(playerAnalysis)
-  if not settings.noreport:
-    env.api.postReport(playerAnalysis.report(config['irwin']['thresholds']))
-"""
+if not (settings.train or settings.eval or settings.noreport or settings.test):
+  [RequestAnalyseReportThread(x, Env(config)).start() for x in range(env.settings['core']['threads'])] 
+  # we need to make new copies of Env as the engine stored in env can't be used by two threads at once

@@ -25,7 +25,6 @@ class PlayerBSONHandler:
       'closedReports': player.closedReports
     }
 
-
 class PlayerDB(namedtuple('PlayerDB', ['playerColl'])):
   def byId(self, _id):
     try:

@@ -1,5 +1,4 @@
 from collections import namedtuple
-from chess.pgn import read_game
 import math
 
 class Blurs(namedtuple('Blurs', ['nb', 'moves'])):

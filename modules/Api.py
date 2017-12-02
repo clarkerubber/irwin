@@ -6,7 +6,6 @@ from collections import namedtuple
 
 class Api(namedtuple('Api', ['url', 'token'])):
   def postReport(self, report):
-    logging.warning('Posting report for ' + report['userId'])
     success = False
     attempts = 0
     while not success and attempts < 5:
@@ -18,6 +17,8 @@ class Api(namedtuple('Api', ['url', 'token'])):
         else:
           logging.warning(str(response.status_code) + ': Failed to post player report')
           logging.warning(json.dumps(report))
+          if response.status_code == 413:
+            return
           logging.debug('Trying again in 60 sec')
           time.sleep(60)
       except requests.ConnectionError:
@@ -34,7 +35,6 @@ class Api(namedtuple('Api', ['url', 'token'])):
         time.sleep(30)
 
   def getPlayerData(self, userId):
-    logging.debug('Getting player data for '+userId+'...')
     success = False
     while not success:
       try:
@@ -54,7 +54,6 @@ class Api(namedtuple('Api', ['url', 'token'])):
       return {}
 
   def getNextPlayerId(self):
-    logging.debug('Getting new player ID...')
     success = False
     while not success:
       try:
