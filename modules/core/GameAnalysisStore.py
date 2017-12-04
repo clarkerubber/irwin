@@ -18,7 +18,7 @@ class GameAnalysisStore(namedtuple('GameAnalysisStore', ['games', 'gameAnalyses'
   def addGameAnalyses(self, gameAnalyses):
     [self.gameAnalyses.append(ga) for ga in gameAnalyses if not self.gameIdHasAnalysis(ga.gameId) and ga is not None and len(ga.moveAnalyses) < 60 and len(ga.moveAnalyses) > 20]
 
-  def randomGamesWithoutAnalysis(self, size = 5):
+  def randomGamesWithoutAnalysis(self, size = 10):
     gWithout = self.gamesWithoutAnalysis()
     return [gWithout[x] for x in np.random.choice(list(range(len(gWithout))), min(len(gWithout), size), replace=False)]
 
