@@ -12,6 +12,7 @@ from modules.core.PlayerEngineStatusBus import PlayerEngineStatusBus
 
 from Env import Env
 from RequestAnalyseReportThread import RequestAnalyseReportThread
+from GatherDataThread import GatherDataThread
 
 config = {}
 with open('conf/config.json') as confFile:
@@ -24,6 +25,10 @@ parser.add_argument("--train", dest="train", nargs="?",
                     default=False, const=True, help="force training to start")
 parser.add_argument("--trainforever", dest="trainforever", nargs="?",
                     default=False, const=True, help="train forever")
+parser.add_argument("--gather", dest="gather", nargs="?",
+                    default=False, const=True, help="collect and analyse players forever to build dataset. Does not use models and does not post results")
+parser.add_argument("--newmodel", dest="newmodel", nargs="?",
+                    default=False, const=True, help="generate a new model for training")
 parser.add_argument("--no-report", dest="noreport", nargs="?",
                     default=False, const=True, help="disable posting of player reports")
 parser.add_argument("--eval", dest="eval", nargs="?",
@@ -35,29 +40,28 @@ parser.add_argument("--quiet", dest="loglevel",
                     help="reduce the number of logged messages")
 settings = parser.parse_args()
 
-config['irwin']['learn'] = settings.train
-
 logging.basicConfig(format="%(message)s", level=settings.loglevel, stream=sys.stdout)
 logging.getLogger("requests.packages.urllib3").setLevel(logging.WARNING)
 logging.getLogger("chess.uci").setLevel(logging.WARNING)
 
 env = Env(config)
 
+# start the bus to update player engine status
+PlayerEngineStatusBus(env.playerDB, env.settings).start()
+
 # test on a single user in the DB
 if settings.test:
-  userId = 'ohsusanna'
-  playerData = env.api.getPlayerData(userId)
-  pprint(playerData)
-  gameAnalysisStore = GameAnalysisStore.new()
-  gameAnalysisStore.addGames(env.gameDB.byUserId(userId))
-  gameAnalysisStore.addGameAnalyses(env.gameAnalysisDB.byUserId(userId))
+  for userId in ['thibault']:
+    gameAnalysisStore = GameAnalysisStore.new()
+    gameAnalysisStore.addGames(env.gameDB.byUserId(userId))
+    gameAnalysisStore.addGameAnalyses(env.gameAnalysisDB.byUserId(userId))
 
-  env.api.postReport(env.irwin.report(userId, gameAnalysisStore))
-  print("posted")
+    env.api.postReport(env.irwin.report(userId, gameAnalysisStore))
+    print("posted")
 
 # train on a single batch
 if settings.train:
-  env.irwin.train()
+  env.irwin.train(settings.newmodel)
 
 # how good is the network?
 if settings.eval:
@@ -65,11 +69,12 @@ if settings.eval:
 
 # train forever
 while settings.trainforever:
-  env.irwin.train()
+  env.irwin.train(settings.newmodel)
+  settings.newmodel = False
 
-# start the bus to update player engine status
-PlayerEngineStatusBus(env.playerDB, env.settings).start()
+if settings.gather:
+  [GatherDataThread(x, Env(config)).start() for x in range(env.settings['core']['instances'])]
 
-if not (settings.train or settings.eval or settings.noreport or settings.test):
-  [RequestAnalyseReportThread(x, Env(config)).start() for x in range(env.settings['core']['threads'])] 
+if not (settings.train or settings.eval or settings.noreport or settings.test or settings.gather):
+  [RequestAnalyseReportThread(x, Env(config)).start() for x in range(env.settings['core']['instances'])] 
   # we need to make new copies of Env as the engine stored in env can't be used by two threads at once

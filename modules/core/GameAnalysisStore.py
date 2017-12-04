@@ -13,12 +13,12 @@ class GameAnalysisStore(namedtuple('GameAnalysisStore', ['games', 'gameAnalyses'
     return any([g for g in self.games if gid == g.id])
 
   def addGames(self, games):
-    [self.games.append(g) for g in games if (not self.hasGameId(g.id) and g.emts is not None and len(g.pgn) < 60 and len(g.pgn) > 20)]
+    [self.games.append(g) for g in games if (not self.hasGameId(g.id) and g.emts is not None and len(g.pgn) < 120 and len(g.pgn) > 40)]
 
   def addGameAnalyses(self, gameAnalyses):
     [self.gameAnalyses.append(ga) for ga in gameAnalyses if not self.gameIdHasAnalysis(ga.gameId) and ga is not None and len(ga.moveAnalyses) < 60 and len(ga.moveAnalyses) > 20]
 
-  def randomGamesWithoutAnalysis(self, size = 10):
+  def randomGamesWithoutAnalysis(self, size = 5):
     gWithout = self.gamesWithoutAnalysis()
     return [gWithout[x] for x in np.random.choice(list(range(len(gWithout))), min(len(gWithout), size), replace=False)]
 

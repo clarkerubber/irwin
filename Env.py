@@ -13,6 +13,7 @@ from modules.Api import Api
 from modules.irwin.Irwin import Irwin
 from modules.irwin.TrainingStats import TrainingStatsDB
 from modules.irwin.FalseReports import FalseReportsDB
+from modules.irwin.GameAnalysisPlayerPivot import GameAnalysisPlayerPivotDB
 
 class Env:
   def __init__(self, settings):
@@ -37,16 +38,18 @@ class Env:
     # Colls
     self.playerColl = self.db.player
     self.gameColl = self.db.game
-    self.GameAnalysisColl = self.db.gameAnalysis
+    self.gameAnalysisColl = self.db.gameAnalysis
 
+    self.gameAnalysisPlayerPivotColl = self.db.gameAnalysisPlayerPivot
     self.trainingStatsColl = self.db.trainingStats
     self.falseReportsColl = self.db.falseReports
 
     # database abstraction
     self.playerDB = PlayerDB(self.playerColl)
     self.gameDB = GameDB(self.gameColl)
-    self.gameAnalysisDB = GameAnalysisDB(self.GameAnalysisColl)
+    self.gameAnalysisDB = GameAnalysisDB(self.gameAnalysisColl)
 
+    self.gameAnalysisPlayerPivotDB = GameAnalysisPlayerPivotDB(self.gameAnalysisPlayerPivotColl)
     self.trainingStatsDB = TrainingStatsDB(self.trainingStatsColl)
     self.falseReportsDB = FalseReportsDB(self.falseReportsColl)
 

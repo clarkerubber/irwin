@@ -15,26 +15,28 @@ from keras.optimizers import Adam
 
 
 class Irwin(namedtuple('Irwin', ['env', 'config'])):
-  def gameModel(self):
-    if os.path.isfile('modules/irwin/models/game.h5'):
+  def gameModel(self, newmodel=False):
+    if os.path.isfile('modules/irwin/models/game.h5') and not newmodel:
       print("model already exists, opening from file")
       return load_model('modules/irwin/models/game.h5')
     print('model does not exist, building from scratch')
     pvInput = Input(shape=(None, 10), dtype='float32', name='pv_input')
-    moveStatsInput = Input(shape=(None, 7), dtype='float32', name='move_input')
+    moveStatsInput = Input(shape=(None, 6), dtype='float32', name='move_input')
 
     advInput = Input(shape=(None,), dtype='int32', name='advantage_input')
     ranksInput = Input(shape=(None,), dtype='int32', name='ranks_input')
     moveNumberInput = Input(shape=(None,), dtype='int32', name='move_number_input')
+    ambiguityInput = Input(shape=(None,), dtype='int32', name='ambiguity_input')
 
     # Embed rank and move number
     a1 = Embedding(input_dim=41, output_dim=32)(advInput)
-    r1 = Embedding(input_dim=16, output_dim=8)(ranksInput)
+    r1 = Embedding(input_dim=16, output_dim=16)(ranksInput)
     mn1 = Embedding(input_dim=61, output_dim=32)(moveNumberInput)
+    am1 = Embedding(input_dim=6, output_dim=16)(ambiguityInput)
 
     # Merge embeddings
-    mnr1 = concatenate([r1, mn1, a1])
-    mnr2 = Reshape((-1, 72))(mnr1)
+    mnr1 = concatenate([r1, mn1, a1, am1])
+    mnr2 = Reshape((-1, 96))(mnr1)
 
     # analyse PV data (potential moves)
     pv1 = Dense(128, activation='relu')(pvInput)
@@ -68,7 +70,7 @@ class Irwin(namedtuple('Irwin', ['env', 'config'])):
 
     mainOutput = Dense(1, activation='sigmoid', name='main_output')(l6)
 
-    model = Model(inputs=[pvInput, moveStatsInput, moveNumberInput, ranksInput, advInput], outputs=[mainOutput, secondaryOutput])
+    model = Model(inputs=[pvInput, moveStatsInput, moveNumberInput, ranksInput, advInput, ambiguityInput], outputs=[mainOutput, secondaryOutput])
 
     model.compile(optimizer=Adam(lr=0.0001),
       loss='binary_crossentropy',
@@ -76,20 +78,19 @@ class Irwin(namedtuple('Irwin', ['env', 'config'])):
       metrics=['accuracy'])
     return model
 
-  def train(self):
+  def train(self, newmodel=False):
     # get player sample
     print("getting model")
-    model = self.gameModel()
+    model = self.gameModel(newmodel)
     print("getting dataset")
     batches = self.getTrainingDataset(self.config['train']['batchSize'])
-    longest = max([len(b['batch'][0]) for b in batches])
 
     print("training")
     for x in range(3):
       for b in batches:
         print("Batch Info: Games: " + str(len(b['batch'][0])))
         print("Game Len: " + str(len(b['batch'][2][0])))
-        model.fit(b['batch'], b['labels'], epochs=int(self.config['train']['cycles']*len(b['batch'][0])/longest), batch_size=32, validation_split=0.2)
+        model.fit(b['batch'], b['labels'], epochs=self.config['train']['cycles'], batch_size=32, validation_split=0.2)
         self.saveGameModel(model)
       shuffle(batches)
     print("complete")
@@ -99,20 +100,21 @@ class Irwin(namedtuple('Irwin', ['env', 'config'])):
     model.save('modules/irwin/models/game.h5')
 
   def getTrainingDataset(self, batchSize):
-    print("getting players", end="...", flush=True)
-    players = self.env.playerDB.balancedSample(batchSize)
-    print(" %d" % len(players))
-    print("getting game analyses", end="...", flush=True)
-    gameAnalyses = []
-    [gameAnalyses.extend(self.env.gameAnalysisDB.byUserId(p.id)) for p in players]
-    print(" %d" % len(gameAnalyses))
+    cheatGameAnalyses = []
+    legitGameAnalyses = []
+    for length in range(22, 61):
+      print("gettings games of length: " + str(length))
+      cheatPivotEntries = self.env.gameAnalysisPlayerPivotDB.byEngineAndLength(True, length)
+      legitPivotEntries = self.env.gameAnalysisPlayerPivotDB.byEngineAndLength(False, length)
 
-    print("assigning labels")
-    gameLabels = self.assignLabels(gameAnalyses, players)
+      shuffle(cheatPivotEntries)
+      shuffle(legitPivotEntries)
 
-    print("splitting game analyses datasets")
-    cheatGameAnalyses = gameAnalyses[:sum(gameLabels)]
-    legitGameAnalyses = gameAnalyses[sum(gameLabels):]
+      minEntries = min(len(cheatPivotEntries), len(legitPivotEntries))
+      sampleSize = min(int(batchSize/2), minEntries)
+
+      cheatGameAnalyses.extend(self.env.gameAnalysisDB.byIds([cpe.id for cpe in cheatPivotEntries[:sampleSize]]))
+      legitGameAnalyses.extend(self.env.gameAnalysisDB.byIds([lpe.id for lpe in legitPivotEntries[:sampleSize]]))
 
     print("getting moveAnalysisTensors")
     cheatGameTensors = [tga.moveAnalysisTensors() for tga in cheatGameAnalyses]
@@ -164,23 +166,25 @@ class Irwin(namedtuple('Irwin', ['env', 'config'])):
 
   def predict(self, tensors, model=None):
     if model == None:
-      model = self.gameModel() 
+      model = self.gameModel()
 
-    pvs =         [[m[0] for m in p] for p in tensors]
-    moveStats =   [[m[1] for m in p] for p in tensors]
-    moveNumbers = [[m[2] for m in p] for p in tensors]
-    ranks =       [[m[3] for m in p] for p in tensors]
-    advs =        [[m[4] for m in p] for p in tensors]
+    pvs =         [[m[0] for m in p] for p in tensors][:40]
+    moveStats =   [[m[1] for m in p] for p in tensors][:40]
+    moveNumbers = [[m[2] for m in p] for p in tensors][:40]
+    ranks =       [[m[3] for m in p] for p in tensors][:40]
+    advs =        [[m[4] for m in p] for p in tensors][:40]
+    ambs =        [[m[5] for m in p] for p in tensors][:40]
 
-    predictions = [model.predict([np.array([p]), np.array([m]), np.array([mn]), np.array([r]), np.array([a])]) for p, m, mn, r, a in zip(pvs, moveStats, moveNumbers, ranks, advs)]
+    predictions = []
+    for p, m, mn, r, a, am in zip(pvs, moveStats, moveNumbers, ranks, advs, ambs):
+      predictions.append(model.predict([np.array([p]), np.array([m]), np.array([mn]), np.array([r]), np.array([a]), np.array([am])]))
+
     return predictions
 
   def report(self, userId, gameAnalysisStore):
     predictions = self.predict(gameAnalysisStore.gameAnalysisTensors())
     report = {
       'userId': userId,
-      'isLegit': True,
-      'pv0ByAmbiguity': [0,0,0,0,0],
       'activation': Irwin.activation(predictions),
       'games': [Irwin.gameReport(ga, p) for ga, p in zip(gameAnalysisStore.gameAnalyses, list(predictions))]
     }
@@ -188,8 +192,7 @@ class Irwin(namedtuple('Irwin', ['env', 'config'])):
 
   @staticmethod
   def activation(predictions): # this is a weighted average. 90+ -> 10x, 80+ -> 5x, 70+ -> 3x, 60+ -> 2x, 50- -> 1x
-    ps = []
-    [ps.extend(Irwin.activationWeight(p[0])*[p[0]]) for p in predictions]
+    ps = Irwin.flatten([Irwin.activationWeight(p[0])*[p[0]] for p in predictions]) # multiply entry amount by weight
     if len(ps) == 0:
       return 0
     return int(100*sum(ps)/len(ps))
@@ -257,8 +260,9 @@ class Irwin(namedtuple('Irwin', ['env', 'config'])):
         moveNumbers = np.array([[m[2] for m in p[0]] for p in blz])
         ranks =       np.array([[m[3] for m in p[0]] for p in blz])
         advs =        np.array([[m[4] for m in p[0]] for p in blz])
+        ambs =        np.array([[m[5] for m in p[0]] for p in blz])
 
-        b = [pvs, moveStats, moveNumbers, ranks, advs]
+        b = [pvs, moveStats, moveNumbers, ranks, advs, ambs]
         l = [
           np.array([int(i[1]) for i in blz]), 
           np.array([[[int(i[1])]]*len(moveStats[0]) for i in blz])

@@ -23,7 +23,7 @@ class GameAnalysis(namedtuple('GameAnalysis', ['id', 'userId', 'gameId', 'moveAn
 
   @staticmethod
   def fromGame(game, engine, infoHandler, white, nodes, threadId = 0):
-    if len(game.pgn) < 20 or len(game.pgn) > 60:
+    if len(game.pgn) < 40 or len(game.pgn) > 120:
       return None
     analysis = []
     try:
@@ -109,6 +109,9 @@ class GameAnalysisDB(namedtuple('GameAnalysisDB', ['gameAnalysisColl'])):
 
   def byUserIds(self, userIds):
     return [self.byUserId(userId) for userId in userIds]
+
+  def byIds(self, ids):
+    return [GameAnalysisBSONHandler.reads(ga) for ga in self.gameAnalysisColl.find({"_id": {"$in": ids}})]
 
   def lazyWriteGameAnalyses(self, gameAnalyses):
     [self.write(ga) for ga in gameAnalyses]

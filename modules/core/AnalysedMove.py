@@ -14,9 +14,8 @@ class AnalysedMove(namedtuple('AnalysedMove', ['uci', 'move', 'emt', 'blur', 'sc
       abs(self.emt - timeAvg) / (timeAvg + 1e-8),
       self.emt,
       float(self.blur),
-      self.ambiguity(),
       self.difToNextBest(),
-      self.winningChancesLoss()], moveNumber, self.rank(), int(40*self.advantage())]
+      self.winningChancesLoss()], moveNumber, self.rank(), int(40*self.advantage()), self.ambiguity()]
 
   def analysesWinningChances(self):
     c = [winningChances(a.score) for a in self.analyses]

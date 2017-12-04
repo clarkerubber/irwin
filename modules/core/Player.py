@@ -3,7 +3,7 @@ from collections import namedtuple
 
 class Player(namedtuple('Player', ['id', 'titled', 'engine', 'gamesPlayed', 'closedReports'])):
   def setEngine(self, status):
-    self.engine = status
+    return Player(id=self.id, titled=self.titled, engine=status, gamesPlayed=self.gamesPlayed, closedReports=self.closedReports)
 
 class PlayerBSONHandler:
   @staticmethod
