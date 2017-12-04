@@ -20,7 +20,9 @@ class GameAnalysisStore(namedtuple('GameAnalysisStore', ['games', 'gameAnalyses'
 
   def randomGamesWithoutAnalysis(self, size = 10):
     gWithout = self.gamesWithoutAnalysis()
-    return [gWithout[x] for x in np.random.choice(list(range(len(gWithout))), min(len(gWithout), size), replace=False)]
+    if len(gWithout) > 0:
+      return [gWithout[x] for x in np.random.choice(list(range(len(gWithout))), min(len(gWithout), size), replace=False)]
+    return []
 
   def gameAnalysisTensors(self):
     return [gameAnalysis.moveAnalysisTensors() for gameAnalysis in self.gameAnalyses if len(gameAnalysis.moveAnalyses) < 60 and len(gameAnalysis.moveAnalyses) > 20]
