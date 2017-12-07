@@ -14,6 +14,7 @@ from modules.irwin.Irwin import Irwin
 from modules.irwin.TrainingStats import TrainingStatsDB
 from modules.irwin.FalseReports import FalseReportsDB
 from modules.irwin.GameAnalysisPlayerPivot import GameAnalysisPlayerPivotDB
+from modules.irwin.ConfidentGameAnalysisPivot import ConfidentGameAnalysisPivotDB
 
 class Env:
   def __init__(self, settings):
@@ -41,6 +42,7 @@ class Env:
     self.gameAnalysisColl = self.db.gameAnalysis
 
     self.gameAnalysisPlayerPivotColl = self.db.gameAnalysisPlayerPivot
+    self.confidentGameAnalysisPivotColl = self.db.confidentGameAnalysisPivot
     self.trainingStatsColl = self.db.trainingStats
     self.falseReportsColl = self.db.falseReports
 
@@ -50,6 +52,7 @@ class Env:
     self.gameAnalysisDB = GameAnalysisDB(self.gameAnalysisColl)
 
     self.gameAnalysisPlayerPivotDB = GameAnalysisPlayerPivotDB(self.gameAnalysisPlayerPivotColl)
+    self.confidentGameAnalysisPivotDB = ConfidentGameAnalysisPivotDB(self.confidentGameAnalysisPivotColl)
     self.trainingStatsDB = TrainingStatsDB(self.trainingStatsColl)
     self.falseReportsDB = FalseReportsDB(self.falseReportsColl)
 

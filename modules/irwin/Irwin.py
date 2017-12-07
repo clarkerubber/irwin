@@ -6,11 +6,12 @@ import logging
 import numpy as np
 import os.path
 
+from modules.irwin.ConfidentGameAnalysisPivot import ConfidentGameAnalysisPivot
 from modules.irwin.TrainingStats import TrainingStats, Accuracy, Sample
 from modules.irwin.FalseReports import FalseReport
 
 from keras.models import load_model, Model
-from keras.layers import Embedding, Dropout, Dense, Reshape, LSTM, Input, concatenate
+from keras.layers import Embedding, Dropout, Dense, Reshape, LSTM, Input, concatenate, Conv1D
 from keras.optimizers import Adam
 
 
@@ -57,8 +58,10 @@ class Irwin(namedtuple('Irwin', ['env', 'config'])):
     # merge move stats with move options
     mvpv = concatenate([mv4, pv4])
 
+    c = Conv1D(filters=128, kernel_size=5, padding='same', name='conv')(mvpv)
+
     # analyse all the moves and come to a decision about the game
-    l1 = LSTM(128, return_sequences=True)(mvpv)
+    l1 = LSTM(128, return_sequences=True)(c)
     l2 = LSTM(128, return_sequences=True)(l1)
     l3 = LSTM(64, return_sequences=True)(l2)
     l4 = LSTM(64)(l3)
@@ -102,10 +105,12 @@ class Irwin(namedtuple('Irwin', ['env', 'config'])):
   def getTrainingDataset(self, batchSize):
     cheatGameAnalyses = []
     legitGameAnalyses = []
-    for length in range(22, 61):
+    for length in range(20, 60):
       print("gettings games of length: " + str(length))
-      cheatPivotEntries = self.env.gameAnalysisPlayerPivotDB.byEngineAndLength(True, length)
-      legitPivotEntries = self.env.gameAnalysisPlayerPivotDB.byEngineAndLength(False, length)
+      cheatPivotEntries = self.env.confidentGameAnalysisPivotDB.byEngineLengthAndConfidence(True, length, 90)
+      legitPivotEntries = self.env.confidentGameAnalysisPivotDB.byEngineLengthAndConfidence(False, length, 25)
+
+      print("got: "+str(len(cheatPivotEntries + legitPivotEntries)))
 
       shuffle(cheatPivotEntries)
       shuffle(legitPivotEntries)
@@ -153,27 +158,16 @@ class Irwin(namedtuple('Irwin', ['env', 'config'])):
 
     pprint(fpnames)
 
-  @staticmethod
-  def outcome(a, t, e): # activation, threshold, expected value
-    if a > t and e:
-      return 1 # true positive
-    if a <= t and e:
-      return 2 # false negative
-    if a <= t and not e:
-      return 3 # true negative
-    else:
-      return 4 # false positive
-
   def predict(self, tensors, model=None):
     if model == None:
       model = self.gameModel()
 
-    pvs =         [[m[0] for m in p] for p in tensors][:40]
-    moveStats =   [[m[1] for m in p] for p in tensors][:40]
-    moveNumbers = [[m[2] for m in p] for p in tensors][:40]
-    ranks =       [[m[3] for m in p] for p in tensors][:40]
-    advs =        [[m[4] for m in p] for p in tensors][:40]
-    ambs =        [[m[5] for m in p] for p in tensors][:40]
+    pvs =         [[m[0] for m in p][:40] for p in tensors]
+    moveStats =   [[m[1] for m in p][:40] for p in tensors]
+    moveNumbers = [[m[2] for m in p][:40] for p in tensors]
+    ranks =       [[m[3] for m in p][:40] for p in tensors]
+    advs =        [[m[4] for m in p][:40] for p in tensors]
+    ambs =        [[m[5] for m in p][:40] for p in tensors]
 
     predictions = []
     for p, m, mn, r, a, am in zip(pvs, moveStats, moveNumbers, ranks, advs, ambs):
@@ -189,6 +183,47 @@ class Irwin(namedtuple('Irwin', ['env', 'config'])):
       'games': [Irwin.gameReport(ga, p) for ga, p in zip(gameAnalysisStore.gameAnalyses, list(predictions))]
     }
     return report
+
+  def buildPivotTable(self):
+    return True #stub
+
+  def buildConfidenceTable(self):
+    cheatGameAnalyses = []
+    legitGameAnalyses = []
+    for length in range(20, 60):
+      print("getting games of length: " + str(length))
+      cheatPivotEntries = self.env.gameAnalysisPlayerPivotDB.byEngineAndLength(True, length)
+      legitPivotEntries = self.env.gameAnalysisPlayerPivotDB.byEngineAndLength(False, length)
+
+      cheatGameAnalyses.extend(self.env.gameAnalysisDB.byIds([cpe.id for cpe in cheatPivotEntries]))
+      legitGameAnalyses.extend(self.env.gameAnalysisDB.byIds([lpe.id for lpe in legitPivotEntries]))
+
+    model = self.gameModel()
+
+    print("getting moveAnalysisTensors")
+    cheatTensors = [tga.moveAnalysisTensors() for tga in cheatGameAnalyses]
+    legitTensors = [tga.moveAnalysisTensors() for tga in legitGameAnalyses]
+
+    print("predicting the things")
+    cheatGamePredictions = self.predict(cheatTensors, model)
+    legitGamePredictions = self.predict(legitTensors, model)
+
+    confidentCheats = [ConfidentGameAnalysisPivot.fromGamesAnalysisandPrediction(gameAnalysis, prediction[0], engine=True) for gameAnalysis, prediction in zip(cheatGameAnalyses, cheatGamePredictions) if prediction[0] > 0.85]
+    confidentLegits = [ConfidentGameAnalysisPivot.fromGamesAnalysisandPrediction(gameAnalysis, prediction[0], engine=False) for gameAnalysis, prediction in zip(legitGameAnalyses, legitGamePredictions) if prediction[0] < 0.25]
+
+    print("writing to db")
+    self.env.confidentGameAnalysisPivotDB.lazyWriteMany(confidentCheats + confidentLegits)
+
+  @staticmethod
+  def outcome(a, t, e): # activation, threshold, expected value
+    if a > t and e:
+      return 1 # true positive
+    if a <= t and e:
+      return 2 # false negative
+    if a <= t and not e:
+      return 3 # true negative
+    else:
+      return 4 # false positive
 
   @staticmethod
   def activation(predictions): # this is a weighted average. 90+ -> 10x, 80+ -> 5x, 70+ -> 3x, 60+ -> 2x, 50- -> 1x
@@ -265,7 +300,7 @@ class Irwin(namedtuple('Irwin', ['env', 'config'])):
         b = [pvs, moveStats, moveNumbers, ranks, advs, ambs]
         l = [
           np.array([int(i[1]) for i in blz]), 
-          np.array([[[int(i[1])]]*len(moveStats[0]) for i in blz])
+          np.array([[[0]]*5 + [[int(i[1])]]*(len(moveStats[0])-5) for i in blz])
         ]
 
         batches.append({

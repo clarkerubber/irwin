@@ -33,6 +33,10 @@ parser.add_argument("--no-report", dest="noreport", nargs="?",
                     default=False, const=True, help="disable posting of player reports")
 parser.add_argument("--eval", dest="eval", nargs="?",
                     default=False, const=True, help="evaluate the performance of neural networks")
+parser.add_argument("--buildpivottable", dest="buildpivottable", nargs="?",
+                    default=False, const=True, help="build table relating game analysis to players, game length and engine status")
+parser.add_argument("--buildconfidencetable", dest="buildconfidencetable", nargs="?",
+                    default=False, const=True, help="build table of game analysis that the network is confident in predicting")
 parser.add_argument("--test", dest="test", nargs="?",
                     default=False, const=True, help="test on a single player")
 parser.add_argument("--quiet", dest="loglevel",
@@ -59,6 +63,12 @@ if settings.test:
     env.api.postReport(env.irwin.report(userId, gameAnalysisStore))
     print("posted")
 
+if settings.buildpivottable:
+  env.irwin.buildPivotTable()
+
+if settings.buildconfidencetable:
+  env.irwin.buildConfidenceTable()
+
 # train on a single batch
 if settings.train:
   env.irwin.train(settings.newmodel)
@@ -69,6 +79,7 @@ if settings.eval:
 
 # train forever
 while settings.trainforever:
+  env.irwin.buildConfidenceTable()
   env.irwin.train(settings.newmodel)
   settings.newmodel = False
 
