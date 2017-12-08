@@ -38,6 +38,3 @@ class RequestAnalyseReportThread(threading.Thread):
 
       logging.warning('Posting report for ' + userId)
       self.env.api.postReport(self.env.irwin.report(userId, gameAnalysisStore))
-
-      with open('log.txt', 'a') as logfile:
-        logfile.write("\n" + "Analysed " + userId)
