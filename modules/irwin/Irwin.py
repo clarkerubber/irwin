@@ -175,8 +175,8 @@ class Irwin(namedtuple('Irwin', ['env', 'config'])):
 
     return predictions
 
-  def report(self, userId, gameAnalysisStore):
-    predictions = self.predict(gameAnalysisStore.gameAnalysisTensors())
+  def report(self, userId, gameAnalysisStore, model=None):
+    predictions = self.predict(gameAnalysisStore.gameAnalysisTensors(), model)
     report = {
       'userId': userId,
       'activation': Irwin.activation(predictions),
@@ -208,8 +208,8 @@ class Irwin(namedtuple('Irwin', ['env', 'config'])):
     cheatGamePredictions = self.predict(cheatTensors, model)
     legitGamePredictions = self.predict(legitTensors, model)
 
-    confidentCheats = [ConfidentGameAnalysisPivot.fromGamesAnalysisandPrediction(gameAnalysis, prediction[0], engine=True) for gameAnalysis, prediction in zip(cheatGameAnalyses, cheatGamePredictions) if prediction[0] > 0.85]
-    confidentLegits = [ConfidentGameAnalysisPivot.fromGamesAnalysisandPrediction(gameAnalysis, prediction[0], engine=False) for gameAnalysis, prediction in zip(legitGameAnalyses, legitGamePredictions) if prediction[0] < 0.25]
+    confidentCheats = [ConfidentGameAnalysisPivot.fromGamesAnalysisandPrediction(gameAnalysis, prediction[0], engine=True) for gameAnalysis, prediction in zip(cheatGameAnalyses, cheatGamePredictions) if prediction[0] > 0.90]
+    confidentLegits = [ConfidentGameAnalysisPivot.fromGamesAnalysisandPrediction(gameAnalysis, prediction[0], engine=False) for gameAnalysis, prediction in zip(legitGameAnalyses, legitGamePredictions) if prediction[0] < 0.35]
 
     print("writing to db")
     self.env.confidentGameAnalysisPivotDB.lazyWriteMany(confidentCheats + confidentLegits)

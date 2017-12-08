@@ -35,11 +35,13 @@ class ConfidentGameAnalysisPivotDB(namedtuple('ConfidentGameAnalysisPivotDB', ['
   def byEngineAndLength(self, engine, length):
     return [ConfidentGameAnalysisPivotBSONHandler.reads(bson) for bson in self.confidentGameAnalysisPivotColl.find({'engine': engine, 'length': length})]
 
-  def byEngineLengthAndConfidence(self, engine, length, prediction):
-    print("finding: "+str(engine)+" : "+str(length)+" : "+str(prediction))
+  def byEngineLengthAndPrediction(self, engine, length, prediction):
     if engine:
       return [ConfidentGameAnalysisPivotBSONHandler.reads(bson) for bson in self.confidentGameAnalysisPivotColl.find({'engine': engine, 'length': length, 'prediction': {'$gte': prediction}})]
     return [ConfidentGameAnalysisPivotBSONHandler.reads(bson) for bson in self.confidentGameAnalysisPivotColl.find({'engine': engine, 'length': length, 'prediction': {'$lte': prediction}})]
+
+  def byPredictionRangeAndLength(self, minPred, maxPred, length):
+    return [ConfidentGameAnalysisPivotBSONHandler.reads(bson) for bson in self.confidentGameAnalysisPivotColl.find({'prediction': {'$gte': minPred, '$lte': maxPred}})]
 
   def writeMany(self, confidentGameAnalysisPivots):
     [self.confidentGameAnalysisPivotColl.insert_many([ConfidentGameAnalysisPivotBSONHandler.writes(cga) for cga in confidentGameAnalysisPivots])]

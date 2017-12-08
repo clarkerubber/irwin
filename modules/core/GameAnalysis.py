@@ -22,7 +22,7 @@ class GameAnalysis(namedtuple('GameAnalysis', ['id', 'userId', 'gameId', 'moveAn
     return (2*(moveNumber-1)) + (0 if white else 1)
 
   @staticmethod
-  def fromGame(game, engine, infoHandler, white, nodes, threadId = 0):
+  def fromGame(game, engine, infoHandler, white, nodes):
     if len(game.pgn) < 40 or len(game.pgn) > 120:
       return None
     analysis = []
@@ -38,7 +38,7 @@ class GameAnalysis(namedtuple('GameAnalysis', ['id', 'userId', 'gameId', 'moveAn
 
     node = playableGame
 
-    logging.debug(str(threadId) + ": " +game.id + " - " + str(node.end().board().fullmove_number) + " moves")
+    logging.debug(game.id + " - " + str(node.end().board().fullmove_number) + " moves")
 
     engine.ucinewgame()
 

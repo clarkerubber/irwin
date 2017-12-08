@@ -55,12 +55,13 @@ PlayerEngineStatusBus(env.playerDB, env.settings).start()
 
 # test on a single user in the DB
 if settings.test:
-  for userId in ['thibault']:
+  model = env.irwin.gameModel()
+  for userId in ['maradomarado', 'chesmstr1390', 'puckeredpete', 'simpel', 'jchpuebla', 'mizginbae', 'ipetrov123456789', 'mbk6', 'angelfire']:
     gameAnalysisStore = GameAnalysisStore.new()
     gameAnalysisStore.addGames(env.gameDB.byUserId(userId))
     gameAnalysisStore.addGameAnalyses(env.gameAnalysisDB.byUserId(userId))
 
-    env.api.postReport(env.irwin.report(userId, gameAnalysisStore))
+    env.api.postReport(env.irwin.report(userId, gameAnalysisStore, model))
     print("posted")
 
 if settings.buildpivottable:
@@ -87,5 +88,5 @@ if settings.gather:
   [GatherDataThread(x, Env(config)).start() for x in range(env.settings['core']['instances'])]
 
 if not (settings.train or settings.eval or settings.noreport or settings.test or settings.gather):
-  [RequestAnalyseReportThread(x, Env(config)).start() for x in range(env.settings['core']['instances'])] 
+  RequestAnalyseReportThread(env).start()
   # we need to make new copies of Env as the engine stored in env can't be used by two threads at once

@@ -6,16 +6,15 @@ from modules.core.GameAnalysis import GameAnalysis
 from modules.core.GameAnalysisStore import GameAnalysisStore
 
 class RequestAnalyseReportThread(threading.Thread):
-  def __init__(self, id, env):
+  def __init__(self, env):
     threading.Thread.__init__(self)
-    self.id = id
     self.env = env
 
   def run(self):
     while True:
-      logging.debug(str(self.id) + ': Getting new player ID')
+      logging.debug('Getting new player ID')
       userId = self.env.api.getNextPlayerId()
-      logging.debug(str(self.id) + ': Getting player data for '+userId)
+      logging.debug('Getting player data for '+userId)
       playerData = self.env.api.getPlayerData(userId)
 
       # pull what we already have on the player
@@ -31,14 +30,14 @@ class RequestAnalyseReportThread(threading.Thread):
 
       self.env.gameDB.lazyWriteGames(gameAnalysisStore.games)
 
-      logging.debug(str(self.id) + ": Already Analysed: " + str(len(gameAnalysisStore.gameAnalyses)))
+      logging.debug("Already Analysed: " + str(len(gameAnalysisStore.gameAnalyses)))
 
-      gameAnalysisStore.addGameAnalyses([GameAnalysis.fromGame(game, self.env.engine, self.env.infoHandler, game.white == userId, self.env.settings['stockfish']['nodes'], self.id) for game in gameAnalysisStore.randomGamesWithoutAnalysis()])
+      gameAnalysisStore.addGameAnalyses([GameAnalysis.fromGame(game, self.env.engine, self.env.infoHandler, game.white == userId, self.env.settings['stockfish']['nodes']) for game in gameAnalysisStore.randomGamesWithoutAnalysis()])
 
       self.env.gameAnalysisDB.lazyWriteGameAnalyses(gameAnalysisStore.gameAnalyses)
 
-      logging.warning(str(self.id) + ': Posting report for ' + userId)
+      logging.warning('Posting report for ' + userId)
       self.env.api.postReport(self.env.irwin.report(userId, gameAnalysisStore))
 
       with open('log.txt', 'a') as logfile:
-        logfile.write("\n" + str(self.id) + ": Analysed " + userId)
+        logfile.write("\n" + "Analysed " + userId)
