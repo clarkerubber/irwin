@@ -346,7 +346,7 @@ class Irwin(namedtuple('Irwin', ['env', 'config'])):
 
   @staticmethod
   def activation(predictions): # this is a weighted average. 90+ -> 10x, 80+ -> 5x, 70+ -> 3x, 60+ -> 2x, 50- -> 1x
-    ps = Irwin.flatten([Irwin.activationWeight(binaryPrediction[0][0][0])*[binaryPrediction[0][0][0]] for binaryPrediction, trinaryPrediction in predictions if trinaryPrediction[0][2] < 0.3]) # multiply entry amount by weight
+    ps = Irwin.flatten([Irwin.activationWeight(trinaryPrediction[0][0])*[trinaryPrediction[0][0]] for binaryPrediction, trinaryPrediction in predictions]) # multiply entry amount by weight
     if len(ps) == 0:
       return 0
     return int(100*sum(ps)/len(ps))
