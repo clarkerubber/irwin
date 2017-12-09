@@ -4,6 +4,7 @@ import logging
 import json
 import threading
 import copy
+import time
 
 from pprint import pprint
 
@@ -21,10 +22,18 @@ if config == {}:
   raise Exception('Config file empty or does not exist!')
 
 parser = argparse.ArgumentParser(description=__doc__)
-parser.add_argument("--train", dest="train", nargs="?",
-                    default=False, const=True, help="force training to start")
-parser.add_argument("--trainforever", dest="trainforever", nargs="?",
-                    default=False, const=True, help="train forever")
+parser.add_argument("--trainbinary", dest="trainbinary", nargs="?",
+                    default=False, const=True, help="train binary game model")
+parser.add_argument("--trainbinaryforever", dest="trainbinaryforever", nargs="?",
+                    default=False, const=True, help="train binary model forever")
+parser.add_argument("--traintrinary", dest="traintrinary", nargs="?",
+                    default=False, const=True, help="train trinary game model")
+parser.add_argument("--traintrinaryforever", dest="traintrinaryforever", nargs="?",
+                    default=False, const=True, help="train trinary model forever")
+parser.add_argument("--epoch", dest="epoch", nargs="?",
+                    default=False, const=True, help="train from start to finish")
+parser.add_argument("--epochforever", dest="epochforever", nargs="?",
+                    default=False, const=True, help="train from start to finish forever")
 parser.add_argument("--gather", dest="gather", nargs="?",
                     default=False, const=True, help="collect and analyse players forever to build dataset. Does not use models and does not post results")
 parser.add_argument("--newmodel", dest="newmodel", nargs="?",
@@ -55,14 +64,27 @@ PlayerEngineStatusBus(env.playerDB, env.settings).start()
 
 # test on a single user in the DB
 if settings.test:
-  model = env.irwin.gameModel()
-  for userId in ['maradomarado', 'chesmstr1390', 'puckeredpete', 'simpel', 'jchpuebla', 'mizginbae', 'ipetrov123456789', 'mbk6', 'angelfire']:
+  binaryModel = env.irwin.gameModelBinary()
+  trinaryModel = env.irwin.gameModelTrinary()
+  for userId in ['prince_upadhyay']:
     gameAnalysisStore = GameAnalysisStore.new()
     gameAnalysisStore.addGames(env.gameDB.byUserId(userId))
     gameAnalysisStore.addGameAnalyses(env.gameAnalysisDB.byUserId(userId))
 
-    env.api.postReport(env.irwin.report(userId, gameAnalysisStore, model))
+    env.api.postReport(env.irwin.report(userId, gameAnalysisStore, binaryModel, trinaryModel))
     print("posted")
+
+if settings.epoch:
+  env.irwin.buildPivotTable()
+  env.irwin.trainBinary()
+  env.irwin.buildConfidenceTable()
+  env.irwin.trainTrinary()
+
+while settings.epochforever:
+  env.irwin.buildPivotTable()
+  env.irwin.trainBinary()
+  env.irwin.buildConfidenceTable()
+  env.irwin.trainTrinary()
 
 if settings.buildpivottable:
   env.irwin.buildPivotTable()
@@ -71,22 +93,36 @@ if settings.buildconfidencetable:
   env.irwin.buildConfidenceTable()
 
 # train on a single batch
-if settings.train:
-  env.irwin.train(settings.newmodel)
+if settings.trainbinary:
+  env.irwin.trainBinary(settings.newmodel)
+
+if settings.traintrinary:
+  env.irwin.trainTrinary(settings.newmodel)
 
 # how good is the network?
 if settings.eval:
   env.irwin.evaluate()
 
 # train forever
-while settings.trainforever:
-  env.irwin.buildConfidenceTable()
-  env.irwin.train(settings.newmodel)
+while settings.trainbinaryforever:
+  env.irwin.trainBinary(settings.newmodel)
   settings.newmodel = False
+
+# train forever
+if settings.traintrinaryforever:
+  #env.irwin.buildConfidenceTable()
+  while True:
+    env.irwin.trainTrinary(settings.newmodel)
+    settings.newmodel = False
 
 if settings.gather:
   [GatherDataThread(x, Env(config)).start() for x in range(env.settings['core']['instances'])]
 
-if not (settings.train or settings.eval or settings.noreport or settings.test or settings.gather):
-  RequestAnalyseReportThread(env).start()
+if not (settings.trainbinary or settings.eval or settings.noreport or settings.test or settings.gather):
+  requestAnalyseReportThread = RequestAnalyseReportThread(env)
+  requestAnalyseReportThread.start()
+  while True:
+    time.sleep(60)
+    if not requestAnalyseReportThread.isAlive():
+      requestAnalyseReportThread.start()
   # we need to make new copies of Env as the engine stored in env can't be used by two threads at once
