@@ -8,11 +8,12 @@ import time
 
 from pprint import pprint
 
+from modules.core.Game import Game
+from modules.core.GameAnalysis import GameAnalysis
 from modules.core.GameAnalysisStore import GameAnalysisStore
 from modules.core.PlayerEngineStatusBus import PlayerEngineStatusBus
 
 from Env import Env
-from RequestAnalyseReportThread import RequestAnalyseReportThread
 from GatherDataThread import GatherDataThread
 
 config = {}
@@ -60,7 +61,8 @@ logging.getLogger("chess.uci").setLevel(logging.WARNING)
 env = Env(config)
 
 # start the bus to update player engine status
-PlayerEngineStatusBus(env.playerDB, env.settings).start()
+playerEngineStatusBus = PlayerEngineStatusBus(env.playerDB, env.settings)
+playerEngineStatusBus.start()
 
 # test on a single user in the DB
 if settings.test:
@@ -119,10 +121,32 @@ if settings.gather:
   [GatherDataThread(x, Env(config)).start() for x in range(env.settings['core']['instances'])]
 
 if not (settings.trainbinary or settings.eval or settings.noreport or settings.test or settings.gather):
-  requestAnalyseReportThread = RequestAnalyseReportThread(env)
-  requestAnalyseReportThread.start()
   while True:
-    time.sleep(60)
-    if not requestAnalyseReportThread.isAlive():
-      requestAnalyseReportThread.start()
-  # we need to make new copies of Env as the engine stored in env can't be used by two threads at once
+    logging.debug('Getting new player ID')
+    userId = env.api.getNextPlayerId()
+    logging.debug('Getting player data for '+userId)
+    playerData = env.api.getPlayerData(userId)
+
+    # pull what we already have on the player
+    gameAnalysisStore = GameAnalysisStore.new()
+    gameAnalysisStore.addGames(env.gameDB.byUserId(userId))
+    gameAnalysisStore.addGameAnalyses(env.gameAnalysisDB.byUserId(userId))
+
+    # Filter games and assessments for relevant info
+    try:
+      gameAnalysisStore.addGames([Game.fromDict(gid, userId, g) for gid, g in playerData['games'].items() if (g.get('initialFen') is None and g.get('variant') is None)])
+    except KeyError:
+      continue # if this doesn't gather any useful data, skip
+
+    env.gameDB.lazyWriteGames(gameAnalysisStore.games)
+
+    logging.debug("Already Analysed: " + str(len(gameAnalysisStore.gameAnalyses)))
+
+    gameAnalysisStore.addGameAnalyses([GameAnalysis.fromGame(game, env.engine, env.infoHandler, game.white == userId, env.settings['stockfish']['nodes']) for game in gameAnalysisStore.randomGamesWithoutAnalysis()])
+
+    env.gameAnalysisDB.lazyWriteGameAnalyses(gameAnalysisStore.gameAnalyses)
+
+    logging.warning('Posting report for ' + userId)
+    env.api.postReport(env.irwin.report(userId, gameAnalysisStore))
+
+playerEngineStatusBus.join()
