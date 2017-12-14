@@ -7,6 +7,8 @@ import os.path
 
 from modules.irwin.BinaryGameModel import BinaryGameModel
 
+from modules.irwin.ConfidentGameAnalysisPivot import ConfidentGameAnalysisPivot, ConfidentGameAnalysisPivotDB
+
 class Irwin():
   def __init__(self, env, config):
     self.env = env
@@ -29,7 +31,7 @@ class Irwin():
     print("getting dataset")
     analysesByPlayer = self.getEvaluationDataset(self.config['evalSize'])
     activations = [Irwin.activation(self.predict([ga.moveAnalysisTensors() for ga in gameAnalyses[1]], model)) for gameAnalyses in analysesByPlayer]
-    outcomes = list(zip(analysesByPlayer, [Irwin.outcome(a, 90, ap[0].engine) for ap, a in zip(analysesByPlayer, activations)]))
+    outcomes = list(zip(analysesByPlayer, [Irwin.outcome(a, 99.9, ap[0].engine) for ap, a in zip(analysesByPlayer, activations)]))
     tp = len([a for a in outcomes if a[1] == 1])
     fn = len([a for a in outcomes if a[1] == 2])
     tn = len([a for a in outcomes if a[1] == 3])
@@ -58,7 +60,7 @@ class Irwin():
       cheatGameAnalyses.extend(self.env.gameAnalysisDB.byIds([cpe.id for cpe in cheatPivotEntries]))
       legitGameAnalyses.extend(self.env.gameAnalysisDB.byIds([lpe.id for lpe in legitPivotEntries]))
 
-    model = self.binaryGameModel.model()
+    model = self.narrowGameModel.model()
 
     print("getting moveAnalysisTensors")
     cheatTensors = [tga.moveAnalysisTensors() for tga in cheatGameAnalyses]

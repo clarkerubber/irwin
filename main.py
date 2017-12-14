@@ -68,7 +68,7 @@ playerEngineStatusBus.start()
 # test on a single user in the DB
 if settings.test:
   model = env.irwin.narrowGameModel.model()
-  for userId in ['matheusalexsander','cognac','urg','biyikli','sallyforth','sakkariini','blues_banan','ramonmarcelo','alexpppp','mimivoistar333','usup','scnorbertus','velikan1111','mumby','overthehills','bandie','iva38','prac']:
+  for userId in ['ohsi','iammagnetic','amo_0','malerian','zeitspiel','krzysiekstasilas','boy49rus','briemann','king_fatty_iv','tm918','semnoy','grodanny']:
     gameAnalysisStore = GameAnalysisStore.new()
     gameAnalysisStore.addGames(env.gameDB.byUserId(userId))
     gameAnalysisStore.addGameAnalyses(env.gameAnalysisDB.byUserId(userId))
@@ -122,31 +122,35 @@ if settings.gather:
 
 if not (settings.traingeneral or settings.trainnarrow or settings.eval or settings.noreport or settings.test or settings.gather):
   while True:
-    logging.debug('Getting new player ID')
-    userId = env.api.getNextPlayerId()
-    logging.debug('Getting player data for '+userId)
-    playerData = env.api.getPlayerData(userId)
-
-    # pull what we already have on the player
-    gameAnalysisStore = GameAnalysisStore.new()
-    gameAnalysisStore.addGames(env.gameDB.byUserId(userId))
-    gameAnalysisStore.addGameAnalyses(env.gameAnalysisDB.byUserId(userId))
-
-    # Filter games and assessments for relevant info
     try:
-      gameAnalysisStore.addGames([Game.fromDict(gid, userId, g) for gid, g in playerData['games'].items() if (g.get('initialFen') is None and g.get('variant') is None)])
-    except KeyError:
-      continue # if this doesn't gather any useful data, skip
+      logging.debug('Getting new player ID')
+      userId = env.api.getNextPlayerId()
+      logging.debug('Getting player data for '+userId)
+      playerData = env.api.getPlayerData(userId)
 
-    env.gameDB.lazyWriteGames(gameAnalysisStore.games)
+      # pull what we already have on the player
+      gameAnalysisStore = GameAnalysisStore.new()
+      gameAnalysisStore.addGames(env.gameDB.byUserId(userId))
+      gameAnalysisStore.addGameAnalyses(env.gameAnalysisDB.byUserId(userId))
 
-    logging.debug("Already Analysed: " + str(len(gameAnalysisStore.gameAnalyses)))
+      # Filter games and assessments for relevant info
+      try:
+        gameAnalysisStore.addGames([Game.fromDict(gid, userId, g) for gid, g in playerData['games'].items() if (g.get('initialFen') is None and g.get('variant') is None)])
+      except KeyError:
+        continue # if this doesn't gather any useful data, skip
 
-    gameAnalysisStore.addGameAnalyses([GameAnalysis.fromGame(game, env.engine, env.infoHandler, game.white == userId, env.settings['stockfish']['nodes']) for game in gameAnalysisStore.randomGamesWithoutAnalysis()])
+      env.gameDB.lazyWriteGames(gameAnalysisStore.games)
 
-    env.gameAnalysisDB.lazyWriteGameAnalyses(gameAnalysisStore.gameAnalyses)
+      logging.debug("Already Analysed: " + str(len(gameAnalysisStore.gameAnalyses)))
 
-    logging.warning('Posting report for ' + userId)
-    env.api.postReport(env.irwin.report(userId, gameAnalysisStore))
+      gameAnalysisStore.addGameAnalyses([GameAnalysis.fromGame(game, env.engine, env.infoHandler, game.white == userId, env.settings['stockfish']['nodes']) for game in gameAnalysisStore.randomGamesWithoutAnalysis()])
+
+      env.gameAnalysisDB.lazyWriteGameAnalyses(gameAnalysisStore.gameAnalyses)
+
+      logging.warning('Posting report for ' + userId)
+      env.api.postReport(env.irwin.report(userId, gameAnalysisStore))
+    except:
+      exit("I broke lol!")
+      os._exit(1)
 print("exitting")
 os._exit(1)
