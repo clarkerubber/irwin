@@ -31,7 +31,7 @@ class Irwin():
     print("getting dataset")
     analysesByPlayer = self.getEvaluationDataset(self.config['evalSize'])
     activations = [Irwin.activation(self.predict([ga.moveAnalysisTensors() for ga in gameAnalyses[1]], model)) for gameAnalyses in analysesByPlayer]
-    outcomes = list(zip(analysesByPlayer, [Irwin.outcome(a, 99.9, ap[0].engine) for ap, a in zip(analysesByPlayer, activations)]))
+    outcomes = list(zip(analysesByPlayer, [Irwin.outcome(a, 90, ap[0].engine) for ap, a in zip(analysesByPlayer, activations)]))
     tp = len([a for a in outcomes if a[1] == 1])
     fn = len([a for a in outcomes if a[1] == 2])
     tn = len([a for a in outcomes if a[1] == 3])
@@ -118,19 +118,12 @@ class Irwin():
     ps = Irwin.flatten([Irwin.activationWeight(prediction[0][0])*[prediction[0][0]] for prediction in predictions]) # multiply entry amount by weight
     if len(ps) < 5:
       return 0
-    return int(100*sum(ps)/len(ps))
+    ps.sort()
+    return int(100*sum(ps[max(int(len(ps)/2)-1, 0):min(int(len(ps)/2)+1, len(ps))])/3) # magic
 
   @staticmethod
   def activationWeight(v):
-    if v > 0.90:
-      return 10
-    if v > 0.80:
-      return 5
-    if v > 0.70:
-      return 3
-    if v > 0.60:
-      return 2
-    return 1
+    return int(100*v)
 
   @staticmethod
   def gameReport(gameAnalysis, prediction):
