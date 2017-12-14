@@ -5,6 +5,7 @@ import json
 import threading
 import copy
 import time
+import os
 
 from pprint import pprint
 
@@ -23,14 +24,14 @@ if config == {}:
   raise Exception('Config file empty or does not exist!')
 
 parser = argparse.ArgumentParser(description=__doc__)
-parser.add_argument("--trainbinary", dest="trainbinary", nargs="?",
-                    default=False, const=True, help="train binary game model")
-parser.add_argument("--trainbinaryforever", dest="trainbinaryforever", nargs="?",
-                    default=False, const=True, help="train binary model forever")
-parser.add_argument("--traintrinary", dest="traintrinary", nargs="?",
-                    default=False, const=True, help="train trinary game model")
-parser.add_argument("--traintrinaryforever", dest="traintrinaryforever", nargs="?",
-                    default=False, const=True, help="train trinary model forever")
+parser.add_argument("--traingeneral", dest="traingeneral", nargs="?",
+                    default=False, const=True, help="train general game model")
+parser.add_argument("--traingenearlforever", dest="traingeneralforever", nargs="?",
+                    default=False, const=True, help="train genearl model forever")
+parser.add_argument("--trainnarrow", dest="trainnarrow", nargs="?",
+                    default=False, const=True, help="train narrow game model")
+parser.add_argument("--trainnarrowforever", dest="trainnarrowforever", nargs="?",
+                    default=False, const=True, help="train narrow model forever")
 parser.add_argument("--epoch", dest="epoch", nargs="?",
                     default=False, const=True, help="train from start to finish")
 parser.add_argument("--epochforever", dest="epochforever", nargs="?",
@@ -66,27 +67,26 @@ playerEngineStatusBus.start()
 
 # test on a single user in the DB
 if settings.test:
-  binaryModel = env.irwin.gameModelBinary()
-  trinaryModel = env.irwin.gameModelTrinary()
-  for userId in ['prince_upadhyay']:
+  model = env.irwin.narrowGameModel.model()
+  for userId in ['matheusalexsander','cognac','urg','biyikli','sallyforth','sakkariini','blues_banan','ramonmarcelo','alexpppp','mimivoistar333','usup','scnorbertus','velikan1111','mumby','overthehills','bandie','iva38','prac']:
     gameAnalysisStore = GameAnalysisStore.new()
     gameAnalysisStore.addGames(env.gameDB.byUserId(userId))
     gameAnalysisStore.addGameAnalyses(env.gameAnalysisDB.byUserId(userId))
 
-    env.api.postReport(env.irwin.report(userId, gameAnalysisStore, binaryModel, trinaryModel))
+    env.api.postReport(env.irwin.report(userId, gameAnalysisStore, model))
     print("posted")
 
 if settings.epoch:
   env.irwin.buildPivotTable()
-  env.irwin.trainBinary()
+  env.irwin.generalGameModel.train(config['irwin']['train']['batchSize'], config['irwin']['train']['epochs'])
   env.irwin.buildConfidenceTable()
-  env.irwin.trainTrinary()
+  env.irwin.narrowGameModel.train(config['irwin']['train']['batchSize'], config['irwin']['train']['epochs'])
 
 while settings.epochforever:
   env.irwin.buildPivotTable()
-  env.irwin.trainBinary()
+  env.irwin.genearlGameModel.train(config['irwin']['train']['batchSize'], config['irwin']['train']['epochs'])
   env.irwin.buildConfidenceTable()
-  env.irwin.trainTrinary()
+  env.irwin.narrowGameModel.train(config['irwin']['train']['batchSize'], config['irwin']['train']['epochs'])
 
 if settings.buildpivottable:
   env.irwin.buildPivotTable()
@@ -95,32 +95,32 @@ if settings.buildconfidencetable:
   env.irwin.buildConfidenceTable()
 
 # train on a single batch
-if settings.trainbinary:
-  env.irwin.trainBinary(settings.newmodel)
+if settings.traingeneral:
+  env.irwin.generalGameModel.train(config['irwin']['train']['batchSize'], config['irwin']['train']['epochs'], settings.newmodel)
 
-if settings.traintrinary:
-  env.irwin.trainTrinary(settings.newmodel)
+if settings.trainnarrow:
+  env.irwin.narrowGameModel.train(config['irwin']['train']['batchSize'], config['irwin']['train']['epochs'], settings.newmodel)
 
 # how good is the network?
 if settings.eval:
   env.irwin.evaluate()
 
 # train forever
-while settings.trainbinaryforever:
-  env.irwin.trainBinary(settings.newmodel)
+while settings.traingeneralforever:
+  env.irwin.generalGameModel.train(config['irwin']['train']['batchSize'], config['irwin']['train']['epochs'], settings.newmodel)
   settings.newmodel = False
 
 # train forever
-if settings.traintrinaryforever:
+if settings.trainnarrowforever:
   #env.irwin.buildConfidenceTable()
   while True:
-    env.irwin.trainTrinary(settings.newmodel)
+    env.irwin.narrowGameModel.train(config['irwin']['train']['batchSize'], config['irwin']['train']['epochs'], settings.newmodel)
     settings.newmodel = False
 
 if settings.gather:
   [GatherDataThread(x, Env(config)).start() for x in range(env.settings['core']['instances'])]
 
-if not (settings.trainbinary or settings.eval or settings.noreport or settings.test or settings.gather):
+if not (settings.traingeneral or settings.trainnarrow or settings.eval or settings.noreport or settings.test or settings.gather):
   while True:
     logging.debug('Getting new player ID')
     userId = env.api.getNextPlayerId()
@@ -148,5 +148,5 @@ if not (settings.trainbinary or settings.eval or settings.noreport or settings.t
 
     logging.warning('Posting report for ' + userId)
     env.api.postReport(env.irwin.report(userId, gameAnalysisStore))
-
-playerEngineStatusBus.join()
+print("exitting")
+os._exit(1)
