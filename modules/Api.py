@@ -36,7 +36,9 @@ class Api(namedtuple('Api', ['url', 'token'])):
 
   def getPlayerData(self, userId):
     success = False
-    while not success:
+    attempts = 0
+    while not success and attempts < 5:
+      attempts += 1
       try:
         response = requests.get(self.url+'irwin/'+userId+'/assessment?api_key='+self.token)
         success = True
@@ -55,7 +57,9 @@ class Api(namedtuple('Api', ['url', 'token'])):
 
   def getNextPlayerId(self):
     success = False
-    while not success:
+    attempts = 0
+    while not success and attempts < 5:
+      attempts += 1
       try:
         response = requests.get(self.url+'irwin/request?api_key='+self.token)
         if response.status_code == 200:
@@ -67,12 +71,10 @@ class Api(namedtuple('Api', ['url', 'token'])):
       except requests.ConnectionError:
         logging.warning('CONNECTION ERROR: Failed to get new player name')
         logging.debug('Trying again in 30 sec')
-        failures += 1
         time.sleep(30)
       except requests.exceptions.SSLError:
         logging.warning('SSL ERROR: Failed to get new player name')
         logging.debug('Trying again in 30 sec')
-        failures += 1
         time.sleep(30)
     try:
       return response.text
