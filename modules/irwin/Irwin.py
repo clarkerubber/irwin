@@ -115,15 +115,16 @@ class Irwin():
 
   @staticmethod
   def activation(predictions): # this is a weighted average. 90+ -> 10x, 80+ -> 5x, 70+ -> 3x, 60+ -> 2x, 50- -> 1x
-    ps = Irwin.flatten([Irwin.activationWeight(prediction[0][0])*[prediction[0][0]] for prediction in predictions]) # multiply entry amount by weight
-    if len(ps) < 5:
+    ps = [int(100*np.asscalar(prediction[0][0][0])) for prediction in predictions] # multiply entry amount by weight
+    ps = Irwin.flatten([p*[p] for p in ps])
+    if len(ps) < 10 or len(predictions) < 10:
       return 0
     ps.sort()
-    return int(100*sum(ps[max(int(len(ps)/2)-1, 0):min(int(len(ps)/2)+1, len(ps))])/3) # magic
-
-  @staticmethod
-  def activationWeight(v):
-    return int(100*v)
+    third = int((2/3)*len(ps))
+    sixth = int((1/6)*len(ps))
+    return int(np.mean(ps[
+      max(third - sixth, 0):
+      min(third + sixth, len(ps))])) # magic
 
   @staticmethod
   def gameReport(gameAnalysis, prediction):

@@ -23,6 +23,7 @@ class GameAnalysis(namedtuple('GameAnalysis', ['id', 'userId', 'gameId', 'moveAn
 
   @staticmethod
   def fromGame(game, engine, infoHandler, white, nodes):
+    print("analysing: " + game.id)
     if len(game.pgn) < 40 or len(game.pgn) > 120:
       return None
     analysis = []

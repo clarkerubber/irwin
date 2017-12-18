@@ -68,7 +68,7 @@ playerEngineStatusBus.start()
 # test on a single user in the DB
 if settings.test:
   model = env.irwin.narrowGameModel.model()
-  for userId in ['ohsi','iammagnetic','amo_0','malerian','zeitspiel','krzysiekstasilas','boy49rus','briemann','king_fatty_iv','tm918','semnoy','grodanny']:
+  for userId in ['bizaro90','tonno3','tidper','papiiii988','remedy93','asachenkoksenia','chinesecheckersgm','captainsolo','zaher72k','armen2888','j152436','saidaluap','thesrinivaskumar','saulrosa','maximuss21','jsales','actualfish','chessszogun','fagundes','ule','lighthouseinacup','perdorio','trahtrah']:
     gameAnalysisStore = GameAnalysisStore.new()
     gameAnalysisStore.addGames(env.gameDB.byUserId(userId))
     gameAnalysisStore.addGameAnalyses(env.gameAnalysisDB.byUserId(userId))
