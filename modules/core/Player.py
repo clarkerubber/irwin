@@ -32,6 +32,9 @@ class PlayerDB(namedtuple('PlayerDB', ['playerColl'])):
     except:
       return None
 
+  def byEngine(self, engine):
+    return [PlayerBSONHandler.reads(p) for p in self.playerColl.find({'engine': engine})]
+
   def balancedSample(self, size):
     pipelines = [[
         {"$match": {"engine": True}},

@@ -26,12 +26,16 @@ if config == {}:
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--traingeneral", dest="traingeneral", nargs="?",
                     default=False, const=True, help="train general game model")
-parser.add_argument("--traingenearlforever", dest="traingeneralforever", nargs="?",
+parser.add_argument("--traingeneralforever", dest="traingeneralforever", nargs="?",
                     default=False, const=True, help="train genearl model forever")
 parser.add_argument("--trainnarrow", dest="trainnarrow", nargs="?",
                     default=False, const=True, help="train narrow game model")
 parser.add_argument("--trainnarrowforever", dest="trainnarrowforever", nargs="?",
                     default=False, const=True, help="train narrow model forever")
+parser.add_argument("--trainplayer", dest="trainplayer", nargs="?",
+                    default=False, const=True, help="train player game model")
+parser.add_argument("--trainplayerforever", dest="trainplayerforever", nargs="?",
+                    default=False, const=True, help="train player game model forever")
 parser.add_argument("--epoch", dest="epoch", nargs="?",
                     default=False, const=True, help="train from start to finish")
 parser.add_argument("--epochforever", dest="epochforever", nargs="?",
@@ -48,6 +52,8 @@ parser.add_argument("--buildpivottable", dest="buildpivottable", nargs="?",
                     default=False, const=True, help="build table relating game analysis to players, game length and engine status")
 parser.add_argument("--buildconfidencetable", dest="buildconfidencetable", nargs="?",
                     default=False, const=True, help="build table of game analysis that the network is confident in predicting")
+parser.add_argument("--buildplayertable", dest="buildplayertable", nargs="?",
+                    default=False, const=True, help="build table of game analyses against player names and engine status")
 parser.add_argument("--test", dest="test", nargs="?",
                     default=False, const=True, help="test on a single player")
 parser.add_argument("--quiet", dest="loglevel",
@@ -67,13 +73,14 @@ playerEngineStatusBus.start()
 
 # test on a single user in the DB
 if settings.test:
-  model = env.irwin.narrowGameModel.model()
+  gameModel = env.irwin.narrowGameModel.model()
+  playerModel = env.irwin.playerModel.model()
   for userId in ['bizaro90','tonno3','tidper','papiiii988','remedy93','asachenkoksenia','chinesecheckersgm','captainsolo','zaher72k','armen2888','j152436','saidaluap','thesrinivaskumar','saulrosa','maximuss21','jsales','actualfish','chessszogun','fagundes','ule','lighthouseinacup','perdorio','trahtrah']:
     gameAnalysisStore = GameAnalysisStore.new()
     gameAnalysisStore.addGames(env.gameDB.byUserId(userId))
     gameAnalysisStore.addGameAnalyses(env.gameAnalysisDB.byUserId(userId))
 
-    env.api.postReport(env.irwin.report(userId, gameAnalysisStore, model))
+    env.api.postReport(env.irwin.report(userId, gameAnalysisStore, gameModel, playerModel))
     print("posted")
 
 if settings.epoch:
@@ -94,12 +101,18 @@ if settings.buildpivottable:
 if settings.buildconfidencetable:
   env.irwin.buildConfidenceTable()
 
+if settings.buildplayertable:
+  env.irwin.buildPlayerGameActivationsTable()
+
 # train on a single batch
 if settings.traingeneral:
   env.irwin.generalGameModel.train(config['irwin']['train']['batchSize'], config['irwin']['train']['epochs'], settings.newmodel)
 
 if settings.trainnarrow:
   env.irwin.narrowGameModel.train(config['irwin']['train']['batchSize'], config['irwin']['train']['epochs'], settings.newmodel)
+
+if settings.trainplayer:
+  env.irwin.playerModel.train(config['irwin']['train']['batchSize'], config['irwin']['train']['epochs'], settings.newmodel)
 
 # how good is the network?
 if settings.eval:
@@ -115,6 +128,11 @@ if settings.trainnarrowforever:
   #env.irwin.buildConfidenceTable()
   while True:
     env.irwin.narrowGameModel.train(config['irwin']['train']['batchSize'], config['irwin']['train']['epochs'], settings.newmodel)
+    settings.newmodel = False
+
+if settings.trainplayerforever:
+  while True:
+    env.irwin.playerModel.train(config['irwin']['train']['batchSize'], config['irwin']['train']['epochs'], settings.newmodel)
     settings.newmodel = False
 
 if settings.gather:
@@ -150,7 +168,7 @@ if not (settings.traingeneral or settings.trainnarrow or settings.eval or settin
       logging.warning('Posting report for ' + userId)
       env.api.postReport(env.irwin.report(userId, gameAnalysisStore))
     except:
-      exit("I broke lol!")
+      print("something important broke")
       os._exit(1)
 print("exitting")
 os._exit(1)

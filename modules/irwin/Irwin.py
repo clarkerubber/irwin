@@ -6,8 +6,13 @@ import numpy as np
 import os.path
 
 from modules.irwin.BinaryGameModel import BinaryGameModel
+from modules.irwin.PlayerModel import PlayerModel
+
+from modules.irwin.PlayerGameActivations import PlayerGameActivations
 
 from modules.irwin.ConfidentGameAnalysisPivot import ConfidentGameAnalysisPivot, ConfidentGameAnalysisPivotDB
+
+from modules.core.GameAnalysisStore import GameAnalysisStore
 
 class Irwin():
   def __init__(self, env, config):
@@ -15,6 +20,7 @@ class Irwin():
     self.config = config
     self.generalGameModel = BinaryGameModel(env, 'general')
     self.narrowGameModel = BinaryGameModel(env, 'narrow')
+    self.playerModel = PlayerModel(env)
 
   def getEvaluationDataset(self, batchSize):
     print("getting players", end="...", flush=True)
@@ -27,10 +33,11 @@ class Irwin():
   def evaluate(self):
     print("evaluate model")
     print("getting model")
-    model = self.narrowGameModel.model()
+    gameModel = self.narrowGameModel.model()
+    playerModel = self.playerModel.model()
     print("getting dataset")
     analysesByPlayer = self.getEvaluationDataset(self.config['evalSize'])
-    activations = [Irwin.activation(self.predict([ga.moveAnalysisTensors() for ga in gameAnalyses[1]], model)) for gameAnalyses in analysesByPlayer]
+    activations = [self.activation(self.predict([ga.moveAnalysisTensors() for ga in gameAnalyses[1]], gameModel), playerModel) for gameAnalyses in analysesByPlayer]
     outcomes = list(zip(analysesByPlayer, [Irwin.outcome(a, 90, ap[0].engine) for ap, a in zip(analysesByPlayer, activations)]))
     tp = len([a for a in outcomes if a[1] == 1])
     fn = len([a for a in outcomes if a[1] == 2])
@@ -76,6 +83,28 @@ class Irwin():
     print("writing to db")
     self.env.confidentGameAnalysisPivotDB.lazyWriteMany(confidentCheats + confidentLegits)
 
+  def buildPlayerGameActivationsTable(self, model=None):
+    if model is None:
+      print("using default model")
+      model = self.narrowGameModel.model()
+    print("getting players")
+    engines = self.env.playerDB.byEngine(True)
+    legits = self.env.playerDB.byEngine(False)
+
+    print("got " + str(len(engines + legits)) + " players")
+
+    playerGameActivations = []
+
+    for player in engines + legits:
+      print("predicting " + player.id)
+      gs = GameAnalysisStore.new()
+      gs.addGameAnalyses(self.env.gameAnalysisDB.byUserId(player.id))
+      predictions = self.predict(gs.gameAnalysisTensors(), model)
+      playerGameActivations.append(PlayerGameActivations(player.id, player.engine, [int(100*np.asscalar(p[0][0][0])) for p in predictions]))
+
+    print("writing to DB")
+    self.env.playerGameActivationsDB.lazyWriteMany(playerGameActivations)
+
   @staticmethod
   def outcome(a, t, e): # activation, threshold, expected value
     if a > t and e:
@@ -104,27 +133,17 @@ class Irwin():
 
     return predictions
 
-  def report(self, userId, gameAnalysisStore, model=None):
-    predictions = self.predict(gameAnalysisStore.gameAnalysisTensors(), model)
+  def report(self, userId, gameAnalysisStore, gameModel=None, playerModel=None):
+    predictions = self.predict(gameAnalysisStore.gameAnalysisTensors(), gameModel)
     report = {
       'userId': userId,
-      'activation': Irwin.activation(predictions),
+      'activation': self.activation(predictions, playerModel),
       'games': [Irwin.gameReport(ga, p) for ga, p in zip(gameAnalysisStore.gameAnalyses, predictions)]
     }
     return report
 
-  @staticmethod
-  def activation(predictions): # this is a weighted average. 90+ -> 10x, 80+ -> 5x, 70+ -> 3x, 60+ -> 2x, 50- -> 1x
-    ps = [int(100*np.asscalar(prediction[0][0][0])) for prediction in predictions] # multiply entry amount by weight
-    ps = Irwin.flatten([p*[p] for p in ps])
-    if len(ps) < 10 or len(predictions) < 10:
-      return 0
-    ps.sort()
-    third = int((2/3)*len(ps))
-    sixth = int((1/6)*len(ps))
-    return int(np.mean(ps[
-      max(third - sixth, 0):
-      min(third + sixth, len(ps))])) # magic
+  def activation(self, predictions, playerModel=None): # determined using the player model
+    return self.playerModel.predict([int(100*np.asscalar(prediction[0][0][0])) for prediction in predictions], playerModel) # multiply entry amount by weight
 
   @staticmethod
   def gameReport(gameAnalysis, prediction):

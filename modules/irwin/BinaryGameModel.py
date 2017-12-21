@@ -192,7 +192,7 @@ class BinaryGameModel(namedtuple('BinaryGameModel', ['env', 'type'])):
         b = [pvs, moveStats, moveNumbers, ranks, advs, ambs]
         l = [
           np.array([int(i[1]) for i in blz]), 
-          np.array([[[0]]*5 + [[int(i[1])]]*(len(moveStats[0])-5) for i in blz])
+          np.array([[[int(i[1])]]*len(moveStats[0]) for i in blz])
         ]
 
         batches.append({
