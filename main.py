@@ -73,9 +73,9 @@ playerEngineStatusBus.start()
 
 # test on a single user in the DB
 if settings.test:
-  gameModel = env.irwin.narrowGameModel.model()
+  gameModel = env.irwin.generalGameModel.model()
   playerModel = env.irwin.playerModel.model()
-  for userId in ['bizaro90','tonno3','tidper','papiiii988','remedy93','asachenkoksenia','chinesecheckersgm','captainsolo','zaher72k','armen2888','j152436','saidaluap','thesrinivaskumar','saulrosa','maximuss21','jsales','actualfish','chessszogun','fagundes','ule','lighthouseinacup','perdorio','trahtrah']:
+  for userId in ['masquerade75','banananajoe','mylunch','mi_galina','ladunika','ozarkpatzer']:
     gameAnalysisStore = GameAnalysisStore.new()
     gameAnalysisStore.addGames(env.gameDB.byUserId(userId))
     gameAnalysisStore.addGameAnalyses(env.gameAnalysisDB.byUserId(userId))
@@ -85,15 +85,21 @@ if settings.test:
 
 if settings.epoch:
   env.irwin.buildPivotTable()
-  env.irwin.generalGameModel.train(config['irwin']['train']['batchSize'], config['irwin']['train']['epochs'])
+  env.irwin.generalGameModel.train(config['irwin']['train']['batchSize'], config['irwin']['train']['epochs'], settings.newmodel)
   env.irwin.buildConfidenceTable()
-  env.irwin.narrowGameModel.train(config['irwin']['train']['batchSize'], config['irwin']['train']['epochs'])
+  env.irwin.narrowGameModel.train(config['irwin']['train']['batchSize'], config['irwin']['train']['epochs'], settings.newmodel)
+  env.irwin.buildPlayerGameActivationsTable()
+  env.irwin.playerModel.train(config['irwin']['train']['batchSize'], config['irwin']['train']['epochs'], settings.newmodel)
 
-while settings.epochforever:
-  env.irwin.buildPivotTable()
-  env.irwin.genearlGameModel.train(config['irwin']['train']['batchSize'], config['irwin']['train']['epochs'])
-  env.irwin.buildConfidenceTable()
-  env.irwin.narrowGameModel.train(config['irwin']['train']['batchSize'], config['irwin']['train']['epochs'])
+if settings.epochforever:
+  #env.irwin.buildPivotTable()
+  while True:
+    env.irwin.generalGameModel.train(config['irwin']['train']['batchSize'], config['irwin']['train']['epochs'], settings.newmodel)
+    env.irwin.buildConfidenceTable()
+    env.irwin.narrowGameModel.train(config['irwin']['train']['batchSize'], config['irwin']['train']['epochs'], settings.newmodel)
+    env.irwin.buildPlayerGameActivationsTable()
+    env.irwin.playerModel.train(config['irwin']['train']['batchSize'], config['irwin']['train']['epochs'], settings.newmodel)
+    settings.newmodel = False
 
 if settings.buildpivottable:
   env.irwin.buildPivotTable()
@@ -138,7 +144,7 @@ if settings.trainplayerforever:
 if settings.gather:
   [GatherDataThread(x, Env(config)).start() for x in range(env.settings['core']['instances'])]
 
-if not (settings.traingeneral or settings.trainnarrow or settings.eval or settings.noreport or settings.test or settings.gather):
+if not (settings.traingeneral or settings.trainnarrow or settings.eval or settings.noreport or settings.test or settings.gather or settings.buildconfidencetable):
   while True:
     try:
       logging.debug('Getting new player ID')

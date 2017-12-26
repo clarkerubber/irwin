@@ -8,14 +8,16 @@ Analysis = namedtuple('Analysis', ['uci', 'score'])
 Score = namedtuple('Score', ['cp', 'mate'])
 
 class AnalysedMove(namedtuple('AnalysedMove', ['uci', 'move', 'emt', 'blur', 'score', 'analyses'])):
-  def tensor(self, moveNumber, timeAvg):
+  def tensor(self, moveNumber, timeAvg, wclAvg):
     return [self.analysesWinningChances() + self.analysesWinningChanceLosses(), [
       self.emt - timeAvg,
       abs(self.emt - timeAvg) / (timeAvg + 1e-8),
       self.emt,
       float(self.blur),
       self.difToNextBest(),
-      self.winningChancesLoss()], moveNumber, self.rank(), int(40*self.advantage()), self.ambiguity()]
+      self.winningChancesLoss(),
+      wclAvg,
+      wclAvg - self.winningChancesLoss()], moveNumber, self.rank(), int(40*self.advantage()), self.ambiguity()]
 
   def analysesWinningChances(self):
     c = [winningChances(a.score) for a in self.analyses]

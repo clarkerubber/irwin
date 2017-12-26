@@ -143,6 +143,8 @@ class Irwin():
     return report
 
   def activation(self, predictions, playerModel=None): # determined using the player model
+    if len(predictions) < 5:
+      return 0
     return self.playerModel.predict([int(100*np.asscalar(prediction[0][0][0])) for prediction in predictions], playerModel) # multiply entry amount by weight
 
   @staticmethod

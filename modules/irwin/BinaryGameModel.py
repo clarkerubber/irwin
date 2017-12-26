@@ -2,6 +2,8 @@ import numpy as np
 import logging
 import os
 
+from pprint import pprint
+
 from random import shuffle
 
 from collections import namedtuple
@@ -22,7 +24,7 @@ class BinaryGameModel(namedtuple('BinaryGameModel', ['env', 'type'])):
         return load_model('modules/irwin/models/gameBinaryNarrow.h5')
     print('model does not exist, building from scratch')
     pvInput = Input(shape=(None, 10), dtype='float32', name='pv_input')
-    moveStatsInput = Input(shape=(None, 6), dtype='float32', name='move_input')
+    moveStatsInput = Input(shape=(None, 8), dtype='float32', name='move_input')
 
     advInput = Input(shape=(None,), dtype='int32', name='advantage_input')
     ranksInput = Input(shape=(None,), dtype='int32', name='ranks_input')
@@ -88,6 +90,8 @@ class BinaryGameModel(namedtuple('BinaryGameModel', ['env', 'type'])):
     print("getting dataset")
     batches = self.getTrainingDataset()
 
+    pprint(batches)
+
     print("training")
     for x in range(2):
       for b in batches:
@@ -109,12 +113,15 @@ class BinaryGameModel(namedtuple('BinaryGameModel', ['env', 'type'])):
     if self.type == 'general':
       cheatGameAnalyses = []
       legitGameAnalyses = []
-      for length in range(20, 60):
+      for length in range(23, 60):
         print("gettings games of length: " + str(length))
         cheatPivotEntries = self.env.gameAnalysisPlayerPivotDB.byEngineAndLength(True, length)
         legitPivotEntries = self.env.gameAnalysisPlayerPivotDB.byEngineAndLength(False, length)
 
         print("got: "+str(len(cheatPivotEntries + legitPivotEntries)))
+
+        if len(cheatPivotEntries+legitPivotEntries) < 800:
+          break
 
         shuffle(cheatPivotEntries)
         shuffle(legitPivotEntries)
@@ -135,13 +142,20 @@ class BinaryGameModel(namedtuple('BinaryGameModel', ['env', 'type'])):
       cheatGameAnalyses = []
       legitGameAnalyses = []
       unclearGameAnalyses = []
-      for length in range(20, 60):
+      for length in range(23, 60):
         print("gettings games of length: " + str(length))
-        cheatPivotEntries = self.env.confidentGameAnalysisPivotDB.byEngineLengthAndPrediction(True, length, 80)
-        legitPivotEntries = self.env.confidentGameAnalysisPivotDB.byEngineLengthAndPrediction(False, length, 30)
-        unclearPivotEntries = self.env.confidentGameAnalysisPivotDB.byPredictionRangeAndLength(40, 60, length)
+        cheatPivotEntries = self.env.confidentGameAnalysisPivotDB.byEngineLengthAndPrediction(True, length, 65)
+        legitPivotEntries = self.env.confidentGameAnalysisPivotDB.byEngineLengthAndPrediction(False, length, 40)
+        unclearPivotEntries = self.env.confidentGameAnalysisPivotDB.byPredictionRangeAndLength(40, 65, length)
+
+        print(len(cheatPivotEntries))
+        print(len(legitPivotEntries))
+        print(len(unclearPivotEntries))
 
         print("got: "+str(len(cheatPivotEntries + legitPivotEntries + unclearPivotEntries)))
+
+        if len(cheatPivotEntries+legitPivotEntries+unclearPivotEntries) < 800:
+          break
 
         shuffle(cheatPivotEntries)
         shuffle(legitPivotEntries)
@@ -180,8 +194,10 @@ class BinaryGameModel(namedtuple('BinaryGameModel', ['env', 'type'])):
       blz = list(zip(cheats+legits, cl))
       shuffle(blz)
 
+      print(len(cheats+legits))
+
       # only make the batch trainable if it's big
-      if len(cheats + legits) > 800:
+      if len(cheats + legits) > 100:
         pvs =         np.array([[m[0] for m in p[0]] for p in blz])
         moveStats =   np.array([[m[1] for m in p[0]] for p in blz])
         moveNumbers = np.array([[m[2] for m in p[0]] for p in blz])
