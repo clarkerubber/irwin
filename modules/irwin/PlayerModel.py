@@ -5,12 +5,16 @@ import os
 from pprint import pprint
 
 from random import shuffle
+from decimal import Decimal
+from math import log
 
 from collections import namedtuple
 
 from keras.models import load_model, Sequential
 from keras.layers import Dense, Activation
 from keras.optimizers import Adam
+
+from modules.core.GameAnalysisStore import GameAnalysisStore
 
 class PlayerModel(namedtuple('BinaryGameModel', ['env'])):
   def model(self, newmodel=False):
@@ -20,7 +24,7 @@ class PlayerModel(namedtuple('BinaryGameModel', ['env'])):
     print('model does not exist, building from scratch')
 
     model = Sequential([
-      Dense(32, input_shape=(5,)),
+      Dense(32, input_shape=(31,)),
       Activation('relu'),
       Dense(16),
       Activation('sigmoid'),
@@ -55,39 +59,51 @@ class PlayerModel(namedtuple('BinaryGameModel', ['env'])):
 
   def getTrainingDataset(self):
     legitPGAs = self.env.playerGameActivationsDB.byEngine(False)
-    enginePGAs = self.env.playerGameActivationsDB.byEngine(True)
+    cheatPGAs = self.env.playerGameActivationsDB.byEngine(True)
 
-    shuffle(legitPGAs)
-    shuffle(enginePGAs)
+    legitGameAnalyses = self.env.gameAnalysisDB.byUserIds([pga.userId for pga in legitPGAs])
+    cheatGameAnalyses = self.env.gameAnalysisDB.byUserIds([pga.userId for pga in cheatPGAs])
 
-    mlen = min(len(legitPGAs), len(enginePGAs))
+    legitZip = list(zip(legitPGAs, legitGameAnalyses))
+    cheatZip = list(zip(cheatPGAs, cheatGameAnalyses))
 
-    legitPGAs = legitPGAs[:mlen]
-    enginePGAs = enginePGAs[:mlen]
+    shuffle(legitZip)
+    shuffle(cheatZip)
 
-    legits = [PlayerModel.binPGAs(pgas) for pgas in legitPGAs]
-    engines = [PlayerModel.binPGAs(pgas) for pgas in enginePGAs]
+    mlen = min(len(legitPGAs), len(cheatPGAs))
 
-    labels = [1]*len(engines) + [0]*len(legits)
+    legitZip = legitZip[:mlen]
+    cheatZip = cheatZip[:mlen]
 
-    blz = list(zip(engines + legits, labels))
+    legits = [PlayerModel.binPGAs(pgas) + (GameAnalysisStore([], gas).playerTensor()) for pgas, gas in legitZip]
+    cheats = [PlayerModel.binPGAs(pgas) + (GameAnalysisStore([], gas).playerTensor()) for pgas, gas in cheatZip]
+
+    labels = [1]*len(cheats) + [0]*len(legits)
+
+    blz = list(zip(cheats + legits, labels))
+
+    shuffle(blz)
 
     return {
       'batch': np.array([a for a, b in blz]),
       'labels': np.array([b for a, b in blz])
     }
 
-  def predict(self, activations, model=None):
+  def predict(self, generalActivations, narrowActivations, playerTensor, model=None):
     if model is None:
       model = self.model()
-    data = PlayerModel.binActivations(activations)
-    p = model.predict(np.array([data]))
+    data = PlayerModel.binActivations(zip(generalActivations, narrowActivations))+playerTensor
+    p = model.predict(np.array([data
+      ]))
     return int(100*p[0][0])
 
   @staticmethod
   def binActivations(activations):
-    return np.array([len([i for i in activations if i > x and i <= y]) for x, y in [(90, 100), (75, 90), (50, 75), (25, 50), (-1, 25)]]) # count by brackets
+    activations = list(activations)
+    logs = [float(10*Decimal(i*j).ln()) for i, j in activations]
+    bins = [(35, 40), (40, 45), (45, 50), (50, 55), (55, 60), (60, 70), (70, 80), (80, 90), (90, 100)]
+    return [len([1 for x in logs if x>i and x<=j]) for i, j in bins]
 
   @staticmethod
   def binPGAs(pgas):
-    return PlayerModel.binActivations(pgas.activations)
+    return PlayerModel.binActivations(zip(pgas.generalActivations, pgas.narrowActivations))

@@ -73,14 +73,15 @@ playerEngineStatusBus.start()
 
 # test on a single user in the DB
 if settings.test:
-  gameModel = env.irwin.generalGameModel.model()
+  generalModel = env.irwin.generalGameModel.model()
+  narrowModel = env.irwin.narrowGameModel.model()
   playerModel = env.irwin.playerModel.model()
-  for userId in ['masquerade75','banananajoe','mylunch','mi_galina','ladunika','ozarkpatzer']:
+  for userId in ['morrteza1369','zeyad_mahmoudgx','giwish','charlylafalda','ja1505','manofseconds','captncuv','cleber_x','mihailmlp','killerbateman','miltonmorales','ojaannestad','chessmast123','hichemovic','spacecase124875','praggnanandha','uyfadcrack','rrphaelus']:
     gameAnalysisStore = GameAnalysisStore.new()
     gameAnalysisStore.addGames(env.gameDB.byUserId(userId))
     gameAnalysisStore.addGameAnalyses(env.gameAnalysisDB.byUserId(userId))
 
-    env.api.postReport(env.irwin.report(userId, gameAnalysisStore, gameModel, playerModel))
+    env.api.postReport(env.irwin.report(userId, gameAnalysisStore, generalModel, narrowModel, playerModel))
     print("posted")
 
 if settings.epoch:
@@ -98,7 +99,7 @@ if settings.epochforever:
     env.irwin.buildConfidenceTable()
     env.irwin.narrowGameModel.train(config['irwin']['train']['batchSize'], config['irwin']['train']['epochs'], settings.newmodel)
     env.irwin.buildPlayerGameActivationsTable()
-    env.irwin.playerModel.train(config['irwin']['train']['batchSize'], config['irwin']['train']['epochs'], settings.newmodel)
+    env.irwin.playerModel.train(config['irwin']['train']['batchSize'], config['irwin']['train']['epochs']*10, settings.newmodel)
     settings.newmodel = False
 
 if settings.buildpivottable:

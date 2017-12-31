@@ -27,18 +27,19 @@ class Irwin():
     players = self.env.playerDB.balancedSample(batchSize)
     print(" %d" % len(players))
     print("getting game analyses")
-    analysesByPlayer = [(player, [ga for ga in self.env.gameAnalysisDB.byUserId(player.id) if len(ga.moveAnalyses) < 60]) for player in players]
+    analysesByPlayer = [(player, GameAnalysisStore([], [ga for ga in self.env.gameAnalysisDB.byUserId(player.id) if len(ga.moveAnalyses) < 50])) for player in players]
     return analysesByPlayer
 
   def evaluate(self):
     print("evaluate model")
     print("getting model")
-    gameModel = self.narrowGameModel.model()
+    generalModel = self.generalGameModel.model()
+    narrowModel = self.narrowGameModel.model()
     playerModel = self.playerModel.model()
     print("getting dataset")
-    analysesByPlayer = self.getEvaluationDataset(self.config['evalSize'])
-    activations = [self.activation(self.predict([ga.moveAnalysisTensors() for ga in gameAnalyses[1]], gameModel), playerModel) for gameAnalyses in analysesByPlayer]
-    outcomes = list(zip(analysesByPlayer, [Irwin.outcome(a, 90, ap[0].engine) for ap, a in zip(analysesByPlayer, activations)]))
+    analysisStoreByPlayer = self.getEvaluationDataset(self.config['evalSize'])
+    activations = [self.activation(self.predict(gameAnalysisStore.quickGameAnalysisTensors(), generalModel, narrowModel), gameAnalysisStore.playerTensor(), playerModel) for player, gameAnalysisStore in analysisStoreByPlayer]
+    outcomes = list(zip(analysisStoreByPlayer, [Irwin.outcome(a, 90, ap[0].engine) for ap, a in zip(analysisStoreByPlayer, activations)]))
     tp = len([a for a in outcomes if a[1] == 1])
     fn = len([a for a in outcomes if a[1] == 2])
     tn = len([a for a in outcomes if a[1] == 3])
@@ -57,53 +58,55 @@ class Irwin():
     return True #stub
 
   def buildConfidenceTable(self):
-    cheatGameAnalyses = []
-    legitGameAnalyses = []
-    for length in range(20, 60):
-      print("getting games of length: " + str(length))
-      cheatPivotEntries = self.env.gameAnalysisPlayerPivotDB.byEngineAndLength(True, length)
-      legitPivotEntries = self.env.gameAnalysisPlayerPivotDB.byEngineAndLength(False, length)
+    print("getting games")
+    cheatPivotEntries = self.env.gameAnalysisPlayerPivotDB.byEngine(True)
+    legitPivotEntries = self.env.gameAnalysisPlayerPivotDB.byEngine(False)
 
-      cheatGameAnalyses.extend(self.env.gameAnalysisDB.byIds([cpe.id for cpe in cheatPivotEntries]))
-      legitGameAnalyses.extend(self.env.gameAnalysisDB.byIds([lpe.id for lpe in legitPivotEntries]))
+    cheatGameAnalyses = self.env.gameAnalysisDB.byIds([cpe.id for cpe in cheatPivotEntries])
+    legitGameAnalyses = self.env.gameAnalysisDB.byIds([lpe.id for lpe in legitPivotEntries])
 
-    model = self.narrowGameModel.model()
+    model = self.generalGameModel.model()
 
     print("getting moveAnalysisTensors")
     cheatTensors = [tga.moveAnalysisTensors() for tga in cheatGameAnalyses]
     legitTensors = [tga.moveAnalysisTensors() for tga in legitGameAnalyses]
 
     print("predicting the things")
-    cheatGamePredictions = self.predict(cheatTensors, model)
-    legitGamePredictions = self.predict(legitTensors, model)
+    cheatGamePredictions = self.predict(cheatTensors, model, generalOnly=True)
+    legitGamePredictions = self.predict(legitTensors, model, generalOnly=True)
 
-    confidentCheats = [ConfidentGameAnalysisPivot.fromGamesAnalysisandPrediction(gameAnalysis, prediction[0], engine=True) for gameAnalysis, prediction in zip(cheatGameAnalyses, cheatGamePredictions)]
-    confidentLegits = [ConfidentGameAnalysisPivot.fromGamesAnalysisandPrediction(gameAnalysis, prediction[0], engine=False) for gameAnalysis, prediction in zip(legitGameAnalyses, legitGamePredictions)]
+    confidentCheats = [ConfidentGameAnalysisPivot.fromGamesAnalysisandPrediction(gameAnalysis, prediction[0][0], engine=True) for gameAnalysis, prediction in zip(cheatGameAnalyses, cheatGamePredictions)]
+    confidentLegits = [ConfidentGameAnalysisPivot.fromGamesAnalysisandPrediction(gameAnalysis, prediction[0][0], engine=False) for gameAnalysis, prediction in zip(legitGameAnalyses, legitGamePredictions)]
 
     print("writing to db")
     self.env.confidentGameAnalysisPivotDB.lazyWriteMany(confidentCheats + confidentLegits)
 
-  def buildPlayerGameActivationsTable(self, model=None):
-    if model is None:
-      print("using default model")
-      model = self.narrowGameModel.model()
+  def buildPlayerGameActivationsTable(self, generalModel=None, narrowModel=None):
+    if generalModel is None:
+      generalModel = self.generalGameModel.model()
+    if narrowModel is None:
+      narrowModel = self.narrowGameModel.model()
     print("getting players")
     engines = self.env.playerDB.byEngine(True)
     legits = self.env.playerDB.byEngine(False)
 
-    print("got " + str(len(engines + legits)) + " players")
+    amount = len(engines+legits)
+
+    print("got " + str(amount) + " players")
 
     playerGameActivations = []
 
-    for player in engines + legits:
-      print("predicting " + player.id)
+    for i, player in enumerate(engines + legits):
+      print("predicting " + str(i) + '/' + str(amount) + ' ' + player.id)
       gs = GameAnalysisStore.new()
       gs.addGameAnalyses(self.env.gameAnalysisDB.byUserId(player.id))
-      predictions = self.predict(gs.gameAnalysisTensors(), model)
-      playerGameActivations.append(PlayerGameActivations(player.id, player.engine, [int(100*np.asscalar(p[0][0][0])) for p in predictions]))
-
-    print("writing to DB")
-    self.env.playerGameActivationsDB.lazyWriteMany(playerGameActivations)
+      predictions = self.predict(gs.gameAnalysisTensors(), generalModel, narrowModel)
+      pga = PlayerGameActivations(
+        player.id, player.engine, 
+        [int(100*(np.asscalar(p[0][0][0][0]))) for p in predictions],
+        [int(100*(np.asscalar(p[1][0][0][0]))) for p in predictions])
+      pprint(pga)
+      self.env.playerGameActivationsDB.write(pga)
 
   @staticmethod
   def outcome(a, t, e): # activation, threshold, expected value
@@ -116,9 +119,12 @@ class Irwin():
     else:
       return 4 # false positive
 
-  def predict(self, tensors, model=None):
-    if model == None:
-      model = self.narrowGameModel.model()
+  def predict(self, tensors, generalModel=None, narrowModel=None, generalOnly=False):
+    if generalModel == None:
+      generalModel = self.generalGameModel.model()
+
+    if narrowModel == None and generalOnly == False:
+      narrowModel = self.narrowGameModel.model()
 
     pvs =         [[m[0] for m in p][:40] for p in tensors]
     moveStats =   [[m[1] for m in p][:40] for p in tensors]
@@ -128,37 +134,51 @@ class Irwin():
     ambs =        [[m[5] for m in p][:40] for p in tensors]
 
     predictions = []
-    for p, m, mn, r, a, am in zip(pvs, moveStats, moveNumbers, ranks, advs, ambs):
-      predictions.append(model.predict([np.array([p]), np.array([m]), np.array([mn]), np.array([r]), np.array([a]), np.array([am])]))
-
+    if not generalOnly:
+      for p, m, mn, r, a, am in zip(pvs, moveStats, moveNumbers, ranks, advs, ambs):
+        predictions.append((
+          generalModel.predict([np.array([p]), np.array([m]), np.array([mn]), np.array([r]), np.array([a]), np.array([am])]),
+          narrowModel.predict([np.array([p]), np.array([m]), np.array([mn]), np.array([r]), np.array([a]), np.array([am])])
+        ))
+    else:
+      for p, m, mn, r, a, am in zip(pvs, moveStats, moveNumbers, ranks, advs, ambs):
+        predictions.append((
+          generalModel.predict([np.array([p]), np.array([m]), np.array([mn]), np.array([r]), np.array([a]), np.array([am])]),
+          []
+        ))
     return predictions
 
-  def report(self, userId, gameAnalysisStore, gameModel=None, playerModel=None):
-    predictions = self.predict(gameAnalysisStore.gameAnalysisTensors(), gameModel)
+  def report(self, userId, gameAnalysisStore, generalModel=None, narrowModel=None, playerModel=None):
+    predictions = self.predict(gameAnalysisStore.gameAnalysisTensors(), generalModel, narrowModel)
     report = {
       'userId': userId,
-      'activation': self.activation(predictions, playerModel),
+      'activation': self.activation(predictions, gameAnalysisStore.playerTensor(), playerModel),
       'games': [Irwin.gameReport(ga, p) for ga, p in zip(gameAnalysisStore.gameAnalyses, predictions)]
     }
     return report
 
-  def activation(self, predictions, playerModel=None): # determined using the player model
+  def activation(self, predictions, playerTensor, playerModel=None): # determined using the player model
+    p = self.playerModel.predict(
+      [int(100*np.asscalar(prediction[0][0][0])) for prediction in predictions],
+      [int(100*np.asscalar(prediction[1][0][0])) for prediction in predictions],
+      playerTensor,
+      playerModel)
     if len(predictions) < 5:
-      return 0
-    return self.playerModel.predict([int(100*np.asscalar(prediction[0][0][0])) for prediction in predictions], playerModel) # multiply entry amount by weight
+      return min(p, 80)
+    return p
 
   @staticmethod
   def gameReport(gameAnalysis, prediction):
     return {
       'gameId': gameAnalysis.gameId,
-      'activation': int(100*prediction[0][0][0]),
-      'moves': [Irwin.moveReport(am, p) for am, p in zip(gameAnalysis.moveAnalyses, list(prediction[1][0]))]
+      'activation': int(50*(prediction[0][0][0][0] + prediction[1][0][0][0])),
+      'moves': [Irwin.moveReport(am, p) for am, p in zip(gameAnalysis.moveAnalyses, zip(list(prediction[0][1][0]), list(prediction[1][1][0])))]
     }
 
   @staticmethod
   def moveReport(analysedMove, prediction):
     return {
-      'a': int(100*prediction[0]),
+      'a': int(50*(prediction[0][0] + prediction[1][0])),
       'r': analysedMove.trueRank(),
       'm': analysedMove.ambiguity(),
       'o': int(100*analysedMove.advantage()),

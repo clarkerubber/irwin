@@ -11,7 +11,7 @@ class Api(namedtuple('Api', ['url', 'token'])):
     while not success and attempts < 5:
       attempts += 1
       try:
-        response = requests.post(self.url+'irwin/report?api_key=' + self.token, json=report)
+        response = requests.post('https://listage.ovh/irwin/report?api_key=' + self.token, json=report)
         if response.status_code == 200:
           success = True
         else:

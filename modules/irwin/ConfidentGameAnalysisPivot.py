@@ -35,6 +35,11 @@ class ConfidentGameAnalysisPivotDB(namedtuple('ConfidentGameAnalysisPivotDB', ['
   def byEngineAndLength(self, engine, length):
     return [ConfidentGameAnalysisPivotBSONHandler.reads(bson) for bson in self.confidentGameAnalysisPivotColl.find({'engine': engine, 'length': length})]
 
+  def byEngineAndPrediction(self, engine, prediction):
+    if engine:
+      return [ConfidentGameAnalysisPivotBSONHandler.reads(bson) for bson in self.confidentGameAnalysisPivotColl.find({'engine': engine, 'prediction': {'$gte': prediction}})]
+    return [ConfidentGameAnalysisPivotBSONHandler.reads(bson) for bson in self.confidentGameAnalysisPivotColl.find({'engine': engine, 'prediction': {'$lte': prediction}})]
+
   def byEngineLengthAndPrediction(self, engine, length, prediction):
     if engine:
       return [ConfidentGameAnalysisPivotBSONHandler.reads(bson) for bson in self.confidentGameAnalysisPivotColl.find({'engine': engine, 'length': length, 'prediction': {'$gte': prediction}})]

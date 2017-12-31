@@ -32,14 +32,14 @@ class BinaryGameModel(namedtuple('BinaryGameModel', ['env', 'type'])):
     ambiguityInput = Input(shape=(None,), dtype='int32', name='ambiguity_input')
 
     # Embed rank and move number
-    a1 = Embedding(input_dim=41, output_dim=32)(advInput)
-    r1 = Embedding(input_dim=16, output_dim=16)(ranksInput)
-    mn1 = Embedding(input_dim=61, output_dim=32)(moveNumberInput)
-    am1 = Embedding(input_dim=6, output_dim=16)(ambiguityInput)
+    a1 = Embedding(input_dim=42, output_dim=32)(advInput)
+    r1 = Embedding(input_dim=17, output_dim=32)(ranksInput)
+    mn1 = Embedding(input_dim=62, output_dim=32)(moveNumberInput)
+    am1 = Embedding(input_dim=7, output_dim=32)(ambiguityInput)
 
     # Merge embeddings
     mnr1 = concatenate([r1, mn1, a1, am1])
-    mnr2 = Reshape((-1, 96))(mnr1)
+    mnr2 = Reshape((-1, 128))(mnr1)
 
     # analyse PV data (potential moves)
     pv1 = Dense(128, activation='relu')(pvInput)
@@ -60,15 +60,19 @@ class BinaryGameModel(namedtuple('BinaryGameModel', ['env', 'type'])):
     # merge move stats with move options
     mvpv = concatenate([mv4, pv4])
 
-    c = Conv1D(filters=128, kernel_size=5, padding='same', name='conv')(mvpv)
+    c1 = Conv1D(filters=128, kernel_size=5, name='conv1')(mvpv)
 
     # analyse all the moves and come to a decision about the game
-    l1 = LSTM(128, return_sequences=True)(c)
-    l2 = LSTM(128, return_sequences=True)(l1)
-    l3 = LSTM(64, return_sequences=True)(l2)
-    l4 = LSTM(64)(l3)
-    l5 = Dense(64, activation='relu')(l4)
-    d4 = Dropout(0.3)(l5)
+    l1 = LSTM(128, return_sequences=True)(c1)
+    l2 = LSTM(128, return_sequences=True, activation='sigmoid')(l1)
+
+    c2 = Conv1D(filters=64, kernel_size=10, name='conv2')(l2)
+
+    l3 = LSTM(64, return_sequences=True)(c2)
+    l4 = LSTM(48, return_sequences=True, activation='sigmoid')(l3)
+    l5 = LSTM(48)(l4)
+    l6 = Dense(32, activation='relu')(l5)
+    d4 = Dropout(0.3)(l6)
     l6 = Dense(1, activation='sigmoid')(d4)
 
     secondaryOutput = Dense(1, activation='sigmoid', name='secondary_output')(l3)
@@ -88,18 +92,16 @@ class BinaryGameModel(namedtuple('BinaryGameModel', ['env', 'type'])):
     print("getting model")
     model = self.model(newmodel)
     print("getting dataset")
-    batches = self.getTrainingDataset()
-
-    pprint(batches)
+    batch = self.getTrainingDataset()
 
     print("training")
-    for x in range(2):
-      for b in batches:
-        print("Batch Info: Games: " + str(len(b['batch'][0])))
-        print("Game Len: " + str(len(b['batch'][2][0])))
-        model.fit(b['batch'], b['labels'], epochs=epochs, batch_size=32, validation_split=0.2)
-        self.saveModel(model)
-      shuffle(batches)
+    print("Batch Info: Games: " + str(len(batch['data'][0])))
+
+    print("Game Len: " + str(len(batch['data'][2][0])))
+
+    model.fit(batch['data'], batch['labels'], epochs=epochs, batch_size=32, validation_split=0.2)
+
+    self.saveModel(model)
     print("complete")
 
   def saveModel(self, model):
@@ -110,110 +112,59 @@ class BinaryGameModel(namedtuple('BinaryGameModel', ['env', 'type'])):
       model.save('modules/irwin/models/gameBinaryNarrow.h5')
 
   def getTrainingDataset(self):
+    print("gettings game IDs from DB")
     if self.type == 'general':
-      cheatGameAnalyses = []
-      legitGameAnalyses = []
-      for length in range(23, 60):
-        print("gettings games of length: " + str(length))
-        cheatPivotEntries = self.env.gameAnalysisPlayerPivotDB.byEngineAndLength(True, length)
-        legitPivotEntries = self.env.gameAnalysisPlayerPivotDB.byEngineAndLength(False, length)
+      cheatPivotEntries = self.env.gameAnalysisPlayerPivotDB.byEngine(True)
+      legitPivotEntries = self.env.gameAnalysisPlayerPivotDB.byEngine(False)
+    else:
+      cheatPivotEntries = self.env.confidentGameAnalysisPivotDB.byEngineAndPrediction(True, 70)
+      legitPivotEntries = self.env.confidentGameAnalysisPivotDB.byEngineAndPrediction(False, 70)
 
-        print("got: "+str(len(cheatPivotEntries + legitPivotEntries)))
+    print("got: "+str(len(cheatPivotEntries + legitPivotEntries)))
 
-        if len(cheatPivotEntries+legitPivotEntries) < 800:
-          break
+    shuffle(cheatPivotEntries)
+    shuffle(legitPivotEntries)
 
-        shuffle(cheatPivotEntries)
-        shuffle(legitPivotEntries)
+    minEntries = min(len(cheatPivotEntries), len(legitPivotEntries))
 
-        minEntries = min(len(cheatPivotEntries), len(legitPivotEntries))
-        sampleSize = min(int(self.env.settings['irwin']['train']['batchSize']/2), minEntries)
+    print("Getting game analyses from DB")
 
-        cheatGameAnalyses.extend(self.env.gameAnalysisDB.byIds([cpe.id for cpe in cheatPivotEntries[:sampleSize]]))
-        legitGameAnalyses.extend(self.env.gameAnalysisDB.byIds([lpe.id for lpe in legitPivotEntries[:sampleSize]]))
+    cheatGameAnalyses = self.env.gameAnalysisDB.byIds([cpe.id for cpe in cheatPivotEntries])
+    legitGameAnalyses = self.env.gameAnalysisDB.byIds([lpe.id for lpe in legitPivotEntries])
 
-      print("getting moveAnalysisTensors")
-      cheatGameTensors = [tga.moveAnalysisTensors() for tga in cheatGameAnalyses]
-      legitGameTensors = [tga.moveAnalysisTensors() for tga in legitGameAnalyses]
+    print("building moveAnalysisTensors")
+    cheatGameTensors = [tga.moveAnalysisTensors(50) for tga in cheatGameAnalyses if tga.gameLength() <= 50]
+    legitGameTensors = [tga.moveAnalysisTensors(50) for tga in legitGameAnalyses if tga.gameLength() <= 50]
 
-      print("batching tensors")
-      return self.createBatchAndLabels(cheatGameTensors, legitGameTensors)
-    elif self.type == 'narrow':
-      cheatGameAnalyses = []
-      legitGameAnalyses = []
-      unclearGameAnalyses = []
-      for length in range(23, 60):
-        print("gettings games of length: " + str(length))
-        cheatPivotEntries = self.env.confidentGameAnalysisPivotDB.byEngineLengthAndPrediction(True, length, 65)
-        legitPivotEntries = self.env.confidentGameAnalysisPivotDB.byEngineLengthAndPrediction(False, length, 40)
-        unclearPivotEntries = self.env.confidentGameAnalysisPivotDB.byPredictionRangeAndLength(40, 65, length)
-
-        print(len(cheatPivotEntries))
-        print(len(legitPivotEntries))
-        print(len(unclearPivotEntries))
-
-        print("got: "+str(len(cheatPivotEntries + legitPivotEntries + unclearPivotEntries)))
-
-        if len(cheatPivotEntries+legitPivotEntries+unclearPivotEntries) < 800:
-          break
-
-        shuffle(cheatPivotEntries)
-        shuffle(legitPivotEntries)
-        shuffle(unclearPivotEntries)
-
-        minEntries = min(len(cheatPivotEntries), len(legitPivotEntries), len(unclearPivotEntries))
-        sampleSize = min(int(self.env.settings['irwin']['train']['batchSize']/2), minEntries)
-
-        cheatGameAnalyses.extend(self.env.gameAnalysisDB.byIds([cpe.id for cpe in cheatPivotEntries[:sampleSize]]))
-        legitGameAnalyses.extend(self.env.gameAnalysisDB.byIds([lpe.id for lpe in legitPivotEntries[:sampleSize]]))
-        unclearGameAnalyses.extend(self.env.gameAnalysisDB.byIds([lpe.id for lpe in unclearPivotEntries[:sampleSize]]))
-
-      print("getting moveAnalysisTensors")
-      cheatGameTensors = [tga.moveAnalysisTensors() for tga in cheatGameAnalyses]
-      legitGameTensors = [tga.moveAnalysisTensors() for tga in legitGameAnalyses]
-      unclearGameTensors = [tga.moveAnalysisTensors() for tga in unclearGameAnalyses]
-
-      print("batching tensors")
-      return self.createBatchAndLabels(cheatGameTensors, legitGameTensors + unclearGameTensors)
+    print("batching tensors")
+    return self.createBatchAndLabels(cheatGameTensors, legitGameTensors)
 
   @staticmethod
   def createBatchAndLabels(cheatBatch, legitBatch):
-    batches = []
     # group the dataset into batches by the length of the dataset, because numpy needs it that way
-    for x in range(20, 60):
-      cheats = list([r for r in cheatBatch if len(r) == x])
-      legits = list([r for r in legitBatch if len(r) == x])
+    mlen = min(len(cheatBatch), len(legitBatch))
 
-      mlen = min(len(cheats), len(legits))
+    cheats = cheatBatch[:mlen]
+    legits = legitBatch[:mlen]
 
-      cheats = cheats[:mlen]
-      legits = legits[:mlen]
+    print("batch size " + str(len(cheats + legits)))
 
-      cl = [True]*len(cheats) + [False]*len(legits)
+    labels = [True]*len(cheats) + [False]*len(legits)
 
-      blz = list(zip(cheats+legits, cl))
-      shuffle(blz)
+    blz = list(zip(cheats+legits, labels))
+    shuffle(blz)
 
-      print(len(cheats+legits))
+    pvs =         np.array([[m[0] for m in t] for t, l in blz])
+    moveStats =   np.array([[m[1] for m in t] for t, l in blz])
+    moveNumbers = np.array([[m[2] for m in t] for t, l in blz])
+    ranks =       np.array([[m[3] for m in t] for t, l in blz])
+    advs =        np.array([[m[4] for m in t] for t, l in blz])
+    ambs =        np.array([[m[5] for m in t] for t, l in blz])
 
-      # only make the batch trainable if it's big
-      if len(cheats + legits) > 100:
-        pvs =         np.array([[m[0] for m in p[0]] for p in blz])
-        moveStats =   np.array([[m[1] for m in p[0]] for p in blz])
-        moveNumbers = np.array([[m[2] for m in p[0]] for p in blz])
-        ranks =       np.array([[m[3] for m in p[0]] for p in blz])
-        advs =        np.array([[m[4] for m in p[0]] for p in blz])
-        ambs =        np.array([[m[5] for m in p[0]] for p in blz])
-
-        b = [pvs, moveStats, moveNumbers, ranks, advs, ambs]
-        l = [
-          np.array([int(i[1]) for i in blz]), 
-          np.array([[[int(i[1])]]*len(moveStats[0]) for i in blz])
-        ]
-
-        batches.append({
-          'batch': b,
-          'labels': l
-        })
-    shuffle(batches)
-    return batches
+    return {
+      'data': [pvs, moveStats, moveNumbers, ranks, advs, ambs],
+      'labels': [
+        np.array([int(l) for t, l in blz]), 
+        np.array([[[int(l)]]*(len(moveStats[0])-13) for t, l in blz])
+      ]
+    }

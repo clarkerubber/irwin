@@ -5,16 +5,43 @@ import numpy as np
 import modules.core.AnalysedMove as AnalysedMove
 
 from collections import namedtuple
-
 class GameAnalysis(namedtuple('GameAnalysis', ['id', 'userId', 'gameId', 'moveAnalyses'])):
-  def moveAnalysisTensors(self):
-    return [ma.tensor(moveNo, self.emtAverage(), self.wclAverage()) for moveNo, ma in enumerate(self.moveAnalyses)]
+  def moveAnalysisTensors(self, length=50):
+    emtAvg = self.emtAverage()
+    wclAvg = self.wclAverage()
+    t = [ma.tensor(moveNo, emtAvg, wclAvg) for moveNo, ma in enumerate(self.moveAnalyses)]
+    return t + (length-len(t))*[self.blankMoveTensor()]
+
+  @staticmethod
+  def blankMoveTensor():
+    return [10*[-1.0], 8*[-1.0], 0, 0, 0, 0]
 
   def emtAverage(self):
     return np.average([m.emt for m in self.moveAnalyses])
 
   def wclAverage(self):
     return np.average([m.winningChancesLoss() for m in self.moveAnalyses])
+
+  def gameLength(self):
+    return len(self.moveAnalyses)
+
+  def wcls(self):
+    return [m.winningChancesLoss() for m in self.moveAnalyses]
+
+  def emts(self):
+    return [m.emt for m in self.moveAnalyses]
+
+  def winningChances(self):
+    return [m.advantage() for m in self.moveAnalyses]
+
+  def wclByEmt(self):
+    return list(zip(self.emts(), self.wcls()))
+
+  def wclByMoveNumber(self):
+    return list(enumerate(self.wcls()))
+
+  def wclByWinningChances(self):
+    return list(zip(self.winningChances(), self.wcls()))
 
   @staticmethod
   def gameAnalysisId(gameId, white):

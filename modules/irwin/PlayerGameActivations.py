@@ -1,6 +1,6 @@
 from collections import namedtuple
 
-PlayerGameActivations = namedtuple('PlayerGameActivations', ['userId', 'engine', 'activations'])
+PlayerGameActivations = namedtuple('PlayerGameActivations', ['userId', 'engine', 'generalActivations', 'narrowActivations'])
 
 class PlayerGameActivationsBSONHandler:
   @staticmethod
@@ -8,19 +8,21 @@ class PlayerGameActivationsBSONHandler:
     return PlayerGameActivations(
       userId = bson['_id'], # userId
       engine = bson['engine'],
-      activations = bson['activations'])
+      generalActivations = bson['generalActivations'],
+      narrowActivations = bson['narrowActivations'])
 
   @staticmethod
   def writes(PlayerGameActivations):
     return {
       '_id': PlayerGameActivations.userId,
       'engine': PlayerGameActivations.engine,
-      'activations': PlayerGameActivations.activations
+      'generalActivations': PlayerGameActivations.generalActivations,
+      'narrowActivations': PlayerGameActivations.narrowActivations
     }
 
 class PlayerGameActivationsDB(namedtuple('PlayerGameActivationsDB', ['playerGameActivationsColl'])):
   def byEngine(self, engine):
-    return [PlayerGameActivationsBSONHandler.reads(bson) for bson in self.playerGameActivationsColl.find({'engine': engine}) if len(bson['activations']) >= 5]
+    return [PlayerGameActivationsBSONHandler.reads(bson) for bson in self.playerGameActivationsColl.find({'engine': engine}) if len(bson['generalActivations']) >= 7]
 
   def write(self, playerGameActivations):
     self.playerGameActivationsColl.update_one({'_id': playerGameActivations.userId}, {'$set': PlayerGameActivationsBSONHandler.writes(playerGameActivations)}, upsert=True)

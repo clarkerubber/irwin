@@ -21,5 +21,8 @@ class GameAnalysisPlayerPivotBSONHandler:
     }
 
 class GameAnalysisPlayerPivotDB(namedtuple('GameAnalysisPlayerPivotDB', ['GameAnalysisPlayerPivotColl'])):
+  def byEngine(self, engine):
+    return [GameAnalysisPlayerPivotBSONHandler.reads(bson) for bson in self.GameAnalysisPlayerPivotColl.find({'engine': engine})]
+    
   def byEngineAndLength(self, engine, length):
     return [GameAnalysisPlayerPivotBSONHandler.reads(bson) for bson in self.GameAnalysisPlayerPivotColl.find({'engine': engine, 'length': length})]

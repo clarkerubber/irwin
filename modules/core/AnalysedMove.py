@@ -17,7 +17,7 @@ class AnalysedMove(namedtuple('AnalysedMove', ['uci', 'move', 'emt', 'blur', 'sc
       self.difToNextBest(),
       self.winningChancesLoss(),
       wclAvg,
-      wclAvg - self.winningChancesLoss()], moveNumber, self.rank(), int(40*self.advantage()), self.ambiguity()]
+      wclAvg - self.winningChancesLoss()], moveNumber, self.rank() + 1, int(40*self.advantage())+1, self.ambiguity()+1]
 
   def analysesWinningChances(self):
     c = [winningChances(a.score) for a in self.analyses]
@@ -58,9 +58,9 @@ class AnalysedMove(namedtuple('AnalysedMove', ['uci', 'move', 'emt', 'blur', 'sc
     return next((x+1 for x, am in enumerate(self.analyses) if am.uci == self.uci), None)
 
   def rank(self):
-    return min(15, next((x for x, am in enumerate(self.analyses) if am.uci == self.uci), self.__projectedRank()) + 1)
+    return min(15, next((x for x, am in enumerate(self.analyses) if am.uci == self.uci), self.projectedRank()) + 1)
 
-  def __projectedRank(self):
+  def projectedRank(self):
     if len(self.analyses) == 1:
       return 10
     else: # rise over run prediction of move rank given the difference between the winning chances in the bottom two analysed moves
