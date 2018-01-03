@@ -153,36 +153,39 @@ if settings.gather:
   [GatherDataThread(x, Env(config)).start() for x in range(env.settings['core']['instances'])]
 
 if not (settings.traingeneral or settings.trainnarrow or settings.eval or settings.noreport or settings.test or settings.gather or settings.buildconfidencetable):
+  generalModel = env.irwin.generalGameModel.model()
+  narrowModel = env.irwin.narrowGameModel.model()
+  generalIntermediateModel = env.irwin.generalGameModel.intermediateModel(generalModel)
+  narrowlIntermediateModel = env.irwin.narrowGameModel.intermediateModel(narrowModel)
+  playerModel = env.irwin.playerModel.model()
   while True:
+    env = Env(config) # remake env because the game engine randomly breaks
+
+    logging.debug('Getting new player ID')
+    userId = env.api.getNextPlayerId()
+    logging.debug('Getting player data for '+userId)
+    playerData = env.api.getPlayerData(userId)
+
+    # pull what we already have on the player
+    gameAnalysisStore = GameAnalysisStore.new()
+    gameAnalysisStore.addGames(env.gameDB.byUserId(userId))
+    gameAnalysisStore.addGameAnalyses(env.gameAnalysisDB.byUserId(userId))
+
+    # Filter games and assessments for relevant info
     try:
-      logging.debug('Getting new player ID')
-      userId = env.api.getNextPlayerId()
-      logging.debug('Getting player data for '+userId)
-      playerData = env.api.getPlayerData(userId)
+      gameAnalysisStore.addGames([Game.fromDict(gid, userId, g) for gid, g in playerData['games'].items() if (g.get('initialFen') is None and g.get('variant') is None)])
+    except KeyError:
+      continue # if this doesn't gather any useful data, skip
 
-      # pull what we already have on the player
-      gameAnalysisStore = GameAnalysisStore.new()
-      gameAnalysisStore.addGames(env.gameDB.byUserId(userId))
-      gameAnalysisStore.addGameAnalyses(env.gameAnalysisDB.byUserId(userId))
+    env.gameDB.lazyWriteGames(gameAnalysisStore.games)
 
-      # Filter games and assessments for relevant info
-      try:
-        gameAnalysisStore.addGames([Game.fromDict(gid, userId, g) for gid, g in playerData['games'].items() if (g.get('initialFen') is None and g.get('variant') is None)])
-      except KeyError:
-        continue # if this doesn't gather any useful data, skip
+    logging.debug("Already Analysed: " + str(len(gameAnalysisStore.gameAnalyses)))
 
-      env.gameDB.lazyWriteGames(gameAnalysisStore.games)
+    gameAnalysisStore.addGameAnalyses([GameAnalysis.fromGame(game, env.engine, env.infoHandler, game.white == userId, env.settings['stockfish']['nodes']) for game in gameAnalysisStore.randomGamesWithoutAnalysis()])
 
-      logging.debug("Already Analysed: " + str(len(gameAnalysisStore.gameAnalyses)))
+    env.gameAnalysisDB.lazyWriteGameAnalyses(gameAnalysisStore.gameAnalyses)
 
-      gameAnalysisStore.addGameAnalyses([GameAnalysis.fromGame(game, env.engine, env.infoHandler, game.white == userId, env.settings['stockfish']['nodes']) for game in gameAnalysisStore.randomGamesWithoutAnalysis()])
-
-      env.gameAnalysisDB.lazyWriteGameAnalyses(gameAnalysisStore.gameAnalyses)
-
-      logging.warning('Posting report for ' + userId)
-      env.api.postReport(env.irwin.report(userId, gameAnalysisStore))
-    except:
-      print("something important broke")
-      os._exit(1)
+    logging.warning('Posting report for ' + userId)
+    env.api.postReport(env.irwin.report(userId, gameAnalysisStore, generalModel, narrowModel, generalIntermediateModel, narrowlIntermediateModel, playerModel))
 print("exitting")
 os._exit(1)
