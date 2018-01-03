@@ -63,3 +63,4 @@ class Env:
 
   def __del__(self):
     print("Removing Env")
+    self.engine.kill()
