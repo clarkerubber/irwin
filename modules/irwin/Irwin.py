@@ -118,6 +118,9 @@ class Irwin():
     print("writing to db")
     self.env.confidentGameAnalysisPivotDB.lazyWriteMany(confidentCheats + confidentLegits)
 
+  def buildVocabularly(self):
+    return self.playerModel.buildVocabularly()
+
   def buildPlayerGameActivationsTable(self, generalModel=None, narrowModel=None, generalIntermediateModel=None, narrowIntermediateModel=None):
     if generalModel is None:
       generalModel = self.generalGameModel.model()

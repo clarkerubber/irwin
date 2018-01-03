@@ -54,6 +54,8 @@ parser.add_argument("--buildconfidencetable", dest="buildconfidencetable", nargs
                     default=False, const=True, help="build table of game analysis that the network is confident in predicting")
 parser.add_argument("--buildplayertable", dest="buildplayertable", nargs="?",
                     default=False, const=True, help="build table of game analyses against player names and engine status")
+parser.add_argument("--buildvocab", dest="buildvocab", nargs="?",
+                    default=False, const=True, help="build table of words used to describe positions and games")
 parser.add_argument("--test", dest="test", nargs="?",
                     default=False, const=True, help="test on a single player")
 parser.add_argument("--quiet", dest="loglevel",
@@ -109,6 +111,9 @@ if settings.buildpivottable:
 
 if settings.buildconfidencetable:
   env.irwin.buildConfidenceTable()
+
+if settings.buildvocab:
+  env.irwin.buildVocabularly()
 
 if settings.buildplayertable:
   env.irwin.buildPlayerGameActivationsTable()
