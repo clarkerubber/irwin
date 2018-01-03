@@ -15,7 +15,6 @@ from modules.core.GameAnalysisStore import GameAnalysisStore
 from modules.core.PlayerEngineStatusBus import PlayerEngineStatusBus
 
 from Env import Env
-from GatherDataThread import GatherDataThread
 
 config = {}
 with open('conf/config.json') as confFile:
@@ -40,8 +39,6 @@ parser.add_argument("--epoch", dest="epoch", nargs="?",
                     default=False, const=True, help="train from start to finish")
 parser.add_argument("--epochforever", dest="epochforever", nargs="?",
                     default=False, const=True, help="train from start to finish forever")
-parser.add_argument("--gather", dest="gather", nargs="?",
-                    default=False, const=True, help="collect and analyse players forever to build dataset. Does not use models and does not post results")
 parser.add_argument("--newmodel", dest="newmodel", nargs="?",
                     default=False, const=True, help="generate a new model for training")
 parser.add_argument("--no-report", dest="noreport", nargs="?",
@@ -68,10 +65,6 @@ logging.getLogger("requests.packages.urllib3").setLevel(logging.WARNING)
 logging.getLogger("chess.uci").setLevel(logging.WARNING)
 
 env = Env(config)
-
-# start the bus to update player engine status
-playerEngineStatusBus = PlayerEngineStatusBus(env.playerDB, env.settings)
-playerEngineStatusBus.start()
 
 # test on a single user in the DB
 if settings.test:
@@ -149,10 +142,7 @@ if settings.trainplayerforever:
     env.irwin.playerModel.train(config['irwin']['train']['batchSize'], config['irwin']['train']['epochs'], settings.newmodel)
     settings.newmodel = False
 
-if settings.gather:
-  [GatherDataThread(x, Env(config)).start() for x in range(env.settings['core']['instances'])]
-
-if not (settings.traingeneral or settings.trainnarrow or settings.eval or settings.noreport or settings.test or settings.gather or settings.buildconfidencetable):
+if not (settings.traingeneral or settings.trainnarrow or settings.eval or settings.noreport or settings.test or settings.buildconfidencetable):
   generalModel = env.irwin.generalGameModel.model()
   narrowModel = env.irwin.narrowGameModel.model()
   generalIntermediateModel = env.irwin.generalGameModel.intermediateModel(generalModel)

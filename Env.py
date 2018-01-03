@@ -60,3 +60,6 @@ class Env:
 
     # Irwin
     self.irwin = Irwin(self, settings['irwin'])
+
+  def __del__(self):
+    print("Removing Env")
