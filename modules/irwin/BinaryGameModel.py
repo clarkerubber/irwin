@@ -69,13 +69,14 @@ class BinaryGameModel(namedtuple('BinaryGameModel', ['env', 'type'])):
     c2 = Conv1D(filters=64, kernel_size=10, name='conv2')(l2)
 
     l3 = LSTM(64, return_sequences=True)(c2)
-    l4 = LSTM(48, return_sequences=True, activation='sigmoid')(l3)
-    l5 = LSTM(48)(l4)
-    l6 = Dense(32, activation='relu')(l5)
+    l4 = LSTM(32, return_sequences=True, activation='sigmoid', name='position_words')(l3)
+    l5 = LSTM(32)(l4)
+    l6 = Dense(16, activation='sigmoid', name='game_word')(l5)
     d4 = Dropout(0.3)(l6)
     l6 = Dense(1, activation='sigmoid')(d4)
 
-    secondaryOutput = Dense(1, activation='sigmoid', name='secondary_output')(l3)
+    s1 = Dense(16, activation='sigmoid')(l4)
+    secondaryOutput = Dense(1, activation='sigmoid', name='secondary_output')(s1)
 
     mainOutput = Dense(1, activation='sigmoid', name='main_output')(l6)
 
@@ -85,6 +86,12 @@ class BinaryGameModel(namedtuple('BinaryGameModel', ['env', 'type'])):
       loss='binary_crossentropy',
       loss_weights=[1., 0.3],
       metrics=['accuracy'])
+    return model
+
+  def intermediateModel(self, baseModel=None):
+    if baseModel is None:
+      baseModel = self.model() 
+    model = Model(inputs=baseModel.input, outputs=[baseModel.get_layer('position_words').output, baseModel.get_layer('game_word').output])
     return model
 
   def train(self, batchSize, epochs, newmodel=False):
@@ -133,8 +140,8 @@ class BinaryGameModel(namedtuple('BinaryGameModel', ['env', 'type'])):
     legitGameAnalyses = self.env.gameAnalysisDB.byIds([lpe.id for lpe in legitPivotEntries])
 
     print("building moveAnalysisTensors")
-    cheatGameTensors = [tga.moveAnalysisTensors(50) for tga in cheatGameAnalyses if tga.gameLength() <= 50]
-    legitGameTensors = [tga.moveAnalysisTensors(50) for tga in legitGameAnalyses if tga.gameLength() <= 50]
+    cheatGameTensors = [tga.moveAnalysisTensors() for tga in cheatGameAnalyses if tga.gameLength() <= 50]
+    legitGameTensors = [tga.moveAnalysisTensors() for tga in legitGameAnalyses if tga.gameLength() <= 50]
 
     print("batching tensors")
     return self.createBatchAndLabels(cheatGameTensors, legitGameTensors)

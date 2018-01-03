@@ -8,13 +8,15 @@ from random import shuffle
 from decimal import Decimal
 from math import log
 
-from collections import namedtuple
+from collections import namedtuple, Counter
 
 from keras.models import load_model, Sequential
 from keras.layers import Dense, Activation
 from keras.optimizers import Adam
 
 from modules.core.GameAnalysisStore import GameAnalysisStore
+
+from modules.irwin.PlayerGameWords import PlayerGameWords
 
 class PlayerModel(namedtuple('BinaryGameModel', ['env'])):
   def model(self, newmodel=False):
@@ -23,8 +25,12 @@ class PlayerModel(namedtuple('BinaryGameModel', ['env'])):
       return load_model('modules/irwin/models/playerBinary.h5')
     print('model does not exist, building from scratch')
 
+    vocabSize = self.buildVocabularly()
+
     model = Sequential([
-      Dense(32, input_shape=(31,)),
+      Dense(32+int(vocabSize/2), input_shape=(31+vocabSize,)),
+      Activation('relu'),
+      Dense(16+int(vocabSize/3)),
       Activation('relu'),
       Dense(16),
       Activation('sigmoid'),
@@ -57,7 +63,52 @@ class PlayerModel(namedtuple('BinaryGameModel', ['env'])):
     print("saving model")
     model.save('modules/irwin/models/playerBinary.h5')
 
+  def buildVocabularly(self):
+    print("Building Vocabularly")
+    print("Getting Player Game Activations")
+    allPGAs = self.env.playerGameActivationsDB.all()
+    length = str(len(allPGAs))
+    print("Got " + length)
+    words = {
+      'narrowPositionWords': Counter(),
+      'generalPositionWords': Counter(),
+      'narrowGameWords': Counter(),
+      'generalGameWords': Counter()
+    }
+    for i, pga in enumerate(allPGAs):
+      words['narrowPositionWords'] =  Counter(pga.narrowIntermediateActivations['positions']) + words['narrowPositionWords']
+      words['generalPositionWords'] =  Counter(pga.generalIntermediateActivations['positions']) + words['generalPositionWords']
+      words['narrowGameWords'] =  Counter(pga.narrowIntermediateActivations['games']) + words['narrowGameWords']
+      words['generalGameWords'] =  Counter(pga.generalIntermediateActivations['games']) + words['generalGameWords']
+
+    a = [int(word) for word, amount in words['narrowPositionWords'].most_common() if amount > 200]
+    b = [int(word) for word, amount in words['generalPositionWords'].most_common() if amount > 200]
+    c = [int(word) for word, amount in words['narrowGameWords'].most_common() if amount > 200]
+    d = [int(word) for word, amount in words['generalGameWords'].most_common() if amount > 200]
+
+    a.sort()
+    b.sort()
+    c.sort()
+    d.sort()
+
+    output = {
+      'narrowPositionWords': a,
+      'generalPositionWords': b,
+      'narrowGameWords': c,
+      'generalGameWords': d
+    }
+
+    self.env.playerGameWordsDB.write(PlayerGameWords(
+      narrowPositionWords = a,
+      generalPositionWords = b,
+      narrowGameWords = c,
+      generalGameWords = d))
+
+    return len(a)+len(b)+len(c)+len(d)
+
   def getTrainingDataset(self):
+    words = self.env.playerGameWordsDB.newest()
+
     legitPGAs = self.env.playerGameActivationsDB.byEngine(False)
     cheatPGAs = self.env.playerGameActivationsDB.byEngine(True)
 
@@ -75,8 +126,8 @@ class PlayerModel(namedtuple('BinaryGameModel', ['env'])):
     legitZip = legitZip[:mlen]
     cheatZip = cheatZip[:mlen]
 
-    legits = [PlayerModel.binPGAs(pgas) + (GameAnalysisStore([], gas).playerTensor()) for pgas, gas in legitZip]
-    cheats = [PlayerModel.binPGAs(pgas) + (GameAnalysisStore([], gas).playerTensor()) for pgas, gas in cheatZip]
+    legits = [PlayerModel.tensorPGAs(pgas, words) + (GameAnalysisStore([], gas).playerTensor()) for pgas, gas in legitZip]
+    cheats = [PlayerModel.tensorPGAs(pgas, words) + (GameAnalysisStore([], gas).playerTensor()) for pgas, gas in cheatZip]
 
     labels = [1]*len(cheats) + [0]*len(legits)
 
@@ -89,10 +140,12 @@ class PlayerModel(namedtuple('BinaryGameModel', ['env'])):
       'labels': np.array([b for a, b in blz])
     }
 
-  def predict(self, generalActivations, narrowActivations, playerTensor, model=None):
+  def predict(self, playerGameActivations, playerTensor, model=None, words=None):
     if model is None:
       model = self.model()
-    data = PlayerModel.binActivations(zip(generalActivations, narrowActivations))+playerTensor
+    if words is None:
+      words = self.env.playerGameWordsDB.newest()
+    data = PlayerModel.tensorPGAs(playerGameActivations, words)+playerTensor
     p = model.predict(np.array([data
       ]))
     return int(100*p[0][0])
@@ -105,5 +158,15 @@ class PlayerModel(namedtuple('BinaryGameModel', ['env'])):
     return [len([1 for x in logs if x>i and x<=j]) for i, j in bins]
 
   @staticmethod
-  def binPGAs(pgas):
-    return PlayerModel.binActivations(zip(pgas.generalActivations, pgas.narrowActivations))
+  def wordTensor(pgas, words):
+    generalPositions = [pgas.generalIntermediateActivations['positions'].get(str(word), 0) for word in words.generalPositionWords]
+    narrowPositions = [pgas.narrowIntermediateActivations['positions'].get(str(word), 0) for word in words.narrowPositionWords]
+
+    generalGames = [pgas.generalIntermediateActivations['games'].get(str(word), 0) for word in words.generalGameWords]
+    narrowGames = [pgas.narrowIntermediateActivations['games'].get(str(word), 0) for word in words.narrowGameWords]
+
+    return generalPositions + narrowPositions + generalGames + narrowGames
+
+  @staticmethod
+  def tensorPGAs(pgas, words):
+    return PlayerModel.binActivations(zip(pgas.generalActivations, pgas.narrowActivations)) + PlayerModel.wordTensor(pgas, words)

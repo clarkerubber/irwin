@@ -75,13 +75,16 @@ playerEngineStatusBus.start()
 if settings.test:
   generalModel = env.irwin.generalGameModel.model()
   narrowModel = env.irwin.narrowGameModel.model()
+  generalIntermediateModel = env.irwin.generalGameModel.intermediateModel(generalModel)
+  narrowlIntermediateModel = env.irwin.narrowGameModel.intermediateModel(narrowModel)
   playerModel = env.irwin.playerModel.model()
-  for userId in ['morrteza1369','zeyad_mahmoudgx','giwish','charlylafalda','ja1505','manofseconds','captncuv','cleber_x','mihailmlp','killerbateman','miltonmorales','ojaannestad','chessmast123','hichemovic','spacecase124875','praggnanandha','uyfadcrack','rrphaelus']:
+
+  for userId in ['madempire','killerbateman','mister_svorc','notjana','mathtuition88','skander846','charlylafalda','gogreenpawns','ojaannestad','jgonzalezm132','nicolau4','costlyeffort','ja1505','chessmast123','alejandro_cr']:
     gameAnalysisStore = GameAnalysisStore.new()
     gameAnalysisStore.addGames(env.gameDB.byUserId(userId))
     gameAnalysisStore.addGameAnalyses(env.gameAnalysisDB.byUserId(userId))
 
-    env.api.postReport(env.irwin.report(userId, gameAnalysisStore, generalModel, narrowModel, playerModel))
+    env.api.postReport(env.irwin.report(userId, gameAnalysisStore, generalModel, narrowModel, generalIntermediateModel, narrowlIntermediateModel, playerModel))
     print("posted")
 
 if settings.epoch:
@@ -90,16 +93,15 @@ if settings.epoch:
   env.irwin.buildConfidenceTable()
   env.irwin.narrowGameModel.train(config['irwin']['train']['batchSize'], config['irwin']['train']['epochs'], settings.newmodel)
   env.irwin.buildPlayerGameActivationsTable()
-  env.irwin.playerModel.train(config['irwin']['train']['batchSize'], config['irwin']['train']['epochs'], settings.newmodel)
+  env.irwin.playerModel.train(config['irwin']['train']['batchSize'], config['irwin']['train']['epochs']*5, True)
 
 if settings.epochforever:
-  #env.irwin.buildPivotTable()
   while True:
     env.irwin.generalGameModel.train(config['irwin']['train']['batchSize'], config['irwin']['train']['epochs'], settings.newmodel)
     env.irwin.buildConfidenceTable()
     env.irwin.narrowGameModel.train(config['irwin']['train']['batchSize'], config['irwin']['train']['epochs'], settings.newmodel)
     env.irwin.buildPlayerGameActivationsTable()
-    env.irwin.playerModel.train(config['irwin']['train']['batchSize'], config['irwin']['train']['epochs']*10, settings.newmodel)
+    env.irwin.playerModel.train(config['irwin']['train']['batchSize'], config['irwin']['train']['epochs']*5, True)
     settings.newmodel = False
 
 if settings.buildpivottable:
