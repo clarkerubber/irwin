@@ -177,5 +177,6 @@ if not (settings.traingeneral or settings.trainnarrow or settings.eval or settin
 
     logging.warning('Posting report for ' + userId)
     env.api.postReport(env.irwin.report(userId, gameAnalysisStore, generalModel, narrowModel, generalIntermediateModel, narrowlIntermediateModel, playerModel))
+    del env
 print("exitting")
 os._exit(1)
