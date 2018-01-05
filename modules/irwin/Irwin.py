@@ -112,8 +112,8 @@ class Irwin():
     cheatGamePredictions = self.predict(cheatTensors, model, generalOnly=True)
     legitGamePredictions = self.predict(legitTensors, model, generalOnly=True)
 
-    confidentCheats = [ConfidentGameAnalysisPivot.fromGamesAnalysisandPrediction(gameAnalysis, prediction[0][0], engine=True) for gameAnalysis, prediction in zip(cheatGameAnalyses, cheatGamePredictions)]
-    confidentLegits = [ConfidentGameAnalysisPivot.fromGamesAnalysisandPrediction(gameAnalysis, prediction[0][0], engine=False) for gameAnalysis, prediction in zip(legitGameAnalyses, legitGamePredictions)]
+    confidentCheats = [ConfidentGameAnalysisPivot.fromGamesAnalysisandPrediction(gameAnalysis, Irwin.avgGameActivation(prediction), engine=True) for gameAnalysis, prediction in zip(cheatGameAnalyses, cheatGamePredictions)]
+    confidentLegits = [ConfidentGameAnalysisPivot.fromGamesAnalysisandPrediction(gameAnalysis, Irwin.avgGameActivation(prediction), engine=False) for gameAnalysis, prediction in zip(legitGameAnalyses, legitGamePredictions)]
 
     print("writing to db")
     self.env.confidentGameAnalysisPivotDB.lazyWriteMany(confidentCheats + confidentLegits)
@@ -144,7 +144,7 @@ class Irwin():
       print("predicting " + str(i) + '/' + str(amount) + ' ' + player.id)
       gs = GameAnalysisStore.new()
       gs.addGameAnalyses(self.env.gameAnalysisDB.byUserId(player.id))
-      predictions = self.predict(gs.gameAnalysisTensors(), generalModel, narrowModel, generalIntermediateModel, narrowIntermediateModel)
+      predictions = self.predict(gs.quickGameAnalysisTensors(), generalModel, narrowModel, generalIntermediateModel, narrowIntermediateModel)
       pga = PlayerGameActivations.fromTensor(player.id, player.engine, predictions)
       self.env.playerGameActivationsDB.write(pga)
 
@@ -188,7 +188,7 @@ class Irwin():
 
   def report(self, userId, gameAnalysisStore, generalModel=None, narrowModel=None, generalIntermediateModel=None, narrowlIntermediateModel=None, playerModel=None):
     predictions = self.predict(
-      gameAnalysisStore.gameAnalysisTensors(),
+      gameAnalysisStore.quickGameAnalysisTensors(),
       generalModel, 
       narrowModel,
       generalIntermediateModel,
@@ -207,7 +207,7 @@ class Irwin():
       playerTensor,
       playerModel)
 
-    avgPredictions = [int(0.5*(g + n)) for g, n in zip(pga.generalActivations, pga.narrowActivations)]
+    avgPredictions = pga.avgGameActivations
     avgPredictions.sort(reverse=True)
 
     maxAvg = np.average(avgPredictions[0:2])
@@ -223,9 +223,16 @@ class Irwin():
   def gameReport(gameAnalysis, prediction):
     return {
       'gameId': gameAnalysis.gameId,
-      'activation': int(50*(prediction[0][0][0][0] + prediction[1][0][0][0])),
+      'activation': Irwin.avgGameActivation(prediction),
       'moves': [Irwin.moveReport(am, p) for am, p in zip(gameAnalysis.moveAnalyses, zip(list(prediction[0][1][0]), list(prediction[1][1][0])))]
     }
+
+  @staticmethod
+  def avgGameActivation(prediction):
+    lstmAct = int(50*(prediction[0][0][0][0] + prediction[1][0][0][0]))
+    avgAct =  np.mean([int(50*(p[0][0] + p[1][0])) for p in zip(list(prediction[0][1][0]), list(prediction[1][1][0]))])
+    avgAct = int(avgAct) if not np.isnan(avgAct) else 0
+    return min(lstmAct, avgAct)
 
   @staticmethod
   def moveReport(analysedMove, prediction):

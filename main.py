@@ -13,6 +13,8 @@ from modules.core.Game import Game
 from modules.core.GameAnalysis import GameAnalysis
 from modules.core.GameAnalysisStore import GameAnalysisStore
 from modules.core.PlayerEngineStatusBus import PlayerEngineStatusBus
+from modules.core.PlayerAnalysisCollection import PlayerAnalysisCollection
+
 
 from Env import Env
 
@@ -35,16 +37,18 @@ parser.add_argument("--trainplayer", dest="trainplayer", nargs="?",
                     default=False, const=True, help="train player game model")
 parser.add_argument("--trainplayerforever", dest="trainplayerforever", nargs="?",
                     default=False, const=True, help="train player game model forever")
+
 parser.add_argument("--epoch", dest="epoch", nargs="?",
                     default=False, const=True, help="train from start to finish")
 parser.add_argument("--epochforever", dest="epochforever", nargs="?",
                     default=False, const=True, help="train from start to finish forever")
+
 parser.add_argument("--newmodel", dest="newmodel", nargs="?",
                     default=False, const=True, help="generate a new model for training")
+
 parser.add_argument("--no-report", dest="noreport", nargs="?",
                     default=False, const=True, help="disable posting of player reports")
-parser.add_argument("--eval", dest="eval", nargs="?",
-                    default=False, const=True, help="evaluate the performance of neural networks")
+
 parser.add_argument("--buildpivottable", dest="buildpivottable", nargs="?",
                     default=False, const=True, help="build table relating game analysis to players, game length and engine status")
 parser.add_argument("--buildconfidencetable", dest="buildconfidencetable", nargs="?",
@@ -53,6 +57,11 @@ parser.add_argument("--buildplayertable", dest="buildplayertable", nargs="?",
                     default=False, const=True, help="build table of game analyses against player names and engine status")
 parser.add_argument("--buildvocab", dest="buildvocab", nargs="?",
                     default=False, const=True, help="build table of words used to describe positions and games")
+parser.add_argument("--collectanalyses", dest="collectanalyses", nargs="?",
+                    default=False, const=True, help="collect game analyses for players. Build database collection")
+
+parser.add_argument("--eval", dest="eval", nargs="?",
+                    default=False, const=True, help="evaluate the performance of neural networks")
 parser.add_argument("--test", dest="test", nargs="?",
                     default=False, const=True, help="test on a single player")
 parser.add_argument("--quiet", dest="loglevel",
@@ -66,6 +75,10 @@ logging.getLogger("chess.uci").setLevel(logging.WARNING)
 
 env = Env(config)
 
+if settings.collectanalyses:
+  playerAnalysisCollectionThread = PlayerAnalysisCollection(env)
+  playerAnalysisCollectionThread.start()
+
 # test on a single user in the DB
 if settings.test:
   generalModel = env.irwin.generalGameModel.model()
@@ -74,7 +87,7 @@ if settings.test:
   narrowlIntermediateModel = env.irwin.narrowGameModel.intermediateModel(narrowModel)
   playerModel = env.irwin.playerModel.model()
 
-  for userId in ['madempire','killerbateman','mister_svorc','notjana','mathtuition88','skander846','charlylafalda','gogreenpawns','ojaannestad','jgonzalezm132','nicolau4','costlyeffort','ja1505','chessmast123','alejandro_cr']:
+  for userId in ['thibault']:
     gameAnalysisStore = GameAnalysisStore.new()
     gameAnalysisStore.addGames(env.gameDB.byUserId(userId))
     gameAnalysisStore.addGameAnalyses(env.gameAnalysisDB.byUserId(userId))
@@ -142,15 +155,13 @@ if settings.trainplayerforever:
     env.irwin.playerModel.train(config['irwin']['train']['batchSize'], config['irwin']['train']['epochs'], settings.newmodel)
     settings.newmodel = False
 
-if not (settings.traingeneral or settings.trainnarrow or settings.eval or settings.noreport or settings.test or settings.buildconfidencetable):
+if not (settings.traingeneral or settings.trainnarrow or settings.eval or settings.noreport or settings.test or settings.buildconfidencetable or settings.collectanalyses):
   generalModel = env.irwin.generalGameModel.model()
   narrowModel = env.irwin.narrowGameModel.model()
   generalIntermediateModel = env.irwin.generalGameModel.intermediateModel(generalModel)
   narrowlIntermediateModel = env.irwin.narrowGameModel.intermediateModel(narrowModel)
   playerModel = env.irwin.playerModel.model()
   while True:
-    env = Env(config) # remake env because the game engine randomly breaks
-
     logging.debug('Getting new player ID')
     userId = env.api.getNextPlayerId()
     logging.debug('Getting player data for '+userId)
@@ -177,6 +188,4 @@ if not (settings.traingeneral or settings.trainnarrow or settings.eval or settin
 
     logging.warning('Posting report for ' + userId)
     env.api.postReport(env.irwin.report(userId, gameAnalysisStore, generalModel, narrowModel, generalIntermediateModel, narrowlIntermediateModel, playerModel))
-    del env
-print("exitting")
-os._exit(1)
+    env.restartEngine()

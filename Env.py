@@ -61,6 +61,18 @@ class Env:
     # Irwin
     self.irwin = Irwin(self, settings['irwin'])
 
+  def restartEngine(self):
+    self.engine.kill()
+    self.engine = uci.popen_engine(stockfish_command(self.settings['stockfish']['update']))
+    self.engine.setoption({'Threads': self.settings['stockfish']['threads'], 'Hash': self.settings['stockfish']['memory']})
+    self.engine.uci()
+    self.infoHandler = uci.InfoHandler()
+    self.engine.info_handlers.append(self.infoHandler)
+
   def __del__(self):
     print("Removing Env")
     self.engine.kill()
+    try:
+      del self.irwin
+    except TypeError:
+      pass

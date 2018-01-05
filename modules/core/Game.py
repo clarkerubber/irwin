@@ -11,7 +11,15 @@ class Blurs(namedtuple('Blurs', ['nb', 'moves'])):
       moves = moves
     )
 
-class Game(namedtuple('Game', ['id', 'white', 'black', 'pgn', 'emts', 'whiteBlurs', 'blackBlurs'])):
+class Score(namedtuple('Score', ['cp', 'mate'])):
+  @staticmethod
+  def fromDict(d):
+    return Score(d.get('cp', None), d.get('mate', None))
+
+  def toDict(self):
+    return {'cp': self.cp} if self.cp is not None else {'mate': self.mate}
+
+class Game(namedtuple('Game', ['id', 'white', 'black', 'pgn', 'emts', 'whiteBlurs', 'blackBlurs', 'analysis'])):
   @staticmethod
   def fromDict(gid, userId, d):
     pgn = d['pgn'].split(" ")
@@ -27,7 +35,8 @@ class Game(namedtuple('Game', ['id', 'white', 'black', 'pgn', 'emts', 'whiteBlur
       pgn = pgn,
       emts = d.get('emts'),
       whiteBlurs = Blurs.fromDict(d['blurs']['white'], math.ceil(len(pgn)/2)),
-      blackBlurs = Blurs.fromDict(d['blurs']['black'], math.floor(len(pgn)/2))
+      blackBlurs = Blurs.fromDict(d['blurs']['black'], math.floor(len(pgn)/2)),
+      analysis = [Score.fromDict(a) for a in d.get('analysis', []) if a is not None]
     )
 
   def getBlur(self, white, moveNumber):
@@ -48,6 +57,14 @@ class BlursBSONHandler:
       'bits': ''.join(['1' if i else '0' for i in blurs.moves])
     }
 
+class ScoreBSONHandler:
+  @staticmethod
+  def reads(bson):
+    return [Score.fromDict(s) for s in bson]
+
+  def writes(scores):
+    return [s.toDict() for s in scores]
+
 class GameBSONHandler:
   @staticmethod
   def reads(bson):
@@ -58,7 +75,8 @@ class GameBSONHandler:
       pgn = bson['pgn'],
       emts = bson['emts'],
       whiteBlurs = BlursBSONHandler.reads(bson['whiteBlurs']),
-      blackBlurs = BlursBSONHandler.reads(bson['blackBlurs']))
+      blackBlurs = BlursBSONHandler.reads(bson['blackBlurs']),
+      analysis = ScoreBSONHandler.reads(bson.get('analysis', [])))
 
   @staticmethod
   def writes(game):
@@ -69,7 +87,8 @@ class GameBSONHandler:
       'pgn': game.pgn,
       'emts': game.emts,
       'whiteBlurs': BlursBSONHandler.writes(game.whiteBlurs),
-      'blackBlurs': BlursBSONHandler.writes(game.blackBlurs)
+      'blackBlurs': BlursBSONHandler.writes(game.blackBlurs),
+      'analysis': ScoreBSONHandler.writes(game.analysis)
     }
 
 class GameDB(namedtuple('GameDB', ['gameColl'])):

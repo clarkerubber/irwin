@@ -30,10 +30,10 @@ class GameAnalysisStore(namedtuple('GameAnalysisStore', ['games', 'gameAnalyses'
 
   def quickGameAnalysisTensors(self):
     self.awclByWinningChances()
-    return [gameAnalysis.moveAnalysisTensors() for gameAnalysis in self.gameAnalyses if len(gameAnalysis.moveAnalyses) < 60 and len(gameAnalysis.moveAnalyses) > 20 and gameAnalysis.emtAverage() < 2500]
+    return [gameAnalysis.moveAnalysisTensors() for gameAnalysis in self.gameAnalyses if len(gameAnalysis.moveAnalyses) < 60 and len(gameAnalysis.moveAnalyses) > 20 and gameAnalysis.emtAverage() < 2000]
 
   def quickGameAnalyses(self):
-    return [gameAnalysis for gameAnalysis in self.gameAnalyses if gameAnalysis.emtAverage() < 2500]
+    return [gameAnalysis for gameAnalysis in self.gameAnalyses if gameAnalysis.emtAverage() < 2000]
 
   def playerTensor(self):
     return self.awclByEmt()+self.awclByPhase()+self.awclByWinningChances()

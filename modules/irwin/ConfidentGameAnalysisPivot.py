@@ -9,7 +9,7 @@ class ConfidentGameAnalysisPivot(namedtuple('ConfidentGameAnalysis', ['id', 'use
       userId = gameAnalysis.userId,
       engine = engine,
       length = len(gameAnalysis.moveAnalyses),
-      prediction = int(100*prediction))
+      prediction = prediction)
 
 class ConfidentGameAnalysisPivotBSONHandler:
   @staticmethod

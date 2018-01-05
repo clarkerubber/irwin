@@ -126,8 +126,8 @@ class PlayerModel(namedtuple('BinaryGameModel', ['env'])):
     legitZip = legitZip[:mlen]
     cheatZip = cheatZip[:mlen]
 
-    legits = [PlayerModel.tensorPGAs(pgas, words) + (GameAnalysisStore([], gas).playerTensor()) for pgas, gas in legitZip]
-    cheats = [PlayerModel.tensorPGAs(pgas, words) + (GameAnalysisStore([], gas).playerTensor()) for pgas, gas in cheatZip]
+    legits = [PlayerModel.tensorPGA(pga, words) + (GameAnalysisStore([], gas).playerTensor()) for pga, gas in legitZip]
+    cheats = [PlayerModel.tensorPGA(pga, words) + (GameAnalysisStore([], gas).playerTensor()) for pga, gas in cheatZip]
 
     labels = [1]*len(cheats) + [0]*len(legits)
 
@@ -145,28 +145,25 @@ class PlayerModel(namedtuple('BinaryGameModel', ['env'])):
       model = self.model()
     if words is None:
       words = self.env.playerGameWordsDB.newest()
-    data = PlayerModel.tensorPGAs(playerGameActivations, words)+playerTensor
-    p = model.predict(np.array([data
-      ]))
+    data = PlayerModel.tensorPGA(playerGameActivations, words)+playerTensor
+    p = model.predict(np.array([data]))
     return int(100*p[0][0])
 
   @staticmethod
   def binActivations(activations):
-    activations = list(activations)
-    logs = [float(10*Decimal(i*j).ln()) for i, j in activations]
-    bins = [(35, 40), (40, 45), (45, 50), (50, 55), (55, 60), (60, 70), (70, 80), (80, 90), (90, 100)]
-    return [len([1 for x in logs if x>i and x<=j]) for i, j in bins]
+    bins = [(0, 10), (10, 20), (20, 30), (30, 40), (40, 50), (50, 60), (60, 70), (70, 80), (90, 100)]
+    return [len([1 for x in activations if x>i and x<=j]) for i, j in bins]
 
   @staticmethod
-  def wordTensor(pgas, words):
-    generalPositions = [pgas.generalIntermediateActivations['positions'].get(str(word), 0) for word in words.generalPositionWords]
-    narrowPositions = [pgas.narrowIntermediateActivations['positions'].get(str(word), 0) for word in words.narrowPositionWords]
+  def wordTensor(pga, words):
+    generalPositions = [pga.generalIntermediateActivations['positions'].get(str(word), 0) for word in words.generalPositionWords]
+    narrowPositions = [pga.narrowIntermediateActivations['positions'].get(str(word), 0) for word in words.narrowPositionWords]
 
-    generalGames = [pgas.generalIntermediateActivations['games'].get(str(word), 0) for word in words.generalGameWords]
-    narrowGames = [pgas.narrowIntermediateActivations['games'].get(str(word), 0) for word in words.narrowGameWords]
+    generalGames = [pga.generalIntermediateActivations['games'].get(str(word), 0) for word in words.generalGameWords]
+    narrowGames = [pga.narrowIntermediateActivations['games'].get(str(word), 0) for word in words.narrowGameWords]
 
     return generalPositions + narrowPositions + generalGames + narrowGames
 
   @staticmethod
-  def tensorPGAs(pgas, words):
-    return PlayerModel.binActivations(zip(pgas.generalActivations, pgas.narrowActivations)) + PlayerModel.wordTensor(pgas, words)
+  def tensorPGA(pga, words):
+    return PlayerModel.binActivations(pga.avgGameActivations) + PlayerModel.wordTensor(pga, words)

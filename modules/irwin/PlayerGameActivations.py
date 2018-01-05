@@ -2,7 +2,7 @@ from collections import namedtuple, Counter
 import numpy as np
 from pprint import pprint
 
-class PlayerGameActivations(namedtuple('PlayerGameActivations', ['userId', 'engine', 'generalActivations', 'narrowActivations', 'generalIntermediateActivations', 'narrowIntermediateActivations'])):
+class PlayerGameActivations(namedtuple('PlayerGameActivations', ['userId', 'engine', 'generalActivations', 'narrowActivations', 'avgGameActivations', 'generalIntermediateActivations', 'narrowIntermediateActivations'])):
   @staticmethod
   def fromTensor(userId, engine, predictions):
     return PlayerGameActivations(
@@ -10,8 +10,16 @@ class PlayerGameActivations(namedtuple('PlayerGameActivations', ['userId', 'engi
       engine = engine,
       generalActivations = [int(100*(np.asscalar(p[0][0][0][0]))) for p in predictions],
       narrowActivations = [int(100*(np.asscalar(p[1][0][0][0]))) for p in predictions],
+      avgGameActivations = [PlayerGameActivations.avgGameActivation(p) for p in predictions],
       generalIntermediateActivations=PlayerGameActivations.gameActivationWords([p[2] for p in predictions]),
       narrowIntermediateActivations=PlayerGameActivations.gameActivationWords([p[3] for p in predictions]))
+
+  @staticmethod
+  def avgGameActivation(prediction):
+    lstmAct = int(50*(prediction[0][0][0][0] + prediction[1][0][0][0]))
+    avgAct =  np.mean([int(50*(p[0][0] + p[1][0])) for p in zip(list(prediction[0][1][0]), list(prediction[1][1][0]))])
+    avgAct = int(avgAct) if not np.isnan(avgAct) else 0
+    return min(lstmAct, avgAct)
 
   @staticmethod
   def gameActivationWords(predictions):
@@ -32,6 +40,7 @@ class PlayerGameActivationsBSONHandler:
       engine = bson['engine'],
       generalActivations = bson['generalActivations'],
       narrowActivations = bson['narrowActivations'],
+      avgGameActivations = bson.get('avgGameActivations', []),
       generalIntermediateActivations = bson.get('generalIntermediateActivations', {'positions': {}, 'games': {}}),
       narrowIntermediateActivations = bson.get('narrowIntermediateActivations', {'positions': {}, 'games': {}}))
 
@@ -42,6 +51,7 @@ class PlayerGameActivationsBSONHandler:
       'engine': PlayerGameActivations.engine,
       'generalActivations': PlayerGameActivations.generalActivations,
       'narrowActivations': PlayerGameActivations.narrowActivations,
+      'avgGameActivations': PlayerGameActivations.avgGameActivations,
       'generalIntermediateActivations': PlayerGameActivations.generalIntermediateActivations,
       'narrowIntermediateActivations': PlayerGameActivations.narrowIntermediateActivations
     }

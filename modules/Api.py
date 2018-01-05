@@ -3,9 +3,11 @@ import logging
 import time
 import json
 from collections import namedtuple
+from pprint import pprint
 
 class Api(namedtuple('Api', ['url', 'token'])):
   def postReport(self, report):
+    pprint(report)
     success = False
     attempts = 0
     while not success and attempts < 5:
