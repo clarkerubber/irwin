@@ -5,7 +5,8 @@ import logging
 import numpy as np
 import os.path
 
-from modules.irwin.BinaryGameModel import BinaryGameModel
+from modules.irwin.AnalysedGameModel import AnalysedGameModel
+from modules.irwin.GameModel import GameModel
 from modules.irwin.PlayerModel import PlayerModel
 
 from modules.irwin.PlayerGameActivations import PlayerGameActivations
@@ -18,8 +19,9 @@ class Irwin():
   def __init__(self, env, config):
     self.env = env
     self.config = config
-    self.generalGameModel = BinaryGameModel(env, 'general')
-    self.narrowGameModel = BinaryGameModel(env, 'narrow')
+    self.gameModel = GameModel(env)
+    self.generalGameModel = AnalysedGameModel(env, 'general')
+    self.narrowGameModel = AnalysedGameModel(env, 'narrow')
     self.playerModel = PlayerModel(env)
 
   def getEvaluationDataset(self, batchSize):
@@ -27,30 +29,21 @@ class Irwin():
     players = self.env.playerDB.balancedSample(batchSize)
     print(" %d" % len(players))
     print("getting game analyses")
-    analysesByPlayer = [(player, GameAnalysisStore([], [ga for ga in self.env.gameAnalysisDB.byUserId(player.id) if len(ga.moveAnalyses) < 50])) for player in players]
+    analysesByPlayer = [(player, GameAnalysisStore([], [ga for ga in self.env.gameAnalysisDB.byUserId(player.id)])) for player in players]
     return analysesByPlayer
 
   def evaluate(self):
     print("evaluate model")
-    print("getting model")
-    generalModel = self.generalGameModel.model()
-    narrowModel = self.narrowGameModel.model()
-    generalIntermediateModel = self.generalGameModel.intermediateModel(generalModel)
-    narrowlIntermediateModel = self.narrowGameModel.intermediateModel(narrowModel)
-    playerModel = self.playerModel.model()
     print("getting dataset")
     analysisStoreByPlayer = self.getEvaluationDataset(self.config['evalSize'])
     activations = [
       self.activation(
-        PlayerGameActivations.fromTensor(player.id, player.engine,
+        PlayerGameActivations.fromTensor(
+          player.id,
+          player.engine,
           self.predict(
-            gameAnalysisStore.quickGameAnalysisTensors(),
-            generalModel,
-            narrowModel,
-            generalIntermediateModel,
-            narrowlIntermediateModel)),
-        gameAnalysisStore.playerTensor(),
-        playerModel) for player, gameAnalysisStore in analysisStoreByPlayer]
+            gameAnalysisStore.quickGameAnalysisTensors())),
+        gameAnalysisStore.playerTensor()) for player, gameAnalysisStore in analysisStoreByPlayer]
     outcomes = list(zip(analysisStoreByPlayer, [Irwin.outcome(a, 90, 60, ap[0].engine) for ap, a in zip(analysisStoreByPlayer, activations)]))
     tp = len([a for a in outcomes if a[1] == 1])
     fn = len([a for a in outcomes if a[1] == 2])
@@ -112,8 +105,8 @@ class Irwin():
     cheatGamePredictions = self.predict(cheatTensors, model, generalOnly=True)
     legitGamePredictions = self.predict(legitTensors, model, generalOnly=True)
 
-    confidentCheats = [ConfidentGameAnalysisPivot.fromGamesAnalysisandPrediction(gameAnalysis, Irwin.avgGameActivation(prediction), engine=True) for gameAnalysis, prediction in zip(cheatGameAnalyses, cheatGamePredictions)]
-    confidentLegits = [ConfidentGameAnalysisPivot.fromGamesAnalysisandPrediction(gameAnalysis, Irwin.avgGameActivation(prediction), engine=False) for gameAnalysis, prediction in zip(legitGameAnalyses, legitGamePredictions)]
+    confidentCheats = [ConfidentGameAnalysisPivot.fromGamesAnalysisandPrediction(gameAnalysis, Irwin.avgAnalysedGameActivation(prediction), engine=True) for gameAnalysis, prediction in zip(cheatGameAnalyses, cheatGamePredictions)]
+    confidentLegits = [ConfidentGameAnalysisPivot.fromGamesAnalysisandPrediction(gameAnalysis, Irwin.avgAnalysedGameActivation(prediction), engine=False) for gameAnalysis, prediction in zip(legitGameAnalyses, legitGamePredictions)]
 
     print("writing to db")
     self.env.confidentGameAnalysisPivotDB.lazyWriteMany(confidentCheats + confidentLegits)
@@ -121,15 +114,7 @@ class Irwin():
   def buildVocabularly(self):
     return self.playerModel.buildVocabularly()
 
-  def buildPlayerGameActivationsTable(self, generalModel=None, narrowModel=None, generalIntermediateModel=None, narrowIntermediateModel=None):
-    if generalModel is None:
-      generalModel = self.generalGameModel.model()
-    if narrowModel is None:
-      narrowModel = self.narrowGameModel.model()
-    if generalIntermediateModel is None:
-      generalIntermediateModel = self.generalGameModel.intermediateModel(generalModel)
-    if narrowIntermediateModel is None:
-      narrowIntermediateModel = self.narrowGameModel.intermediateModel(narrowModel)
+  def buildPlayerGameActivationsTable(self):
     print("getting players")
     engines = self.env.playerDB.byEngine(True)
     legits = self.env.playerDB.byEngine(False)
@@ -144,22 +129,11 @@ class Irwin():
       print("predicting " + str(i) + '/' + str(amount) + ' ' + player.id)
       gs = GameAnalysisStore.new()
       gs.addGameAnalyses(self.env.gameAnalysisDB.byUserId(player.id))
-      predictions = self.predict(gs.quickGameAnalysisTensors(), generalModel, narrowModel, generalIntermediateModel, narrowIntermediateModel)
+      predictions = self.predict(gs.quickGameAnalysisTensors())
       pga = PlayerGameActivations.fromTensor(player.id, player.engine, predictions)
       self.env.playerGameActivationsDB.write(pga)
 
-  def predict(self, tensors, generalModel=None, narrowModel=None, generalIntermediateModel=None, narrowIntermediateModel=None, generalOnly=False):
-    if generalModel == None:
-      generalModel = self.generalGameModel.model()
-
-    if narrowModel == None and generalOnly == False:
-      narrowModel = self.narrowGameModel.model()
-
-    if generalIntermediateModel is None:
-      generalIntermediateModel = self.generalGameModel.intermediateModel(generalModel)
-    if narrowIntermediateModel is None:
-      narrowIntermediateModel = self.narrowGameModel.intermediateModel(narrowModel)
-
+  def predict(self, tensors, generalOnly=False):
     pvs =         [[m[0] for m in p] for p in tensors]
     moveStats =   [[m[1] for m in p] for p in tensors]
     moveNumbers = [[m[2] for m in p] for p in tensors]
@@ -171,43 +145,45 @@ class Irwin():
     if not generalOnly:
       for p, m, mn, r, a, am in zip(pvs, moveStats, moveNumbers, ranks, advs, ambs):
         predictions.append((
-          generalModel.predict(            [np.array([p]), np.array([m]), np.array([mn]), np.array([r]), np.array([a]), np.array([am])]),
-          narrowModel.predict(             [np.array([p]), np.array([m]), np.array([mn]), np.array([r]), np.array([a]), np.array([am])]),
-          generalIntermediateModel.predict([np.array([p]), np.array([m]), np.array([mn]), np.array([r]), np.array([a]), np.array([am])]),
-          narrowIntermediateModel.predict( [np.array([p]), np.array([m]), np.array([mn]), np.array([r]), np.array([a]), np.array([am])])
+          self.generalGameModel.model().predict(                        [np.array([p]), np.array([m]), np.array([mn]), np.array([r]), np.array([a]), np.array([am])]),
+          self.narrowGameModel.model().predict(                         [np.array([p]), np.array([m]), np.array([mn]), np.array([r]), np.array([a]), np.array([am])]),
+          self.generalGameModel.intermediateModel().predict([np.array([p]), np.array([m]), np.array([mn]), np.array([r]), np.array([a]), np.array([am])]),
+          self.narrowGameModel.intermediateModel().predict(  [np.array([p]), np.array([m]), np.array([mn]), np.array([r]), np.array([a]), np.array([am])])
         ))
     else:
       for p, m, mn, r, a, am in zip(pvs, moveStats, moveNumbers, ranks, advs, ambs):
         predictions.append((
-          generalModel.predict([np.array([p]), np.array([m]), np.array([mn]), np.array([r]), np.array([a]), np.array([am])]),
+          self.generalGameModel.model().predict([np.array([p]), np.array([m]), np.array([mn]), np.array([r]), np.array([a]), np.array([am])]),
           [],
           [],
           []
         ))
     return predictions
 
-  def report(self, userId, gameAnalysisStore, generalModel=None, narrowModel=None, generalIntermediateModel=None, narrowlIntermediateModel=None, playerModel=None):
-    predictions = self.predict(
-      gameAnalysisStore.quickGameAnalysisTensors(),
-      generalModel, 
-      narrowModel,
-      generalIntermediateModel,
-      narrowlIntermediateModel)
+  def report(self, userId, gameAnalysisStore):
+    predictions = self.predict(gameAnalysisStore.quickGameAnalysisTensors())
     pga = PlayerGameActivations.fromTensor(userId, None, predictions)
     report = {
       'userId': userId,
-      'activation': self.activation(pga, gameAnalysisStore.playerTensor(), playerModel),
+      'activation': self.activation(pga, gameAnalysisStore.playerTensor()),
       'games': [Irwin.gameReport(ga, p) for ga, p in zip(gameAnalysisStore.gameAnalyses, predictions)]
     }
     return report
 
-  def activation(self, pga, playerTensor, playerModel=None): # determined using the player model
+  def predictGames(self, gameTensors):
+    # game tensors is a list of tuples in the form: [(gameId, tensor), ...]
+    if len(gameTensors) == 0:
+      return None
+    gameIds = [gid for gid, t in gameTensors]
+    predictions = [int(100*np.asscalar(p)) for p in self.gameModel.model().predict([t for gid, t in gameTensors])]
+    return list(zip(gameIds, predictions))
+
+  def activation(self, pga, playerTensor): # determined using the player model
     p = self.playerModel.predict(
       pga,
-      playerTensor,
-      playerModel)
+      playerTensor)
 
-    avgPredictions = pga.avgGameActivations
+    avgPredictions = pga.avgAnalysedGameActivations
     avgPredictions.sort(reverse=True)
 
     maxAvg = np.average(avgPredictions[0:2])
@@ -223,12 +199,12 @@ class Irwin():
   def gameReport(gameAnalysis, prediction):
     return {
       'gameId': gameAnalysis.gameId,
-      'activation': Irwin.avgGameActivation(prediction),
+      'activation': Irwin.avgAnalysedGameActivation(prediction),
       'moves': [Irwin.moveReport(am, p) for am, p in zip(gameAnalysis.moveAnalyses, zip(list(prediction[0][1][0]), list(prediction[1][1][0])))]
     }
 
   @staticmethod
-  def avgGameActivation(prediction):
+  def avgAnalysedGameActivation(prediction):
     lstmAct = int(50*(prediction[0][0][0][0] + prediction[1][0][0][0]))
     avgAct =  np.mean([int(50*(p[0][0] + p[1][0])) for p in zip(list(prediction[0][1][0]), list(prediction[1][1][0]))])
     avgAct = int(avgAct) if not np.isnan(avgAct) else 0
@@ -255,3 +231,19 @@ class Irwin():
   @staticmethod
   def flatten(l):
     return [item for sublist in l for item in sublist]
+
+  def discover(self):
+    # discover potential cheaters in the database of un-marked players
+    print("getting players")
+    players = self.env.playerDB.byEngine(None)
+    sus = []
+    for player in players:
+      print("investigating "+player.id)
+      gameAnalysisStore = GameAnalysisStore([], [ga for ga in self.env.gameAnalysisDB.byUserId(player.id)])
+      predictions = self.predict(gameAnalysisStore.quickGameAnalysisTensors())
+      pga = PlayerGameActivations.fromTensor(player.id, None, predictions)
+      activation = self.activation(pga, gameAnalysisStore.playerTensor())
+      print(str(activation))
+      if activation > 70:
+        sus.append((player.id, activation))
+    pprint(sus)

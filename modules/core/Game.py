@@ -1,5 +1,7 @@
 from collections import namedtuple
+from pprint import pprint
 import math
+import numpy as np
 
 class Blurs(namedtuple('Blurs', ['nb', 'moves'])):
   @staticmethod
@@ -18,6 +20,13 @@ class Score(namedtuple('Score', ['cp', 'mate'])):
 
   def toDict(self):
     return {'cp': self.cp} if self.cp is not None else {'mate': self.mate}
+
+  def winningChances(self, white):
+    if self.mate is not None:
+      base = (1 if self.mate > 0 else 0)
+    else:
+      base = 1 / (1 + math.exp(-0.004 * self.cp))
+    return 100*(base if white else (1-base))
 
 class Game(namedtuple('Game', ['id', 'white', 'black', 'pgn', 'emts', 'whiteBlurs', 'blackBlurs', 'analysis'])):
   @staticmethod
@@ -38,6 +47,43 @@ class Game(namedtuple('Game', ['id', 'white', 'black', 'pgn', 'emts', 'whiteBlur
       blackBlurs = Blurs.fromDict(d['blurs']['black'], math.floor(len(pgn)/2)),
       analysis = [Score.fromDict(a) for a in d.get('analysis', []) if a is not None]
     )
+
+  def tensor(self, userId):
+    if self.analysis == [] or self.emts is None and (self.white == userId or self.black == userId):
+      return None
+
+    white = (self.white == userId)
+    blurs = self.whiteBlurs.moves if white else self.blackBlurs.moves
+
+    analysis = self.analysis[1:] if white else self.analysis
+    analysis = list(zip(analysis[0::2],analysis[1::2]))
+
+    emts = self.emtsByColour(white)
+    avgEmt = np.average(emts)
+    tensors = [Game.moveTensor(a, b, e, avgEmt, white) for a, b, e in zip(analysis, blurs, emts)]
+    tensors = (max(0, 100-len(tensors)))*[Game.nullTensor()] + tensors
+    return tensors[:100]
+
+  def emtsByColour(self, white):
+    return self.emts[(0 if white else 1)::2]
+
+  @staticmethod
+  def moveTensor(analysis, blur, emt, avgEmt, white):
+    return [
+      analysis[1].winningChances(white),
+      (analysis[0].winningChances(white) - analysis[1].winningChances(white)),
+      int(blur),
+      emt,
+      100*((emt - avgEmt)/(avgEmt + 1e-8)),
+    ]
+
+  @staticmethod
+  def nullTensor():
+    return [0, 0, 0, 0, 0]
+
+  @staticmethod
+  def ply(moveNumber, white):
+    return (2*(moveNumber-1)) + (0 if white else 1)
 
   def getBlur(self, white, moveNumber):
     if white:

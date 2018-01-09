@@ -16,17 +16,16 @@ class PlayerAnalysisCollection(threading.Thread):
     legits = self.env.playerDB.byEngine(False)
     length = len(engines+legits)
     for i, p in enumerate(engines + legits):
-      if i > 4763:
-        logging.debug('Getting player data for '+p.id + '  -  '+str(i)+'/'+str(length))
-        playerData = self.env.api.getPlayerData(p.id)
+      logging.debug('Getting player data for '+p.id + '  -  '+str(i)+'/'+str(length))
+      playerData = self.env.api.getPlayerData(p.id)
 
-        # pull what we already have on the player
-        gameAnalysisStore = GameAnalysisStore.new()
+      # pull what we already have on the player
+      gameAnalysisStore = GameAnalysisStore.new()
 
-        # Filter games and assessments for relevant info
-        try:
-          gameAnalysisStore.addGames([Game.fromDict(gid, p.id, g) for gid, g in playerData['games'].items() if (g.get('initialFen') is None and g.get('variant') is None)])
-        except KeyError:
-          continue # if this doesn't gather any useful data, skip
+      # Filter games and assessments for relevant info
+      try:
+        gameAnalysisStore.addGames([Game.fromDict(gid, p.id, g) for gid, g in playerData['games'].items() if (g.get('initialFen') is None and g.get('variant') is None)])
+      except KeyError:
+        continue # if this doesn't gather any useful data, skip
 
-        self.env.gameDB.lazyWriteGames(gameAnalysisStore.games)
+      self.env.gameDB.lazyWriteGames(gameAnalysisStore.games)

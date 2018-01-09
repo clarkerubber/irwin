@@ -12,16 +12,19 @@ from keras.models import load_model, Model
 from keras.layers import Embedding, Dropout, Dense, Reshape, LSTM, Input, concatenate, Conv1D
 from keras.optimizers import Adam
 
-class BinaryGameModel(namedtuple('BinaryGameModel', ['env', 'type'])):
+from functools import lru_cache
+
+class AnalysedGameModel(namedtuple('AnalysedGameModel', ['env', 'type'])):
+  @lru_cache(maxsize=2)
   def model(self, newmodel=False):
     if self.type == 'general':
-      if os.path.isfile('modules/irwin/models/gameBinary.h5') and not newmodel:
+      if os.path.isfile('modules/irwin/models/generalAnalysedGame.h5') and not newmodel:
         print("model already exists, opening from file")
-        return load_model('modules/irwin/models/gameBinary.h5')
+        return load_model('modules/irwin/models/generalAnalysedGame.h5')
     elif self.type == 'narrow':
-      if os.path.isfile('modules/irwin/models/gameBinaryNarrow.h5') and not newmodel:
+      if os.path.isfile('modules/irwin/models/narrowAnalysedGame.h5') and not newmodel:
         print("model already exists, opening from file")
-        return load_model('modules/irwin/models/gameBinaryNarrow.h5')
+        return load_model('modules/irwin/models/narrowAnalysedGame.h5')
     print('model does not exist, building from scratch')
     pvInput = Input(shape=(None, 10), dtype='float32', name='pv_input')
     moveStatsInput = Input(shape=(None, 8), dtype='float32', name='move_input')
@@ -88,13 +91,13 @@ class BinaryGameModel(namedtuple('BinaryGameModel', ['env', 'type'])):
       metrics=['accuracy'])
     return model
 
-  def intermediateModel(self, baseModel=None):
-    if baseModel is None:
-      baseModel = self.model() 
+  @lru_cache(maxsize=1)
+  def intermediateModel(self):
+    baseModel = self.model() 
     model = Model(inputs=baseModel.input, outputs=[baseModel.get_layer('position_words').output, baseModel.get_layer('game_word').output])
     return model
 
-  def train(self, batchSize, epochs, newmodel=False):
+  def train(self, epochs, newmodel=False):
     # get player sample
     print("getting model")
     model = self.model(newmodel)
@@ -114,9 +117,9 @@ class BinaryGameModel(namedtuple('BinaryGameModel', ['env', 'type'])):
   def saveModel(self, model):
     print("saving model")
     if self.type == 'general':
-      model.save('modules/irwin/models/gameBinary.h5')
+      model.save('modules/irwin/models/generalAnalysedGame.h5')
     if self.type == 'narrow':
-      model.save('modules/irwin/models/gameBinaryNarrow.h5')
+      model.save('modules/irwin/models/narrowAnalysedGame.h5')
 
   def getTrainingDataset(self):
     print("gettings game IDs from DB")

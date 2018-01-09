@@ -25,6 +25,8 @@ if config == {}:
   raise Exception('Config file empty or does not exist!')
 
 parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument("--trainbasic", dest="trainbasic", nargs="?",
+                    default=False, const=True, help="train basic game model")
 parser.add_argument("--traingeneral", dest="traingeneral", nargs="?",
                     default=False, const=True, help="train general game model")
 parser.add_argument("--traingeneralforever", dest="traingeneralforever", nargs="?",
@@ -64,6 +66,8 @@ parser.add_argument("--eval", dest="eval", nargs="?",
                     default=False, const=True, help="evaluate the performance of neural networks")
 parser.add_argument("--test", dest="test", nargs="?",
                     default=False, const=True, help="test on a single player")
+parser.add_argument("--discover", dest="discover", nargs="?",
+                    default=False, const=True, help="search for cheaters in the database that haven't been marked")
 parser.add_argument("--quiet", dest="loglevel",
                     default=logging.DEBUG, action="store_const", const=logging.INFO,
                     help="reduce the number of logged messages")
@@ -81,18 +85,11 @@ if settings.collectanalyses:
 
 # test on a single user in the DB
 if settings.test:
-  generalModel = env.irwin.generalGameModel.model()
-  narrowModel = env.irwin.narrowGameModel.model()
-  generalIntermediateModel = env.irwin.generalGameModel.intermediateModel(generalModel)
-  narrowlIntermediateModel = env.irwin.narrowGameModel.intermediateModel(narrowModel)
-  playerModel = env.irwin.playerModel.model()
-
-  for userId in ['thibault']:
+  for userId in ['thibault', 'clarkey']:
     gameAnalysisStore = GameAnalysisStore.new()
     gameAnalysisStore.addGames(env.gameDB.byUserId(userId))
     gameAnalysisStore.addGameAnalyses(env.gameAnalysisDB.byUserId(userId))
-
-    env.api.postReport(env.irwin.report(userId, gameAnalysisStore, generalModel, narrowModel, generalIntermediateModel, narrowlIntermediateModel, playerModel))
+    env.api.postReport(env.irwin.report(userId, gameAnalysisStore))
     print("posted")
 
 if settings.epoch:
@@ -125,45 +122,47 @@ if settings.buildplayertable:
   env.irwin.buildPlayerGameActivationsTable()
 
 # train on a single batch
+if settings.trainbasic:
+  env.irwin.gameModel.train(config['irwin']['train']['epochs'], settings.newmodel)
+
 if settings.traingeneral:
-  env.irwin.generalGameModel.train(config['irwin']['train']['batchSize'], config['irwin']['train']['epochs'], settings.newmodel)
+  env.irwin.generalGameModel.train(config['irwin']['train']['epochs'], settings.newmodel)
 
 if settings.trainnarrow:
-  env.irwin.narrowGameModel.train(config['irwin']['train']['batchSize'], config['irwin']['train']['epochs'], settings.newmodel)
+  env.irwin.narrowGameModel.train(config['irwin']['train']['epochs'], settings.newmodel)
 
 if settings.trainplayer:
-  env.irwin.playerModel.train(config['irwin']['train']['batchSize'], config['irwin']['train']['epochs'], settings.newmodel)
+  env.irwin.playerModel.train(config['irwin']['train']['epochs'], settings.newmodel)
 
 # how good is the network?
 if settings.eval:
   env.irwin.evaluate()
 
+if settings.discover:
+  env.irwin.discover()
+
 # train forever
 while settings.traingeneralforever:
-  env.irwin.generalGameModel.train(config['irwin']['train']['batchSize'], config['irwin']['train']['epochs'], settings.newmodel)
+  env.irwin.generalGameModel.train(config['irwin']['train']['epochs'], settings.newmodel)
   settings.newmodel = False
 
 # train forever
 if settings.trainnarrowforever:
   #env.irwin.buildConfidenceTable()
   while True:
-    env.irwin.narrowGameModel.train(config['irwin']['train']['batchSize'], config['irwin']['train']['epochs'], settings.newmodel)
+    env.irwin.narrowGameModel.train(config['irwin']['train']['epochs'], settings.newmodel)
     settings.newmodel = False
 
 if settings.trainplayerforever:
   while True:
-    env.irwin.playerModel.train(config['irwin']['train']['batchSize'], config['irwin']['train']['epochs'], settings.newmodel)
+    env.irwin.playerModel.train(config['irwin']['train']['epochs'], settings.newmodel)
     settings.newmodel = False
 
 if not (settings.traingeneral or settings.trainnarrow or settings.eval or settings.noreport or settings.test or settings.buildconfidencetable or settings.collectanalyses):
-  generalModel = env.irwin.generalGameModel.model()
-  narrowModel = env.irwin.narrowGameModel.model()
-  generalIntermediateModel = env.irwin.generalGameModel.intermediateModel(generalModel)
-  narrowlIntermediateModel = env.irwin.narrowGameModel.intermediateModel(narrowModel)
-  playerModel = env.irwin.playerModel.model()
   while True:
     logging.debug('Getting new player ID')
-    userId = env.api.getNextPlayerId()
+    #userId = env.api.getNextPlayerId()
+    userId = 'Chess-Network'
     logging.debug('Getting player data for '+userId)
     playerData = env.api.getPlayerData(userId)
 
@@ -176,16 +175,30 @@ if not (settings.traingeneral or settings.trainnarrow or settings.eval or settin
     try:
       gameAnalysisStore.addGames([Game.fromDict(gid, userId, g) for gid, g in playerData['games'].items() if (g.get('initialFen') is None and g.get('variant') is None)])
     except KeyError:
+      print("KeyError Warning")
       continue # if this doesn't gather any useful data, skip
 
     env.gameDB.lazyWriteGames(gameAnalysisStore.games)
 
     logging.debug("Already Analysed: " + str(len(gameAnalysisStore.gameAnalyses)))
 
+    # decide which games should be analysed
+    gameTensors = gameAnalysisStore.gameTensorsWithoutAnalysis(userId)
+
+    if gameTensors is not None:
+      gamePredictions = env.irwin.predictGames(gameTensors)
+      gamePredictions.sort(key=lambda tup: -tup[1])
+      gids = [gid for gid, p in gamePredictions][:5]
+      gamesFromPredictions = [gameAnalysisStore.gameById(gid) for gid in gids]
+      gamesFromPredictions = [g for g in gamesFromPredictions if g is not None] # just in case
+      gamesToAnalyse = gamesFromPredictions + gameAnalysisStore.randomGamesWithoutAnalysis(10 - len(gids), excludeIds=gamesFromPredictions)
+    else:
+      gamesToAnalyse = gameAnalysisStore.randomGamesWithoutAnalysis()
+
     gameAnalysisStore.addGameAnalyses([GameAnalysis.fromGame(game, env.engine, env.infoHandler, game.white == userId, env.settings['stockfish']['nodes']) for game in gameAnalysisStore.randomGamesWithoutAnalysis()])
 
     env.gameAnalysisDB.lazyWriteGameAnalyses(gameAnalysisStore.gameAnalyses)
 
     logging.warning('Posting report for ' + userId)
-    env.api.postReport(env.irwin.report(userId, gameAnalysisStore, generalModel, narrowModel, generalIntermediateModel, narrowlIntermediateModel, playerModel))
+    env.api.postReport(env.irwin.report(userId, gameAnalysisStore))
     env.restartEngine()

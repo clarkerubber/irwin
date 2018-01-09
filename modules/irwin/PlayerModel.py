@@ -18,7 +18,10 @@ from modules.core.GameAnalysisStore import GameAnalysisStore
 
 from modules.irwin.PlayerGameWords import PlayerGameWords
 
+from functools import lru_cache
+
 class PlayerModel(namedtuple('BinaryGameModel', ['env'])):
+  @lru_cache(maxsize=2)
   def model(self, newmodel=False):
     if os.path.isfile('modules/irwin/models/playerBinary.h5') and not newmodel:
       print("model already exists, opening from file")
@@ -140,13 +143,10 @@ class PlayerModel(namedtuple('BinaryGameModel', ['env'])):
       'labels': np.array([b for a, b in blz])
     }
 
-  def predict(self, playerGameActivations, playerTensor, model=None, words=None):
-    if model is None:
-      model = self.model()
-    if words is None:
-      words = self.env.playerGameWordsDB.newest()
+  def predict(self, playerGameActivations, playerTensor):
+    words = self.env.playerGameWordsDB.newest()
     data = PlayerModel.tensorPGA(playerGameActivations, words)+playerTensor
-    p = model.predict(np.array([data]))
+    p = self.model().predict(np.array([data]))
     return int(100*p[0][0])
 
   @staticmethod
