@@ -68,6 +68,8 @@ parser.add_argument("--test", dest="test", nargs="?",
                     default=False, const=True, help="test on a single player")
 parser.add_argument("--discover", dest="discover", nargs="?",
                     default=False, const=True, help="search for cheaters in the database that haven't been marked")
+parser.add_argument("--queuebuilder", dest="queuebuilder", nargs="?",
+                    default=False, const=True, help="pull player data from lichess and build a ranked queue for irwin to analyse")
 parser.add_argument("--quiet", dest="loglevel",
                     default=logging.DEBUG, action="store_const", const=logging.INFO,
                     help="reduce the number of logged messages")
@@ -85,7 +87,7 @@ if settings.collectanalyses:
 
 # test on a single user in the DB
 if settings.test:
-  for userId in ['thibault', 'clarkey']:
+  for userId in ['chess-network']:
     gameAnalysisStore = GameAnalysisStore.new()
     gameAnalysisStore.addGames(env.gameDB.byUserId(userId))
     gameAnalysisStore.addGameAnalyses(env.gameAnalysisDB.byUserId(userId))
@@ -158,11 +160,47 @@ if settings.trainplayerforever:
     env.irwin.playerModel.train(config['irwin']['train']['epochs'], settings.newmodel)
     settings.newmodel = False
 
+if settings.queuebuilder:
+  while True:
+    logging.debug('Getting new player ID')
+    userId = env.api.getNextPlayerId()
+    logging.debug('Getting player dara for '+userId)
+    playerData = env.api.getPlayerData(userId)
+
+    # pull what we already have on the player
+    gameAnalysisStore = GameAnalysisStore.new()
+    gameAnalysisStore.addGames(env.gameDB.byUserId(userId))
+    gameAnalysisStore.addGameAnalyses(env.gameAnalysisDB.byUserId(userId))
+
+    # Filter games and assessments for relevant info
+    try:
+      gameAnalysisStore.addGames([Game.fromDict(gid, userId, g) for gid, g in playerData['games'].items() if (g.get('initialFen') is None and g.get('variant') is None)])
+    except KeyError:
+      print("KeyError Warning")
+      continue # if this doesn't gather any useful data, skip
+
+    env.gameDB.lazyWriteGames(gameAnalysisStore.games)
+
+    logging.debug("Already Analysed: " + str(len(gameAnalysisStore.gameAnalyses)))
+
+    # decide which games should be analysed
+    gameTensors = gameAnalysisStore.gameTensorsWithoutAnalysis(userId)
+
+    if gameTensors is not None:
+      gamePredictions = env.irwin.predictGames(gameTensors)
+      gamePredictions.sort(key=lambda tup: -tup[1])
+      gids = [gid for gid, p in gamePredictions][:5]
+      gamesFromPredictions = [gameAnalysisStore.gameById(gid) for gid in gids]
+      gamesFromPredictions = [g for g in gamesFromPredictions if g is not None] # just in case
+      gamesToAnalyse = gamesFromPredictions + gameAnalysisStore.randomGamesWithoutAnalysis(10 - len(gids), excludeIds=gamesFromPredictions)
+    else:
+      gamesToAnalyse = gameAnalysisStore.randomGamesWithoutAnalysis()
+
+
 if not (settings.traingeneral or settings.trainnarrow or settings.eval or settings.noreport or settings.test or settings.buildconfidencetable or settings.collectanalyses):
   while True:
     logging.debug('Getting new player ID')
-    #userId = env.api.getNextPlayerId()
-    userId = 'Chess-Network'
+    userId = env.api.getNextPlayerId()
     logging.debug('Getting player data for '+userId)
     playerData = env.api.getPlayerData(userId)
 
@@ -195,6 +233,7 @@ if not (settings.traingeneral or settings.trainnarrow or settings.eval or settin
     else:
       gamesToAnalyse = gameAnalysisStore.randomGamesWithoutAnalysis()
 
+    # analyse games with SF
     gameAnalysisStore.addGameAnalyses([GameAnalysis.fromGame(game, env.engine, env.infoHandler, game.white == userId, env.settings['stockfish']['nodes']) for game in gameAnalysisStore.randomGamesWithoutAnalysis()])
 
     env.gameAnalysisDB.lazyWriteGameAnalyses(gameAnalysisStore.gameAnalyses)

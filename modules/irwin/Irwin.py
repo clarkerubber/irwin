@@ -105,8 +105,8 @@ class Irwin():
     cheatGamePredictions = self.predict(cheatTensors, model, generalOnly=True)
     legitGamePredictions = self.predict(legitTensors, model, generalOnly=True)
 
-    confidentCheats = [ConfidentGameAnalysisPivot.fromGamesAnalysisandPrediction(gameAnalysis, Irwin.avgAnalysedGameActivation(prediction), engine=True) for gameAnalysis, prediction in zip(cheatGameAnalyses, cheatGamePredictions)]
-    confidentLegits = [ConfidentGameAnalysisPivot.fromGamesAnalysisandPrediction(gameAnalysis, Irwin.avgAnalysedGameActivation(prediction), engine=False) for gameAnalysis, prediction in zip(legitGameAnalyses, legitGamePredictions)]
+    confidentCheats = [ConfidentGameAnalysisPivot.fromGamesAnalysisandPrediction(gameAnalysis, PlayerGameActivations.avgAnalysedGameActivation(prediction), engine=True) for gameAnalysis, prediction in zip(cheatGameAnalyses, cheatGamePredictions)]
+    confidentLegits = [ConfidentGameAnalysisPivot.fromGamesAnalysisandPrediction(gameAnalysis, PlayerGameActivations.avgAnalysedGameActivation(prediction), engine=False) for gameAnalysis, prediction in zip(legitGameAnalyses, legitGamePredictions)]
 
     print("writing to db")
     self.env.confidentGameAnalysisPivotDB.lazyWriteMany(confidentCheats + confidentLegits)
@@ -183,7 +183,7 @@ class Irwin():
       pga,
       playerTensor)
 
-    avgPredictions = pga.avgAnalysedGameActivations
+    avgPredictions = pga.avgGameActivations
     avgPredictions.sort(reverse=True)
 
     maxAvg = np.average(avgPredictions[0:2])
@@ -199,16 +199,9 @@ class Irwin():
   def gameReport(gameAnalysis, prediction):
     return {
       'gameId': gameAnalysis.gameId,
-      'activation': Irwin.avgAnalysedGameActivation(prediction),
+      'activation': PlayerGameActivations.avgAnalysedGameActivation(prediction),
       'moves': [Irwin.moveReport(am, p) for am, p in zip(gameAnalysis.moveAnalyses, zip(list(prediction[0][1][0]), list(prediction[1][1][0])))]
     }
-
-  @staticmethod
-  def avgAnalysedGameActivation(prediction):
-    lstmAct = int(50*(prediction[0][0][0][0] + prediction[1][0][0][0]))
-    avgAct =  np.mean([int(50*(p[0][0] + p[1][0])) for p in zip(list(prediction[0][1][0]), list(prediction[1][1][0]))])
-    avgAct = int(avgAct) if not np.isnan(avgAct) else 0
-    return min(lstmAct, avgAct)
 
   @staticmethod
   def moveReport(analysedMove, prediction):

@@ -10,12 +10,12 @@ class PlayerGameActivations(namedtuple('PlayerGameActivations', ['userId', 'engi
       engine = engine,
       generalActivations = [int(100*(np.asscalar(p[0][0][0][0]))) for p in predictions],
       narrowActivations = [int(100*(np.asscalar(p[1][0][0][0]))) for p in predictions],
-      avgGameActivations = [PlayerGameActivations.avgGameActivation(p) for p in predictions],
+      avgGameActivations = [PlayerGameActivations.avgAnalysedGameActivation(p) for p in predictions],
       generalIntermediateActivations=PlayerGameActivations.gameActivationWords([p[2] for p in predictions]),
       narrowIntermediateActivations=PlayerGameActivations.gameActivationWords([p[3] for p in predictions]))
 
   @staticmethod
-  def avgGameActivation(prediction):
+  def avgAnalysedGameActivation(prediction):
     lstmAct = int(50*(prediction[0][0][0][0] + prediction[1][0][0][0]))
     avgAct =  np.mean([int(50*(p[0][0] + p[1][0])) for p in zip(list(prediction[0][1][0]), list(prediction[1][1][0]))])
     avgAct = int(avgAct) if not np.isnan(avgAct) else 0
