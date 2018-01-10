@@ -197,7 +197,14 @@ if settings.queuebuilder:
       gamesToAnalyse = gameAnalysisStore.randomGamesWithoutAnalysis()
 
 
-if not (settings.traingeneral or settings.trainnarrow or settings.eval or settings.noreport or settings.test or settings.buildconfidencetable or settings.collectanalyses):
+if not (
+  settings.traingeneral or
+  settings.trainnarrow or
+  settings.eval or
+  settings.noreport or
+  settings.test or
+  settings.buildconfidencetable or
+  settings.collectanalyses):
   while True:
     logging.debug('Getting new player ID')
     userId = env.api.getNextPlayerId()
