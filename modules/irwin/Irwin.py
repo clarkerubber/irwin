@@ -191,11 +191,11 @@ class Irwin():
 
     p = min(max(90, maxAvg), p) # if the average activation of the top two games is less than 90, the highest overall activation is 90
 
-    p = p if p > 90 else min(avgPredictions, 90) # if the player model prediction is less than 90, use the average game activation up until 90. Otherwise use the player activation.
+    p = p if p > 90 else min(np.mean(avgPredictions), 90) # if the player model prediction is less than 90, use the average game activation up until 90. Otherwise use the player activation.
 
     if len(pga.generalActivations) < 7:
       return min(p, 90)
-    return p
+    return int(p)
 
   @staticmethod
   def gameReport(gameAnalysis, prediction):
