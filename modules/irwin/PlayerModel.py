@@ -156,7 +156,6 @@ class PlayerModel(namedtuple('BinaryGameModel', ['env'])):
 
   @staticmethod
   def wordTensor(pga, words):
-    pprint(words)
     generalPositions = [pga.generalIntermediateActivations['positions'].get(str(word), 0) for word in words.generalPositionWords]
     narrowPositions = [pga.narrowIntermediateActivations['positions'].get(str(word), 0) for word in words.narrowPositionWords]
 
