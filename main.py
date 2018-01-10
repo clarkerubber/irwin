@@ -80,7 +80,7 @@ env = Env(config)
 logging.basicConfig(format="%(message)s", level=settings.loglevel, stream=sys.stdout)
 logging.getLogger("requests.packages.urllib3").setLevel(logging.WARNING)
 logging.getLogger("chess.uci").setLevel(logging.WARNING)
-logging.getLogger("fishnet").setLevel(logging.WARNING)
+logging.getLogger("modules.fishnet.fishnet").setLevel(logging.WARNING)
 
 if settings.collectanalyses:
   playerAnalysisCollectionThread = PlayerAnalysisCollection(env)
