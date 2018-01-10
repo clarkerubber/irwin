@@ -42,7 +42,7 @@ class Api(namedtuple('Api', ['url', 'token'])):
       attempts += 1
       try:
         response = requests.get(self.url+'irwin/'+userId+'/assessment?api_key='+self.token)
-        output = response.text
+        output = json.loads(response.text)
         success = True
       except requests.ConnectionError:
         logging.warning('CONNECTION ERROR: Failed to pull assessment data')
@@ -52,7 +52,7 @@ class Api(namedtuple('Api', ['url', 'token'])):
         logging.warning('SSL ERROR: Failed to pull assessment data')
         logging.debug('Trying again in 30 sec')
         time.sleep(30)
-    return json.loads(output)
+    return output
 
   def getNextPlayerId(self):
     success = False

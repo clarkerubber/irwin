@@ -212,6 +212,10 @@ if not (
     logging.debug('Getting player data for '+userId)
     playerData = env.api.getPlayerData(userId)
 
+    if playerData is None:
+      logging.warning("getPlayerData returned None in main.py")
+      continue
+
     # pull what we already have on the player
     gameAnalysisStore = GameAnalysisStore.new()
     gameAnalysisStore.addGames(env.gameDB.byUserId(userId))
@@ -221,7 +225,7 @@ if not (
     try:
       gameAnalysisStore.addGames([Game.fromDict(gid, userId, g) for gid, g in playerData['games'].items() if (g.get('initialFen') is None and g.get('variant') is None)])
     except KeyError:
-      print("KeyError Warning")
+      logging.warning("KeyError warning when adding games to analysisStore in main.py")
       continue # if this doesn't gather any useful data, skip
 
     env.gameDB.lazyWriteGames(gameAnalysisStore.games)
@@ -233,6 +237,9 @@ if not (
 
     if gameTensors is not None:
       gamePredictions = env.irwin.predictGames(gameTensors)
+      if gamePredictions is None:
+        logging.warning("gamePredictions is None in main.py")
+        continue
       gamePredictions.sort(key=lambda tup: -tup[1])
       gids = [gid for gid, p in gamePredictions][:5]
       gamesFromPredictions = [gameAnalysisStore.gameById(gid) for gid in gids]
