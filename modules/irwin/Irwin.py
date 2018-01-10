@@ -187,12 +187,14 @@ class Irwin():
     avgPredictions.sort(reverse=True)
 
     maxAvg = np.average(avgPredictions[0:2])
-    maxAvg = 0 if np.isnan(maxAvg) else int(maxAvg) 
+    maxAvg = 0 if np.isnan(maxAvg) else int(maxAvg)
 
-    p = min(max(70, maxAvg), p)
+    p = min(max(90, maxAvg), p) # if the average activation of the top two games is less than 90, the highest overall activation is 90
+
+    p = p if p > 90 else min(avgPredictions, 90) # if the player model prediction is less than 90, use the average game activation up until 90. Otherwise use the player activation.
 
     if len(pga.generalActivations) < 7:
-      return min(p, 85)
+      return min(p, 90)
     return p
 
   @staticmethod
