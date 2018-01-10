@@ -75,11 +75,12 @@ parser.add_argument("--quiet", dest="loglevel",
                     help="reduce the number of logged messages")
 settings = parser.parse_args()
 
+env = Env(config)
+
 logging.basicConfig(format="%(message)s", level=settings.loglevel, stream=sys.stdout)
 logging.getLogger("requests.packages.urllib3").setLevel(logging.WARNING)
 logging.getLogger("chess.uci").setLevel(logging.WARNING)
-
-env = Env(config)
+logging.getLogger("fishnet").setLevel(logging.WARNING)
 
 if settings.collectanalyses:
   playerAnalysisCollectionThread = PlayerAnalysisCollection(env)

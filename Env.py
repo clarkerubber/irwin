@@ -22,8 +22,6 @@ from modules.irwin.PlayerGameWords import PlayerGameWordsDB
 
 class Env:
   def __init__(self, settings):
-    logging.getLogger("fishnet").setLevel(logging.WARNING)
-    
     self.settings = settings
 
     self.engine = uci.popen_engine(stockfish_command(settings['stockfish']['update']))
