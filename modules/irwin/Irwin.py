@@ -1,5 +1,6 @@
 from pprint import pprint
 from random import shuffle
+from math import ceil
 
 import logging
 import numpy as np
@@ -33,8 +34,8 @@ class Irwin():
     return analysesByPlayer
 
   def evaluate(self):
-    print("evaluate model")
-    print("getting dataset")
+    logging.warning("Evaluating Model")
+    logging.debug("Getting Dataset")
     analysisStoreByPlayer = self.getEvaluationDataset(self.config['evalSize'])
     activations = [
       self.activation(
@@ -54,12 +55,12 @@ class Irwin():
 
     fpnames = [a[0][0].id for a in outcomes if a[1] == 4]
 
-    print("True positive: " + str(tp))
-    print("False negative: " + str(fn))
-    print("True negative: " + str(tn))
-    print("False positive: " + str(fp))
-    print("True Report: " + str(tr))
-    print("False Report: " + str(fr))
+    logging.warning("True positive: " + str(tp))
+    logging.warning("False negative: " + str(fn))
+    logging.warning("True negative: " + str(tn))
+    logging.warning("False positive: " + str(fp))
+    logging.warning("True Report: " + str(tr))
+    logging.warning("False Report: " + str(fr))
 
     pprint(fpnames)
 
@@ -88,7 +89,8 @@ class Irwin():
     return True #stub
 
   def buildConfidenceTable(self):
-    print("getting games")
+    logging.warning("Building Confidence Table")
+    logging.debug("getting games")
     cheatPivotEntries = self.env.gameAnalysisPlayerPivotDB.byEngine(True)
     legitPivotEntries = self.env.gameAnalysisPlayerPivotDB.byEngine(False)
 
@@ -97,36 +99,37 @@ class Irwin():
 
     model = self.generalGameModel.model()
 
-    print("getting moveAnalysisTensors")
+    logging.debug("getting moveAnalysisTensors")
     cheatTensors = [tga.moveAnalysisTensors() for tga in cheatGameAnalyses]
     legitTensors = [tga.moveAnalysisTensors() for tga in legitGameAnalyses]
 
-    print("predicting the things")
+    logging.debug("predicting the things")
     cheatGamePredictions = self.predict(cheatTensors, model, generalOnly=True)
     legitGamePredictions = self.predict(legitTensors, model, generalOnly=True)
 
     confidentCheats = [ConfidentGameAnalysisPivot.fromGamesAnalysisandPrediction(gameAnalysis, PlayerGameActivations.avgAnalysedGameActivation(prediction), engine=True) for gameAnalysis, prediction in zip(cheatGameAnalyses, cheatGamePredictions)]
     confidentLegits = [ConfidentGameAnalysisPivot.fromGamesAnalysisandPrediction(gameAnalysis, PlayerGameActivations.avgAnalysedGameActivation(prediction), engine=False) for gameAnalysis, prediction in zip(legitGameAnalyses, legitGamePredictions)]
 
-    print("writing to db")
+    logging.debug("writing to db")
     self.env.confidentGameAnalysisPivotDB.lazyWriteMany(confidentCheats + confidentLegits)
 
   def buildVocabularly(self):
     return self.playerModel.buildVocabularly()
 
   def buildPlayerGameActivationsTable(self):
-    print("getting players")
+    logging.warning("Building Player Game Activations Table")
+    logging.debug("getting players")
     engines = self.env.playerDB.byEngine(True)
     legits = self.env.playerDB.byEngine(False)
 
     amount = len(engines+legits)
 
-    print("got " + str(amount) + " players")
+    logging.debug("got " + str(amount) + " players")
 
     playerGameActivations = []
 
     for i, player in enumerate(engines + legits):
-      print("predicting " + str(i) + '/' + str(amount) + ' ' + player.id)
+      logging.debug("predicting " + str(i) + '/' + str(amount) + ' ' + player.id)
       gs = GameAnalysisStore.new()
       gs.addGameAnalyses(self.env.gameAnalysisDB.byUserId(player.id))
       predictions = self.predict(gs.quickGameAnalysisTensors())
@@ -189,12 +192,12 @@ class Irwin():
     maxAvg = np.average(avgPredictions[0:2])
     maxAvg = 0 if np.isnan(maxAvg) else int(maxAvg)
 
-    avg = np.average(avgPredictions)
-    avg = 0 if np.isnan(avg) else int(avg)
+    avgTopHalf = np.average(avgPredictions[0:ceil(len(avgPredictions)/2)])
+    avgTopHalf = 0 if np.isnan(avgTopHalf) else int(avgTopHalf)
 
     p = min(max(90, maxAvg), p) # if the average activation of the top two games is less than 90, the highest overall activation is 90
 
-    p = p if p > 90 else min(avg, 90) # if the player model prediction is less than 90, use the average game activation up until 90. Otherwise use the player activation.
+    p = p if p > 90 else min(avgTopHalf, 90) # if the player model prediction is less than 90, use the average game activation up until 90. Otherwise use the player activation.
 
     if len(pga.generalActivations) < 7:
       return min(p, 90)
@@ -232,16 +235,17 @@ class Irwin():
 
   def discover(self):
     # discover potential cheaters in the database of un-marked players
-    print("getting players")
+    logging.warning("Discovering unprocessed players")
+    logging.debug("getting players")
     players = self.env.playerDB.byEngine(None)
     sus = []
     for player in players:
-      print("investigating "+player.id)
+      logging.debug("investigating "+player.id)
       gameAnalysisStore = GameAnalysisStore([], [ga for ga in self.env.gameAnalysisDB.byUserId(player.id)])
       predictions = self.predict(gameAnalysisStore.quickGameAnalysisTensors())
       pga = PlayerGameActivations.fromTensor(player.id, None, predictions)
       activation = self.activation(pga, gameAnalysisStore.playerTensor())
-      print(str(activation))
+      logging.debug(str(activation))
       if activation > 70:
         sus.append((player.id, activation))
     pprint(sus)

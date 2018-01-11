@@ -72,7 +72,7 @@ class Env:
     self.engine.info_handlers.append(self.infoHandler)
 
   def __del__(self):
-    print("Removing Env")
+    logging.warning("Removing Env")
     self.engine.kill()
     try:
       del self.irwin

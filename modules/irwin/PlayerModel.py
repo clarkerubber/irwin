@@ -2,12 +2,10 @@ import numpy as np
 import logging
 import os
 
-from pprint import pprint
-
 from random import shuffle
 from decimal import Decimal
 from math import log
-
+from functools import lru_cache
 from collections import namedtuple, Counter
 
 from keras.models import load_model, Sequential
@@ -15,18 +13,15 @@ from keras.layers import Dense, Activation
 from keras.optimizers import Adam
 
 from modules.core.GameAnalysisStore import GameAnalysisStore
-
 from modules.irwin.PlayerGameWords import PlayerGameWords
-
-from functools import lru_cache
 
 class PlayerModel(namedtuple('BinaryGameModel', ['env'])):
   @lru_cache(maxsize=2)
   def model(self, newmodel=False):
     if os.path.isfile('modules/irwin/models/playerBinary.h5') and not newmodel:
-      print("model already exists, opening from file")
+      logging.debug("model already exists, opening from file")
       return load_model('modules/irwin/models/playerBinary.h5')
-    print('model does not exist, building from scratch')
+    logging.debug('model does not exist, building from scratch')
 
     vocabSize = self.buildVocabularly()
 
@@ -51,27 +46,27 @@ class PlayerModel(namedtuple('BinaryGameModel', ['env'])):
 
   def train(self, batchSize, epochs, newmodel=False):
     # get player sample
-    print("getting model")
+    logging.debug("getting model")
     model = self.model(newmodel)
-    print("getting dataset")
+    logging.debug("getting dataset")
     batch = self.getTrainingDataset()
 
-    print("training")
-    print("samples: " + str(len(batch['batch'])))
+    logging.debug("training")
+    logging.debug("samples: " + str(len(batch['batch'])))
     model.fit(batch['batch'], batch['labels'], epochs=epochs, batch_size=32, validation_split=0.2)
     self.saveModel(model)
-    print("complete")
+    logging.debug("complete")
 
   def saveModel(self, model):
-    print("saving model")
+    logging.debug("saving model")
     model.save('modules/irwin/models/playerBinary.h5')
 
   def buildVocabularly(self):
-    print("Building Vocabularly")
-    print("Getting Player Game Activations")
+    logging.debug("Building Vocabularly")
+    logging.debug("Getting Player Game Activations")
     allPGAs = self.env.playerGameActivationsDB.all()
     length = str(len(allPGAs))
-    print("Got " + length)
+    logging.debug("Got " + length)
     words = {
       'narrowPositionWords': Counter(),
       'generalPositionWords': Counter(),

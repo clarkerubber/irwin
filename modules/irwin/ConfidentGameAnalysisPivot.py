@@ -1,5 +1,4 @@
 from collections import namedtuple
-from pprint import pprint
 
 class ConfidentGameAnalysisPivot(namedtuple('ConfidentGameAnalysis', ['id', 'userId', 'engine', 'length', 'prediction'])):
   @staticmethod

@@ -1,6 +1,5 @@
 from collections import namedtuple, Counter
 import numpy as np
-from pprint import pprint
 
 class PlayerGameActivations(namedtuple('PlayerGameActivations', ['userId', 'engine', 'generalActivations', 'narrowActivations', 'avgGameActivations', 'generalIntermediateActivations', 'narrowIntermediateActivations'])):
   @staticmethod

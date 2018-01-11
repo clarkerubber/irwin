@@ -7,8 +7,6 @@ import copy
 import time
 import os
 
-from pprint import pprint
-
 from modules.core.Game import Game
 from modules.core.GameAnalysis import GameAnalysis
 from modules.core.GameAnalysisStore import GameAnalysisStore
@@ -93,7 +91,7 @@ if settings.test:
     gameAnalysisStore.addGames(env.gameDB.byUserId(userId))
     gameAnalysisStore.addGameAnalyses(env.gameAnalysisDB.byUserId(userId))
     env.api.postReport(env.irwin.report(userId, gameAnalysisStore))
-    print("posted")
+    logging.debug("posted")
 
 if settings.epoch:
   env.irwin.buildPivotTable()
@@ -162,41 +160,7 @@ if settings.trainplayerforever:
     settings.newmodel = False
 
 if settings.queuebuilder:
-  while True:
-    logging.debug('Getting new player ID')
-    userId = env.api.getNextPlayerId()
-    logging.debug('Getting player dara for '+userId)
-    playerData = env.api.getPlayerData(userId)
-
-    # pull what we already have on the player
-    gameAnalysisStore = GameAnalysisStore.new()
-    gameAnalysisStore.addGames(env.gameDB.byUserId(userId))
-    gameAnalysisStore.addGameAnalyses(env.gameAnalysisDB.byUserId(userId))
-
-    # Filter games and assessments for relevant info
-    try:
-      gameAnalysisStore.addGames([Game.fromDict(gid, userId, g) for gid, g in playerData['games'].items() if (g.get('initialFen') is None and g.get('variant') is None)])
-    except KeyError:
-      print("KeyError Warning")
-      continue # if this doesn't gather any useful data, skip
-
-    env.gameDB.lazyWriteGames(gameAnalysisStore.games)
-
-    logging.debug("Already Analysed: " + str(len(gameAnalysisStore.gameAnalyses)))
-
-    # decide which games should be analysed
-    gameTensors = gameAnalysisStore.gameTensorsWithoutAnalysis(userId)
-
-    if gameTensors is not None:
-      gamePredictions = env.irwin.predictGames(gameTensors)
-      gamePredictions.sort(key=lambda tup: -tup[1])
-      gids = [gid for gid, p in gamePredictions][:5]
-      gamesFromPredictions = [gameAnalysisStore.gameById(gid) for gid in gids]
-      gamesFromPredictions = [g for g in gamesFromPredictions if g is not None] # just in case
-      gamesToAnalyse = gamesFromPredictions + gameAnalysisStore.randomGamesWithoutAnalysis(10 - len(gids), excludeIds=gamesFromPredictions)
-    else:
-      gamesToAnalyse = gameAnalysisStore.randomGamesWithoutAnalysis()
-
+  pass # we'll get to this later
 
 if not (
   settings.traingeneral or
@@ -205,11 +169,12 @@ if not (
   settings.noreport or
   settings.test or
   settings.buildconfidencetable or
-  settings.collectanalyses):
+  settings.collectanalyses or
+  settings.queuebuilder):
   while True:
     logging.debug('Getting new player ID')
     userId = env.api.getNextPlayerId()
-    logging.debug('Getting player data for '+userId)
+    logging.warning('Getting player data for '+userId)
     playerData = env.api.getPlayerData(userId)
 
     if playerData is None:

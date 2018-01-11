@@ -2,8 +2,6 @@ import numpy as np
 import logging
 import os
 
-from pprint import pprint
-
 from random import shuffle
 
 from collections import namedtuple
@@ -18,9 +16,9 @@ class GameModel(namedtuple('GameModel', ['env'])):
   @lru_cache(maxsize=2)
   def model(self, newmodel=False):
     if os.path.isfile('modules/irwin/models/game.h5') and not newmodel:
-      print("model already exists, opening from file")
+      logging.debug("model already exists, opening from file")
       return load_model('modules/irwin/models/game.h5')
-    print('model does not exist, building from scratch')
+    logging.debug('model does not exist, building from scratch')
 
     moveStatsInput = Input(shape=(None, 5), dtype='float32', name='move_input')
 
@@ -54,32 +52,32 @@ class GameModel(namedtuple('GameModel', ['env'])):
 
   def train(self, epochs, newmodel=False):
     # get player sample
-    print("getting model")
+    logging.debug("getting model")
     model = self.model(newmodel)
-    print("getting dataset")
+    logging.debug("getting dataset")
     batch = self.getTrainingDataset()
 
-    print("training")
-    print("Batch Info: Games: " + str(len(batch['data'])))
+    logging.debug("training")
+    logging.debug("Batch Info: Games: " + str(len(batch['data'])))
 
     model.fit(batch['data'], batch['labels'], epochs=epochs, batch_size=32, validation_split=0.2)
 
     self.saveModel(model)
-    print("complete")
+    logging.debug("complete")
 
   def saveModel(self, model):
-    print("saving model")
+    logging.debug("saving model")
     model.save('modules/irwin/models/game.h5')
 
   def getTrainingDataset(self):
-    print("Getting players from DB")
+    logging.debug("Getting players from DB")
     cheats = self.env.playerDB.byEngine(True)
     legits = self.env.playerDB.byEngine(False)
 
     cheatTensors = []
     legitTensors = []
 
-    print("Getting games from DB")
+    logging.debug("Getting games from DB")
     for p in legits + cheats:
       if p.engine:
         cheatTensors.extend([g.tensor(p.id) for g in self.env.gameDB.byUserId(p.id)])
@@ -92,7 +90,7 @@ class GameModel(namedtuple('GameModel', ['env'])):
     shuffle(cheatTensors)
     shuffle(legitTensors)
 
-    print("batching tensors")
+    logging.debug("batching tensors")
     return self.createBatchAndLabels(cheatTensors, legitTensors)
 
   @staticmethod
@@ -103,7 +101,7 @@ class GameModel(namedtuple('GameModel', ['env'])):
     cheats = cheatBatch[:mlen]
     legits = legitBatch[:mlen]
 
-    print("batch size " + str(len(cheats + legits)))
+    logging.debug("batch size " + str(len(cheats + legits)))
 
     labels = [1]*len(cheats) + [0]*len(legits)
 

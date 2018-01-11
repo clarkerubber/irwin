@@ -2,8 +2,6 @@ import numpy as np
 import logging
 import os
 
-from pprint import pprint
-
 from random import shuffle
 
 from collections import namedtuple
@@ -19,13 +17,13 @@ class AnalysedGameModel(namedtuple('AnalysedGameModel', ['env', 'type'])):
   def model(self, newmodel=False):
     if self.type == 'general':
       if os.path.isfile('modules/irwin/models/generalAnalysedGame.h5') and not newmodel:
-        print("model already exists, opening from file")
+        logging.debug("model already exists, opening from file")
         return load_model('modules/irwin/models/generalAnalysedGame.h5')
     elif self.type == 'narrow':
       if os.path.isfile('modules/irwin/models/narrowAnalysedGame.h5') and not newmodel:
-        print("model already exists, opening from file")
+        logging.debug("model already exists, opening from file")
         return load_model('modules/irwin/models/narrowAnalysedGame.h5')
-    print('model does not exist, building from scratch')
+    logging.debug('model does not exist, building from scratch')
     pvInput = Input(shape=(None, 10), dtype='float32', name='pv_input')
     moveStatsInput = Input(shape=(None, 8), dtype='float32', name='move_input')
 
@@ -99,30 +97,30 @@ class AnalysedGameModel(namedtuple('AnalysedGameModel', ['env', 'type'])):
 
   def train(self, epochs, newmodel=False):
     # get player sample
-    print("getting model")
+    logging.debug("getting model")
     model = self.model(newmodel)
-    print("getting dataset")
+    logging.debug("getting dataset")
     batch = self.getTrainingDataset()
 
-    print("training")
-    print("Batch Info: Games: " + str(len(batch['data'][0])))
+    logging.debug("training")
+    logging.debug("Batch Info: Games: " + str(len(batch['data'][0])))
 
-    print("Game Len: " + str(len(batch['data'][2][0])))
+    logging.debug("Game Len: " + str(len(batch['data'][2][0])))
 
     model.fit(batch['data'], batch['labels'], epochs=epochs, batch_size=32, validation_split=0.2)
 
     self.saveModel(model)
-    print("complete")
+    logging.debug("complete")
 
   def saveModel(self, model):
-    print("saving model")
+    logging.debug("saving model")
     if self.type == 'general':
       model.save('modules/irwin/models/generalAnalysedGame.h5')
     if self.type == 'narrow':
       model.save('modules/irwin/models/narrowAnalysedGame.h5')
 
   def getTrainingDataset(self):
-    print("gettings game IDs from DB")
+    logging.debug("gettings game IDs from DB")
     if self.type == 'general':
       cheatPivotEntries = self.env.gameAnalysisPlayerPivotDB.byEngine(True)
       legitPivotEntries = self.env.gameAnalysisPlayerPivotDB.byEngine(False)
@@ -130,23 +128,23 @@ class AnalysedGameModel(namedtuple('AnalysedGameModel', ['env', 'type'])):
       cheatPivotEntries = self.env.confidentGameAnalysisPivotDB.byEngineAndPrediction(True, 70)
       legitPivotEntries = self.env.confidentGameAnalysisPivotDB.byEngineAndPrediction(False, 70)
 
-    print("got: "+str(len(cheatPivotEntries + legitPivotEntries)))
+    logging.debug("got: "+str(len(cheatPivotEntries + legitPivotEntries)))
 
     shuffle(cheatPivotEntries)
     shuffle(legitPivotEntries)
 
     minEntries = min(len(cheatPivotEntries), len(legitPivotEntries))
 
-    print("Getting game analyses from DB")
+    logging.debug("Getting game analyses from DB")
 
     cheatGameAnalyses = self.env.gameAnalysisDB.byIds([cpe.id for cpe in cheatPivotEntries])
     legitGameAnalyses = self.env.gameAnalysisDB.byIds([lpe.id for lpe in legitPivotEntries])
 
-    print("building moveAnalysisTensors")
+    logging.debug("building moveAnalysisTensors")
     cheatGameTensors = [tga.moveAnalysisTensors() for tga in cheatGameAnalyses if tga.gameLength() <= 50]
     legitGameTensors = [tga.moveAnalysisTensors() for tga in legitGameAnalyses if tga.gameLength() <= 50]
 
-    print("batching tensors")
+    logging.debug("batching tensors")
     return self.createBatchAndLabels(cheatGameTensors, legitGameTensors)
 
   @staticmethod
@@ -157,7 +155,7 @@ class AnalysedGameModel(namedtuple('AnalysedGameModel', ['env', 'type'])):
     cheats = cheatBatch[:mlen]
     legits = legitBatch[:mlen]
 
-    print("batch size " + str(len(cheats + legits)))
+    logging.debug("batch size " + str(len(cheats + legits)))
 
     labels = [True]*len(cheats) + [False]*len(legits)
 
