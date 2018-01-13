@@ -81,7 +81,13 @@ class AnalysedGameModel(namedtuple('AnalysedGameModel', ['env', 'type'])):
 
     mainOutput = Dense(1, activation='sigmoid', name='main_output')(l6)
 
-    model = Model(inputs=[pvInput, moveStatsInput, moveNumberInput, ranksInput, advInput, ambiguityInput], outputs=[mainOutput, secondaryOutput])
+    # isolated consideration of move blocks
+
+    mi1 = Dense(64, activation='relu')(c1)
+    mi2 = Dense(16, activation='relu')(mi1)
+    secondaryOutput = Dense(1, activation='sigmoid')(mi2)
+
+    model = Model(inputs=[pvInput, moveStatsInput, moveNumberInput, ranksInput, advInput, ambiguityInput], outputs=[mainOutput, secondaryOutput, thirdOutput])
 
     model.compile(optimizer=Adam(lr=0.0001),
       loss='binary_crossentropy',
@@ -169,10 +175,13 @@ class AnalysedGameModel(namedtuple('AnalysedGameModel', ['env', 'type'])):
     advs =        np.array([[m[4] for m in t] for t, l in blz])
     ambs =        np.array([[m[5] for m in t] for t, l in blz])
 
+    moveLabels = np.array([[[int(l)]]*(len(moveStats[0])-13) for t, l in blz])
+
     return {
       'data': [pvs, moveStats, moveNumbers, ranks, advs, ambs],
       'labels': [
         np.array([int(l) for t, l in blz]), 
-        np.array([[[int(l)]]*(len(moveStats[0])-13) for t, l in blz])
+        moveLabels,
+        moveLabels
       ]
     }

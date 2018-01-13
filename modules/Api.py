@@ -42,7 +42,10 @@ class Api(namedtuple('Api', ['url', 'token'])):
       attempts += 1
       try:
         response = requests.get(self.url+'irwin/'+userId+'/assessment?api_key='+self.token)
-        output = json.loads(response.text)
+        try:
+          output = json.loads(response.text)
+        except json.decoder.JSONDecodeError:
+          return None
         success = True
       except requests.ConnectionError:
         logging.warning('CONNECTION ERROR: Failed to pull assessment data')
