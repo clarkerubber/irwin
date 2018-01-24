@@ -1,4 +1,8 @@
 from collections import namedtuple
+from pprint import pprint
+
+from modules.core.GameAnalysis import GameAnalysis
+
 import numpy as np
 import math
 
@@ -38,7 +42,6 @@ class GameAnalysisStore(namedtuple('GameAnalysisStore', ['games', 'gameAnalyses'
     return [gameAnalysis.moveAnalysisTensors() for gameAnalysis in self.gameAnalyses if len(gameAnalysis.moveAnalyses) < 60 and len(gameAnalysis.moveAnalyses) > 20]
 
   def quickGameAnalysisTensors(self):
-    self.awclByWinningChances()
     return [gameAnalysis.moveAnalysisTensors() for gameAnalysis in self.gameAnalyses if len(gameAnalysis.moveAnalyses) < 60 and len(gameAnalysis.moveAnalyses) > 20 and gameAnalysis.emtAverage() < 2000]
 
   def quickGameAnalyses(self):

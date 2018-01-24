@@ -20,7 +20,7 @@ class GameModel(namedtuple('GameModel', ['env'])):
       return load_model('modules/irwin/models/game.h5')
     logging.debug('model does not exist, building from scratch')
 
-    moveStatsInput = Input(shape=(None, 5), dtype='float32', name='move_input')
+    moveStatsInput = Input(shape=(None, 6), dtype='float32', name='move_input')
 
     mv1 = Dense(32, activation='relu')(moveStatsInput)
     d1 = Dropout(0.3)(mv1)
@@ -35,7 +35,7 @@ class GameModel(namedtuple('GameModel', ['env'])):
     c2 = Conv1D(filters=64, kernel_size=10, name='conv2')(l2)
 
     l3 = LSTM(32, return_sequences=True)(c2)
-    l4 = LSTM(16, return_sequences=True, activation='sigmoid')(l3)
+    l4 = LSTM(16, return_sequences=True, activation='sigmoid', recurrent_activation='hard_sigmoid')(l3)
     l5 = LSTM(8)(l4)
     l6 = Dense(8, activation='sigmoid', name='game_word')(l5)
     d4 = Dropout(0.3)(l6)

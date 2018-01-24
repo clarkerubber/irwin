@@ -1,4 +1,5 @@
 from collections import namedtuple
+from functools import lru_cache
 from math import exp
 import numpy as np
 
@@ -8,16 +9,25 @@ Analysis = namedtuple('Analysis', ['uci', 'score'])
 Score = namedtuple('Score', ['cp', 'mate'])
 
 class AnalysedMove(namedtuple('AnalysedMove', ['uci', 'move', 'emt', 'blur', 'score', 'analyses'])):
-  def tensor(self, moveNumber, timeAvg, wclAvg):
-    return [self.analysesWinningChances() + self.analysesWinningChanceLosses(), [
-      self.emt - timeAvg,
-      abs(self.emt - timeAvg) / (timeAvg + 1e-8),
-      self.emt,
-      float(self.blur),
+  def tensor(self, timeAvg, wclAvg):
+    return [
+      self.rank() + 1,
+      self.ambiguity() + 1,
+      self.advantage(),
+      self.emt, # elapsed move time
+      self.emt - timeAvg, # difference from average
+      abs(self.emt - timeAvg) / (timeAvg + 1e-8), # variance from average
+      float(self.blur), # did they blur
       self.difToNextBest(),
-      self.winningChancesLoss(),
-      wclAvg,
-      wclAvg - self.winningChancesLoss()], moveNumber, self.rank() + 1, int(40*self.advantage())+1, self.ambiguity()+1]
+      self.difToNextWorst(),
+      self.winningChancesLoss(), # loss of advantage
+      self.winningChancesLoss() - wclAvg, # loss in comparison to average
+      self.averageWinningChancesLoss()
+    ]
+
+  @staticmethod
+  def nullTensor():
+    return 12*[0]
 
   def analysesWinningChances(self):
     c = [winningChances(a.score) for a in self.analyses]
@@ -38,6 +48,15 @@ class AnalysedMove(namedtuple('AnalysedMove', ['uci', 'move', 'emt', 'blur', 'sc
       return 0
     else:
       return winningChances(self.analyses[-1].score) - self.advantage()
+
+  def difToNextWorst(self):
+    tr = self.trueRank()
+    if tr is not None and tr <= len(self.analyses)-1:
+      return winningChances(self.analyses[tr].score) - self.advantage()
+    return 0
+
+  def averageWinningChancesLoss(self):
+    return np.average([winningChances(self.top().score) - winningChances(a.score) for a in self.analyses])
 
   def winningChancesLoss(self):
     return max(0, winningChances(self.top().score) - self.advantage())
@@ -69,6 +88,7 @@ class AnalysedMove(namedtuple('AnalysedMove', ['uci', 'move', 'emt', 'blur', 'sc
       except ZeroDivisionError:
         return 10
 
+@lru_cache(maxsize=64)
 def winningChances(score):
   if score.mate is not None:
     return 1 if score.mate > 0 else 0

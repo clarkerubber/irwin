@@ -18,9 +18,9 @@ from modules.irwin.PlayerGameWords import PlayerGameWords
 class PlayerModel(namedtuple('BinaryGameModel', ['env'])):
   @lru_cache(maxsize=2)
   def model(self, newmodel=False):
-    if os.path.isfile('modules/irwin/models/playerBinary.h5') and not newmodel:
+    if os.path.isfile('modules/irwin/models/player.h5') and not newmodel:
       logging.debug("model already exists, opening from file")
-      return load_model('modules/irwin/models/playerBinary.h5')
+      return load_model('modules/irwin/models/player.h5')
     logging.debug('model does not exist, building from scratch')
 
     vocabSize = self.buildVocabularly()
@@ -59,7 +59,7 @@ class PlayerModel(namedtuple('BinaryGameModel', ['env'])):
 
   def saveModel(self, model):
     logging.debug("saving model")
-    model.save('modules/irwin/models/playerBinary.h5')
+    model.save('modules/irwin/models/player.h5')
 
   def buildVocabularly(self):
     logging.debug("Building Vocabularly")

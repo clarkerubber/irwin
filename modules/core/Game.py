@@ -73,12 +73,13 @@ class Game(namedtuple('Game', ['id', 'white', 'black', 'pgn', 'emts', 'whiteBlur
       (analysis[0].winningChances(white) - analysis[1].winningChances(white)),
       int(blur),
       emt,
+      emt - avgEmt,
       100*((emt - avgEmt)/(avgEmt + 1e-8)),
     ]
 
   @staticmethod
   def nullTensor():
-    return [0, 0, 0, 0, 0]
+    return [0, 0, 0, 0, 0, 0]
 
   @staticmethod
   def ply(moveNumber, white):

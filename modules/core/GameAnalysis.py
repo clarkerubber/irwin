@@ -1,20 +1,23 @@
 from chess.pgn import read_game
 import logging
 import numpy as np
+from pprint import pprint
 
-import modules.core.AnalysedMove as AnalysedMove
+from modules.core.AnalysedMove import AnalysedMove, AnalysedMoveBSONHandler, Score, Analysis
 
 from collections import namedtuple
 class GameAnalysis(namedtuple('GameAnalysis', ['id', 'userId', 'gameId', 'moveAnalyses'])):
-  def moveAnalysisTensors(self, length=50):
+  def moveAnalysisTensors(self, length=60):
     emtAvg = self.emtAverage()
     wclAvg = self.wclAverage()
-    t = [ma.tensor(moveNo, emtAvg, wclAvg) for moveNo, ma in enumerate(self.moveAnalyses)]
-    return t + (length-len(t))*[self.blankMoveTensor()]
+    ts = [ma.tensor(emtAvg, wclAvg) for ma in self.moveAnalyses]
+    ts = ts[:length]
+    ts = ts + (length-len(ts))*[AnalysedMove.nullTensor()]
+    return np.array(ts)
 
   @staticmethod
-  def blankMoveTensor():
-    return [10*[-1.0], 8*[-1.0], 0, 0, 0, 0]
+  def nullSimplifiedGameTensor():
+    return np.zeros((60, 12))
 
   def emtAverage(self):
     return np.average([m.emt for m in self.moveAnalyses])
@@ -81,8 +84,8 @@ class GameAnalysis(namedtuple('GameAnalysis', ['id', 'userId', 'gameId', 'moveAn
         engine.go(nodes=nodes)
 
         analyses = list([
-          AnalysedMove.Analysis(pv[1][0].uci(),
-            AnalysedMove.Score(score[1].cp, score[1].mate)) for score, pv in zip(
+          Analysis(pv[1][0].uci(),
+            Score(score[1].cp, score[1].mate)) for score, pv in zip(
               infoHandler.info['score'].items(),
               infoHandler.info['pv'].items())])
 
@@ -93,12 +96,12 @@ class GameAnalysis(namedtuple('GameAnalysis', ['id', 'userId', 'gameId', 'moveAn
         cp = infoHandler.info['score'][1].cp
         mate = infoHandler.info['score'][1].mate
 
-        score = AnalysedMove.Score(-cp if cp is not None else None,
+        score = Score(-cp if cp is not None else None,
           -mate if mate is not None else None) # flipped because analysing from other player side
 
         moveNumber = node.board().fullmove_number
 
-        analysis.append(AnalysedMove.AnalysedMove(
+        analysis.append(AnalysedMove(
           uci = node.variation(0).move.uci(),
           move = moveNumber,
           emt = game.emts[GameAnalysis.ply(moveNumber, white)],
@@ -118,7 +121,7 @@ class GameAnalysisBSONHandler:
       id = bson['_id'],
       userId = bson['userId'],
       gameId = bson['gameId'],
-      moveAnalyses = [AnalysedMove.AnalysedMoveBSONHandler.reads(am) for am in bson['analysis']])
+      moveAnalyses = [AnalysedMoveBSONHandler.reads(am) for am in bson['analysis']])
 
   @staticmethod
   def writes(gameAnalysis):
@@ -126,7 +129,7 @@ class GameAnalysisBSONHandler:
       '_id': gameAnalysis.id,
       'userId': gameAnalysis.userId,
       'gameId': gameAnalysis.gameId,
-      'analysis': [AnalysedMove.AnalysedMoveBSONHandler.writes(am) for am in gameAnalysis.moveAnalyses]
+      'analysis': [AnalysedMoveBSONHandler.writes(am) for am in gameAnalysis.moveAnalyses]
     }
 
 class GameAnalysisDB(namedtuple('GameAnalysisDB', ['gameAnalysisColl'])):

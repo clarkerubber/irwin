@@ -37,6 +37,8 @@ parser.add_argument("--trainplayer", dest="trainplayer", nargs="?",
                     default=False, const=True, help="train player game model")
 parser.add_argument("--trainplayerforever", dest="trainplayerforever", nargs="?",
                     default=False, const=True, help="train player game model forever")
+parser.add_argument("--traincomplete", dest="traincomplete", nargs="?",
+                    default=False, const=True, help="train complete player game model")
 
 parser.add_argument("--epoch", dest="epoch", nargs="?",
                     default=False, const=True, help="train from start to finish")
@@ -49,8 +51,6 @@ parser.add_argument("--newmodel", dest="newmodel", nargs="?",
 parser.add_argument("--no-report", dest="noreport", nargs="?",
                     default=False, const=True, help="disable posting of player reports")
 
-parser.add_argument("--buildpivottable", dest="buildpivottable", nargs="?",
-                    default=False, const=True, help="build table relating game analysis to players, game length and engine status")
 parser.add_argument("--buildconfidencetable", dest="buildconfidencetable", nargs="?",
                     default=False, const=True, help="build table of game analysis that the network is confident in predicting")
 parser.add_argument("--buildplayertable", dest="buildplayertable", nargs="?",
@@ -94,7 +94,6 @@ if settings.test:
     logging.debug("posted")
 
 if settings.epoch:
-  env.irwin.buildPivotTable()
   env.irwin.generalGameModel.train(config['irwin']['train']['batchSize'], config['irwin']['train']['epochs'], settings.newmodel)
   env.irwin.buildConfidenceTable()
   env.irwin.narrowGameModel.train(config['irwin']['train']['batchSize'], config['irwin']['train']['epochs'], settings.newmodel)
@@ -109,9 +108,6 @@ if settings.epochforever:
     env.irwin.buildPlayerGameActivationsTable()
     env.irwin.playerModel.train(config['irwin']['train']['batchSize'], config['irwin']['train']['epochs']*5, True)
     settings.newmodel = False
-
-if settings.buildpivottable:
-  env.irwin.buildPivotTable()
 
 if settings.buildconfidencetable:
   env.irwin.buildConfidenceTable()
@@ -134,6 +130,9 @@ if settings.trainnarrow:
 
 if settings.trainplayer:
   env.irwin.playerModel.train(config['irwin']['train']['epochs'], settings.newmodel)
+
+if settings.traincomplete:
+  env.irwin.completePlayerModel.train(config['irwin']['train']['epochs'], settings.newmodel)
 
 # how good is the network?
 if settings.eval:
@@ -163,6 +162,7 @@ if settings.queuebuilder:
   pass # we'll get to this later
 
 if not (
+  settings.trainbasic or
   settings.traingeneral or
   settings.trainnarrow or
   settings.eval or
@@ -201,7 +201,7 @@ if not (
     gameTensors = gameAnalysisStore.gameTensorsWithoutAnalysis(userId)
 
     if gameTensors is not None:
-      gamePredictions = env.irwin.predictGames(gameTensors)
+      gamePredictions = env.irwin.predictGames(gameTensors) # [(gameIds, predictions)]
       if gamePredictions is None:
         logging.warning("gamePredictions is None in main.py")
         continue

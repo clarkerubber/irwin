@@ -1,3 +1,3 @@
 from collections import namedtuple
 
-PlayerQueue = namedtuple('')
+PlayerQueue = namedtuple('PlayerQueue', [])

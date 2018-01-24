@@ -31,6 +31,9 @@ class ConfidentGameAnalysisPivotBSONHandler:
     }
 
 class ConfidentGameAnalysisPivotDB(namedtuple('ConfidentGameAnalysisPivotDB', ['confidentGameAnalysisPivotColl'])):
+  def byUserId(self, userId):
+    return [ConfidentGameAnalysisPivotBSONHandler.reads(bson) for bson in self.confidentGameAnalysisPivotColl.find({'userId': userId})]
+    
   def byEngineAndLength(self, engine, length):
     return [ConfidentGameAnalysisPivotBSONHandler.reads(bson) for bson in self.confidentGameAnalysisPivotColl.find({'engine': engine, 'length': length})]
 
