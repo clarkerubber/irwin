@@ -90,8 +90,8 @@ class Irwin():
     legitTensors = [tga.moveAnalysisTensors() for tga in legitGameAnalyses]
 
     logging.debug("predicting the things")
-    cheatGamePredictions = self.predict(cheatTensors, general=True)
-    legitGamePredictions = self.predict(legitTensors, general=True)
+    cheatGamePredictions = self.predict(cheatTensors, general=False)
+    legitGamePredictions = self.predict(legitTensors, general=False)
 
     confidentCheats = [ConfidentGameAnalysisPivot.fromGamesAnalysisandPrediction(gameAnalysis, int(100*prediction[0][0]), engine=True) for gameAnalysis, prediction in zip(cheatGameAnalyses, cheatGamePredictions)]
     confidentLegits = [ConfidentGameAnalysisPivot.fromGamesAnalysisandPrediction(gameAnalysis, int(100*prediction[0][0]), engine=False) for gameAnalysis, prediction in zip(legitGameAnalyses, legitGamePredictions)]

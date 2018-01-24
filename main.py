@@ -33,12 +33,6 @@ parser.add_argument("--trainnarrow", dest="trainnarrow", nargs="?",
                     default=False, const=True, help="train narrow game model")
 parser.add_argument("--trainnarrowforever", dest="trainnarrowforever", nargs="?",
                     default=False, const=True, help="train narrow model forever")
-parser.add_argument("--trainplayer", dest="trainplayer", nargs="?",
-                    default=False, const=True, help="train player game model")
-parser.add_argument("--trainplayerforever", dest="trainplayerforever", nargs="?",
-                    default=False, const=True, help="train player game model forever")
-parser.add_argument("--traincomplete", dest="traincomplete", nargs="?",
-                    default=False, const=True, help="train complete player game model")
 
 parser.add_argument("--epoch", dest="epoch", nargs="?",
                     default=False, const=True, help="train from start to finish")
@@ -112,12 +106,6 @@ if settings.epochforever:
 if settings.buildconfidencetable:
   env.irwin.buildConfidenceTable()
 
-if settings.buildvocab:
-  env.irwin.buildVocabularly()
-
-if settings.buildplayertable:
-  env.irwin.buildPlayerGameActivationsTable()
-
 # train on a single batch
 if settings.trainbasic:
   env.irwin.gameModel.train(config['irwin']['train']['epochs'], settings.newmodel)
@@ -127,12 +115,6 @@ if settings.traingeneral:
 
 if settings.trainnarrow:
   env.irwin.narrowGameModel.train(config['irwin']['train']['epochs'], settings.newmodel)
-
-if settings.trainplayer:
-  env.irwin.playerModel.train(config['irwin']['train']['epochs'], settings.newmodel)
-
-if settings.traincomplete:
-  env.irwin.completePlayerModel.train(config['irwin']['train']['epochs'], settings.newmodel)
 
 # how good is the network?
 if settings.eval:
@@ -151,11 +133,6 @@ if settings.trainnarrowforever:
   #env.irwin.buildConfidenceTable()
   while True:
     env.irwin.narrowGameModel.train(config['irwin']['train']['epochs'], settings.newmodel)
-    settings.newmodel = False
-
-if settings.trainplayerforever:
-  while True:
-    env.irwin.playerModel.train(config['irwin']['train']['epochs'], settings.newmodel)
     settings.newmodel = False
 
 if settings.queuebuilder:
