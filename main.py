@@ -80,7 +80,7 @@ if settings.collectanalyses:
 
 # test on a single user in the DB
 if settings.test:
-  for userId in ['chess-network']:
+  for userId in ['chess-network', 'clarkey', 'thibault']:
     gameAnalysisStore = GameAnalysisStore.new()
     gameAnalysisStore.addGames(env.gameDB.byUserId(userId))
     gameAnalysisStore.addGameAnalyses(env.gameAnalysisDB.byUserId(userId))

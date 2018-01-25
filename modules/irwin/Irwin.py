@@ -1,6 +1,7 @@
 from pprint import pprint
 from random import shuffle
 from math import ceil
+from functools import lru_cache
 
 import logging
 import numpy as np
@@ -106,15 +107,6 @@ class Irwin():
       predictions = [self.narrowGameModel.model().predict(np.array([t])) for t in tensors]
     return predictions
 
-  def report(self, userId, gameAnalysisStore):
-    predictions = self.predict(gameAnalysisStore.quickGameAnalysisTensors())
-    report = {
-      'userId': userId,
-      'activation': self.activation(predictions),
-      'games': [Irwin.gameReport(ga, p) for ga, p in zip(gameAnalysisStore.gameAnalyses, predictions)]
-    }
-    return report
-
   def predictGames(self, gameTensors):
     # game tensors is a list of tuples in the form: [(gameId, tensor), ...]
     if len(gameTensors) == 0:
@@ -123,26 +115,42 @@ class Irwin():
     predictions = [int(100*np.asscalar(p)) for p in self.gameModel.model().predict(np.array([t for gid, t in gameTensors]))]
     return list(zip(gameIds, predictions))
 
-  def activation(self, predictions):
-    gamePredictions = [int(100*p[0][0]) for p in predictions]
-    if len(gamePredictions) > 0:
-      percentile = np.percentile(gamePredictions, 70)
-    else:
-      percentile = 0
-    return min(90, percentile) if len(predictions) < 6 else percentile
+  @staticmethod
+  def top30avg(moveActivations):
+    top30 = sorted(moveActivations, reverse=True)[:ceil(0.3*len(moveActivations))]
+    res = int(np.average(top30)) if len(top30) > 0 else 0
+    return res
+
+  def report(self, userId, gameAnalysisStore):
+    predictions = self.predict(gameAnalysisStore.quickGameAnalysisTensors())
+    gamesMoveActivations = [[int(50*(p[0][0] + p[1][0])) for p in zip(list(prediction[1][0]), list(prediction[2][0]))] for prediction in predictions]
+    report = {
+      'userId': userId,
+      'activation': self.activation(gamesMoveActivations),
+      'games': [Irwin.gameReport(ga, p, ma) for ga, p, ma in zip(gameAnalysisStore.gameAnalyses, predictions, gamesMoveActivations)]
+    }
+    return report
+
+  def activation(self, predictions, gamesMoveActivations=None):
+    if gamesMoveActivations is None:
+      gamesMoveActivations = [[int(50*(p[0][0] + p[1][0])) for p in zip(list(prediction[1][0]), list(prediction[2][0]))] for prediction in predictions]
+    gamesTop30avg = [Irwin.top30avg(moveActivations) for moveActivations in gamesMoveActivations]
+    top30games = sorted(gamesTop30avg, reverse=True)[:ceil(0.3*len(gamesTop30avg))]
+    top30avgGames = int(np.average(top30games)) if len(top30games) > 0 else 0
+    return min(90, top30avgGames) if len(gamesTop30avg) < 6 else top30avgGames
 
   @staticmethod
-  def gameReport(gameAnalysis, prediction):
+  def gameReport(gameAnalysis, prediction, moveActivations):
     return {
       'gameId': gameAnalysis.gameId,
-      'activation': int(100*prediction[0][0]),
-      'moves': [Irwin.moveReport(am, p) for am, p in zip(gameAnalysis.moveAnalyses, zip(list(prediction[1][0]), list(prediction[2][0])))]
+      'activation': int(50*prediction[0][0] + 0.5*Irwin.top30avg(moveActivations)),
+      'moves': [Irwin.moveReport(am, p) for am, p in zip(gameAnalysis.moveAnalyses, moveActivations)]
     }
 
   @staticmethod
   def moveReport(analysedMove, prediction):
     return {
-      'a': int(50*(prediction[0][0] + prediction[1][0])),
+      'a': prediction,
       'r': analysedMove.trueRank(),
       'm': analysedMove.ambiguity(),
       'o': int(100*analysedMove.advantage()),
