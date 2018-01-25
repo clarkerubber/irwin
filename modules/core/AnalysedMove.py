@@ -17,7 +17,7 @@ class AnalysedMove(namedtuple('AnalysedMove', ['uci', 'move', 'emt', 'blur', 'sc
       self.emt, # elapsed move time
       self.emt - timeAvg, # difference from average
       abs(self.emt - timeAvg) / (timeAvg + 1e-8), # variance from average
-      float(self.blur), # did they blur
+      0*float(self.blur), # did they blur
       self.difToNextBest(),
       self.difToNextWorst(),
       self.winningChancesLoss(), # loss of advantage

@@ -181,9 +181,9 @@ class Irwin():
       logging.debug("investigating "+player.id)
       gameAnalysisStore = GameAnalysisStore([], [ga for ga in self.env.gameAnalysisDB.byUserId(player.id)])
       predictions = self.predict(gameAnalysisStore.quickGameAnalysisTensors())
-      pga = PlayerGameActivations.fromTensor(player.id, None, predictions)
-      activation = self.activation(pga, gameAnalysisStore.playerTensor())
+      activation = self.activation(predictions)
       logging.debug(str(activation))
-      if activation > 70:
+      if activation > 90:
+        print("SUSPICIOUS")
         sus.append((player.id, activation))
     pprint(sus)
