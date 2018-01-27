@@ -27,14 +27,6 @@ class MoveAnalysis(namedtuple('MoveAnalysis', ['uci', 'move', 'emt', 'blur', 'sc
     def nullTensor():
         return 10*[0]
 
-    def analysesWinningChances(self):
-        c = [winningChances(a.score) for a in self.analyses]
-        c += [0] * (5 - len(c))
-        return c
-
-    def analysesWinningChanceLosses(self):
-        return [winningChances(self.top().score) - a for a in self.analysesWinningChances()]
-
     def top(self):
         return next(iter(self.analyses or []), None)
 
@@ -61,12 +53,6 @@ class MoveAnalysis(namedtuple('MoveAnalysis', ['uci', 'move', 'emt', 'blur', 'sc
 
     def advantage(self):
         return winningChances(self.score)
-
-    def ambiguous(self): # if the top and second moves both have similar winning chances, the position is ambiguous
-        try:
-            return similarChances(winningChances(self.top().score), winningChances(self.analyses[1].score))
-        except IndexError:
-            return False
 
     def ambiguity(self): # 1 = only one top move, 5 = all moves good
         return sum(int(similarChances(winningChances(self.top().score), winningChances(analysis.score))) for analysis in self.analyses)

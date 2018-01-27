@@ -139,7 +139,7 @@ if not (settings.trainbasic
                 logging.warning("gamePredictions is None in main.py")
                 continue
             gamePredictions.sort(key=lambda tup: -tup[1])
-            gids = [gid for gid, p in gamePredictions][:5]
+            gids = [gid for gid, _ in gamePredictions][:5]
             gamesFromPredictions = [gameAnalysisStore.gameById(gid) for gid in gids]
             gamesFromPredictions = [g for g in gamesFromPredictions if g is not None] # just in case
             gamesToAnalyse = gamesFromPredictions + gameAnalysisStore.randomGamesWithoutAnalysis(10 - len(gids), excludeIds=gamesFromPredictions)
@@ -153,7 +153,7 @@ if not (settings.trainbasic
                 env.engine,
                 env.infoHandler,
                 game.white == userId,
-                env.settings['stockfish']['nodes']) for game in gameAnalysisStore.randomGamesWithoutAnalysis()])
+                env.settings['stockfish']['nodes']) for game in gamesToAnalyse])
 
         env.gameAnalysisDB.lazyWriteGameAnalyses(gameAnalysisStore.gameAnalyses)
 

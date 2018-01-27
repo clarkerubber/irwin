@@ -150,9 +150,5 @@ class GameDB(namedtuple('GameDB', ['gameColl'])):
     def write(self, game): # Game
         self.gameColl.update_one({'_id': game.id}, {'$set': GameBSONHandler.writes(game)}, upsert=True)
 
-    def writeGames(self, games): # Games
-        if len(games) > 0:
-            self.gameColl.insert_many([GameBSONHandler.writes(g) for g in games])
-
     def lazyWriteGames(self, games):
         [self.write(g) for g in games]

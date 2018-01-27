@@ -24,23 +24,11 @@ class GameAnalysis(namedtuple('GameAnalysis', ['id', 'userId', 'gameId', 'moveAn
     def gameLength(self):
         return len(self.moveAnalyses)
 
-    def wcls(self):
-        return [m.winningChancesLoss() for m in self.moveAnalyses]
-
     def emts(self):
         return [m.emt for m in self.moveAnalyses]
 
     def winningChances(self):
         return [m.advantage() for m in self.moveAnalyses]
-
-    def wclByEmt(self):
-        return list(zip(self.emts(), self.wcls()))
-
-    def wclByMoveNumber(self):
-        return list(enumerate(self.wcls()))
-
-    def wclByWinningChances(self):
-        return list(zip(self.winningChances(), self.wcls()))
 
     @staticmethod
     def gameAnalysisId(gameId, white):
@@ -69,8 +57,6 @@ class GameAnalysis(namedtuple('GameAnalysis', ['id', 'userId', 'gameId', 'moveAn
         node = playableGame
 
         engine.ucinewgame()
-
-        analysed_positions = []
 
         while not node.is_end():
             nextNode = node.variation(0)

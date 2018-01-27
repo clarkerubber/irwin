@@ -51,7 +51,7 @@ class Env:
         self.gameAnalysisActivationDB = GameAnalysisActivationDB(self.gameAnalysisActivationColl)
 
         # Irwin
-        self.irwin = Irwin(self, settings['irwin'])
+        self.irwin = Irwin(self)
 
     def restartEngine(self):
         self.engine.kill()

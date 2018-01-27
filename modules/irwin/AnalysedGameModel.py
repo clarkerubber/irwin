@@ -7,7 +7,7 @@ from random import shuffle
 from collections import namedtuple
 
 from keras.models import load_model, Model
-from keras.layers import Embedding, Dropout, Dense, Reshape, LSTM, Input, concatenate, Conv1D, Flatten
+from keras.layers import Dropout, Dense, LSTM, Input, concatenate, Conv1D, Flatten
 from keras.optimizers import Adam
 
 from functools import lru_cache

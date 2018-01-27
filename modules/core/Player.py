@@ -1,4 +1,3 @@
-import pymongo
 from collections import namedtuple
 
 class Player(namedtuple('Player', ['id', 'titled', 'engine', 'gamesPlayed', 'closedReports'])):
@@ -32,9 +31,6 @@ class PlayerDB(namedtuple('PlayerDB', ['playerColl'])):
         except:
             return None
 
-    def byEngine(self, engine):
-        return [PlayerBSONHandler.reads(p) for p in self.playerColl.find({'engine': engine})]
-
     def balancedSample(self, size):
         pipelines = [[
                 {"$match": {"engine": True}},
@@ -46,6 +42,9 @@ class PlayerDB(namedtuple('PlayerDB', ['playerColl'])):
         engines = [PlayerBSONHandler.reads(p) for p in self.playerColl.aggregate(pipelines[0])]
         legits = [PlayerBSONHandler.reads(p) for p in self.playerColl.aggregate(pipelines[1])]
         return engines + legits
+
+    def byEngine(self, engine):
+        return [PlayerBSONHandler.reads(p) for p in self.playerColl.find({'engine': engine})]
 
     def write(self, player):
         self.playerColl.update_one({'_id': player.id}, {'$set': PlayerBSONHandler.writes(player)}, upsert=True)

@@ -33,25 +33,11 @@ class GameAnalysisActivationBSONHandler:
 class GameAnalysisActivationDB(namedtuple('GameAnalysisActivationDB', ['confidentGameAnalysisPivotColl'])):
     def byUserId(self, userId):
         return [GameAnalysisActivationBSONHandler.reads(bson) for bson in self.confidentGameAnalysisPivotColl.find({'userId': userId})]
-        
-    def byEngineAndLength(self, engine, length):
-        return [GameAnalysisActivationBSONHandler.reads(bson) for bson in self.confidentGameAnalysisPivotColl.find({'engine': engine, 'length': length})]
 
     def byEngineAndPrediction(self, engine, prediction):
         if engine:
             return [GameAnalysisActivationBSONHandler.reads(bson) for bson in self.confidentGameAnalysisPivotColl.find({'engine': engine, 'prediction': {'$gte': prediction}})]
         return [GameAnalysisActivationBSONHandler.reads(bson) for bson in self.confidentGameAnalysisPivotColl.find({'engine': engine, 'prediction': {'$lte': prediction}})]
-
-    def byEngineLengthAndPrediction(self, engine, length, prediction):
-        if engine:
-            return [GameAnalysisActivationBSONHandler.reads(bson) for bson in self.confidentGameAnalysisPivotColl.find({'engine': engine, 'length': length, 'prediction': {'$gte': prediction}})]
-        return [GameAnalysisActivationBSONHandler.reads(bson) for bson in self.confidentGameAnalysisPivotColl.find({'engine': engine, 'length': length, 'prediction': {'$lte': prediction}})]
-
-    def byPredictionRangeAndLength(self, minPred, maxPred, length):
-        return [GameAnalysisActivationBSONHandler.reads(bson) for bson in self.confidentGameAnalysisPivotColl.find({'prediction': {'$gte': minPred, '$lte': maxPred}})]
-
-    def writeMany(self, confidentGameAnalysisPivots):
-        [self.confidentGameAnalysisPivotColl.insert_many([GameAnalysisActivationBSONHandler.writes(cga) for cga in confidentGameAnalysisPivots])]
 
     def write(self, cga): # Game
         self.confidentGameAnalysisPivotColl.update_one({'_id': cga.id}, {'$set': GameAnalysisActivationBSONHandler.writes(cga)}, upsert=True)

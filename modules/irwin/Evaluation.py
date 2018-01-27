@@ -15,8 +15,8 @@ class Evaluation:
     def evaluate(self):
         logging.warning("Evaluating Model")
         logging.debug("Getting Dataset")
-        analysisStoreByPlayer = self.getEvaluationDataset(self.config['evalSize'])
-        activations = [self.activation(self.predictAnalysed(gameAnalysisStore.quickGameAnalysisTensors())) for player, gameAnalysisStore in analysisStoreByPlayer]
+        analysisStoreByPlayer = self.getEvaluationDataset(self.env.settings['irwin']['evalSize'])
+        activations = [self.activation(self.predictAnalysed(gameAnalysisStore.gameAnalysisTensors())) for player, gameAnalysisStore in analysisStoreByPlayer]
         outcomes = list([(ap, Evaluation.outcome(a, 90, 60, ap[0].engine)) for ap, a in zip(analysisStoreByPlayer, activations)])
         tp = len([a for a in outcomes if a[1] == 1])
         fn = len([a for a in outcomes if a[1] == 2])

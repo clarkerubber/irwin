@@ -17,9 +17,8 @@ from modules.irwin.Evaluation import Evaluation
 from modules.core.GameAnalysisStore import GameAnalysisStore
 
 class Irwin(Evaluation):
-    def __init__(self, env, config):
+    def __init__(self, env):
         self.env = env
-        self.config = config
         self.basicGameModel = BasicGameModel(env)
         self.analysedGameModel = AnalysedGameModel(env)
 
@@ -41,7 +40,7 @@ class Irwin(Evaluation):
         return res
 
     def report(self, userId, gameAnalysisStore):
-        predictions = self.predictAnalysed(gameAnalysisStore.quickGameAnalysisTensors())
+        predictions = self.predictAnalysed(gameAnalysisStore.gameAnalysisTensors())
         gamesMoveActivations = [[int(50*(p[0][0] + p[1][0])) for p in zip(list(prediction[1][0]), list(prediction[2][0]))] for prediction in predictions]
         report = {
             'userId': userId,
@@ -90,18 +89,6 @@ class Irwin(Evaluation):
             'l': int(100*analysedMove.winningChancesLoss())
         }
 
-    @staticmethod
-    def getGameEngineStatus(gameAnalysis, players):
-        return any([p for p in players if gameAnalysis.userId == p.id and p.engine])
-
-    @staticmethod
-    def assignLabels(gameAnalyses, players):
-        return [int(Irwin.getGameEngineStatus(gameAnalysis, players)) for gameAnalysis in gameAnalyses]
-
-    @staticmethod
-    def flatten(l):
-        return [item for sublist in l for item in sublist]
-
     def discover(self):
         # discover potential cheaters in the database of un-marked players
         logging.warning("Discovering unprocessed players")
@@ -111,7 +98,7 @@ class Irwin(Evaluation):
         for player in players:
             logging.debug("investigating "+player.id)
             gameAnalysisStore = GameAnalysisStore([], [ga for ga in self.env.gameAnalysisDB.byUserId(player.id)])
-            predictions = self.predictAnalysed(gameAnalysisStore.quickGameAnalysisTensors())
+            predictions = self.predictAnalysed(gameAnalysisStore.gameAnalysisTensors())
             activation = self.activation(predictions)
             logging.debug(str(activation))
             if activation > 90:
