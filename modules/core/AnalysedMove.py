@@ -14,10 +14,8 @@ class AnalysedMove(namedtuple('AnalysedMove', ['uci', 'move', 'emt', 'blur', 'sc
       self.rank() + 1,
       self.ambiguity() + 1,
       self.advantage(),
-      self.emt, # elapsed move time
-      self.emt - timeAvg, # difference from average
+      self.emt / (timeAvg + 1e-8), # elapsed move time / average
       abs(self.emt - timeAvg) / (timeAvg + 1e-8), # variance from average
-      0*float(self.blur), # did they blur
       self.difToNextBest(),
       self.difToNextWorst(),
       self.winningChancesLoss(), # loss of advantage
@@ -27,7 +25,7 @@ class AnalysedMove(namedtuple('AnalysedMove', ['uci', 'move', 'emt', 'blur', 'sc
 
   @staticmethod
   def nullTensor():
-    return 12*[0]
+    return 10*[0]
 
   def analysesWinningChances(self):
     c = [winningChances(a.score) for a in self.analyses]

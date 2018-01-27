@@ -136,10 +136,22 @@ class Irwin():
       gamesMoveActivations = [[int(50*(p[0][0] + p[1][0])) for p in zip(list(prediction[1][0]), list(prediction[2][0]))] for prediction in predictions]
     gamesTop30avg = [Irwin.top30avg(moveActivations) for moveActivations in gamesMoveActivations]
     gameOverallPredictions = [100*p[0][0] for p in predictions]
-    gameActivations = [int(0.5*(a+o)) for a, o in zip(gamesTop30avg, gameOverallPredictions)]
-    top30games = sorted(gameActivations, reverse=True)[:ceil(0.3*len(gameActivations))]
+    sortedGameActivations = sorted([int(0.5*(a+o)) for a, o in zip(gamesTop30avg, gameOverallPredictions)], reverse=True)
+
+    top30games = sortedGameActivations[:ceil(0.3*len(sortedGameActivations))]
     top30avgGames = int(np.average(top30games)) if len(top30games) > 0 else 0
-    return min(90, top30avgGames) if len(gamesTop30avg) < 6 else top30avgGames
+
+    above90 = len([a for a in sortedGameActivations if a > 90])
+    above80 = len([a for a in sortedGameActivations if a > 80])
+
+    if len(gamesTop30avg) < 6 or above90 < 3:
+      result = min(90, top30avgGames) # Not enough games to mark
+    elif above80 == 0:
+      result = min(60, top30avgGames) # Not enough games to report
+    else:
+      result = top30avgGames # Normal activation
+
+    return result
 
   @staticmethod
   def gameReport(gameAnalysis, prediction, moveActivations):

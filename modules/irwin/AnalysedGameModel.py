@@ -24,7 +24,7 @@ class AnalysedGameModel(namedtuple('AnalysedGameModel', ['env', 'type'])):
         logging.debug("model already exists, opening from file")
         return load_model('modules/irwin/models/narrowAnalysedGame.h5')
     logging.debug('model does not exist, building from scratch')
-    inputGame = Input(shape=(60, 12), dtype='float32', name='game_input')
+    inputGame = Input(shape=(60, 10), dtype='float32', name='game_input')
 
     # Merge embeddings
 
