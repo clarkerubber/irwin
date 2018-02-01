@@ -23,7 +23,7 @@ class Irwin(Evaluation):
         self.analysedGameModel = AnalysedGameModel(env)
 
     def predictAnalysed(self, tensors):
-        return [self.analysedGameModel.model().predict(np.array([t])) for t in tensors]
+        return [(self.analysedGameModel.model().predict(np.array([t])), length) for t, length in tensors]
 
     def predictBasicGames(self, gameTensors):
         # game tensors is a list of tuples in the form: [(gameId, tensor), ...]
@@ -52,8 +52,8 @@ class Irwin(Evaluation):
         return result
 
     @staticmethod
-    def gameActivation(gamePredictions):
-        moveActivations = [Irwin.moveActivation(movePrediction) for movePrediction in Irwin.movePredictions(gamePredictions)]
+    def gameActivation(gamePredictions, gameLength):
+        moveActivations = [Irwin.moveActivation(movePrediction) for movePrediction in Irwin.movePredictions(gamePredictions)][:gameLength]
         gameOverall = 100*gamePredictions[0][0]
         pOverX = Irwin.pOverX(moveActivations, 80)
         top30avg = np.average(sorted(moveActivations, reverse=True)[:ceil(0.3*len(moveActivations))])
@@ -69,7 +69,7 @@ class Irwin(Evaluation):
 
     def report(self, userId, gameAnalysisStore):
         playerPredictions = self.predictAnalysed(gameAnalysisStore.gameAnalysisTensors())
-        gameActivations = [Irwin.gameActivation(gamePredictions) for gamePredictions in playerPredictions]
+        gameActivations = [Irwin.gameActivation(gamePredictions, gameLength) for gamePredictions, gameLength in playerPredictions]
         report = {
             'userId': userId,
             'activation': self.activation(gameActivations),
@@ -82,7 +82,7 @@ class Irwin(Evaluation):
         return {
             'gameId': gameAnalysis.gameId,
             'activation': gameActivation,
-            'moves': [Irwin.moveReport(am, p) for am, p in zip(gameAnalysis.moveAnalyses, Irwin.movePredictions(gamePredictions))]
+            'moves': [Irwin.moveReport(am, p) for am, p in zip(gameAnalysis.moveAnalyses, Irwin.movePredictions(gamePredictions[0]))]
         }
 
     @staticmethod

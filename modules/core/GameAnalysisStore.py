@@ -39,7 +39,7 @@ class GameAnalysisStore(namedtuple('GameAnalysisStore', ['games', 'gameAnalyses'
         return [(gid, t) for gid, t in self.gameTensors(userId) if not self.gameIdHasAnalysis(gid)]
 
     def gameAnalysisTensors(self):
-        return [gameAnalysis.moveAnalysisTensors() for gameAnalysis in self.gameAnalyses if len(gameAnalysis.moveAnalyses) < 60 and len(gameAnalysis.moveAnalyses) > 20 and gameAnalysis.emtAverage() < 2000]
+        return [(gameAnalysis.moveAnalysisTensors(), gameAnalysis.length()) for gameAnalysis in self.gameAnalyses if len(gameAnalysis.moveAnalyses) < 60 and len(gameAnalysis.moveAnalyses) > 20 and gameAnalysis.emtAverage() < 2000]
 
     @staticmethod
     def new():

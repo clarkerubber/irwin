@@ -30,6 +30,9 @@ class GameAnalysis(namedtuple('GameAnalysis', ['id', 'userId', 'gameId', 'moveAn
     def winningChances(self):
         return [m.advantage() for m in self.moveAnalyses]
 
+    def length(self):
+        return len(self.moveAnalyses)
+
     @staticmethod
     def gameAnalysisId(gameId, white):
         return gameId + '/' + ('white' if white else 'black')
