@@ -9,7 +9,7 @@ class PlayerBSONHandler:
     def reads(bson):
         return Player(
                 id = bson['_id'],
-                titled = bson['titled'],
+                titled = bson.get('titled', False),
                 engine = bson['engine'],
                 gamesPlayed = bson['gamesPlayed'],
                 closedReports = bson['closedReports']

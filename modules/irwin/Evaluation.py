@@ -27,12 +27,17 @@ class Evaluation:
 
         fpnames = [a[0][0].id for a in outcomes if a[1] == 4]
 
-        logging.warning("True positive: " + str(tp))
-        logging.warning("False negative: " + str(fn))
-        logging.warning("True negative: " + str(tn))
-        logging.warning("False positive: " + str(fp))
-        logging.warning("True Report: " + str(tr))
-        logging.warning("False Report: " + str(fr))
+        cheatsLen = tp + fn + tr
+        legitsLen = fp + tn + fr 
+
+        logging.warning("True positive: " + str(tp) + " (" + str(int(100*tp/cheatsLen)) + "%)")
+        logging.warning("False negative: " + str(fn) + " (" + str(int(100*fn/cheatsLen)) + "%)")
+        logging.warning("True negative: " + str(tn) + " (" + str(int(100*tn/legitsLen)) + "%)")
+        logging.warning("False positive: " + str(fp) + " (" + str(int(100*fp/legitsLen)) + "%)")
+        logging.warning("True Report: " + str(tr) + " (" + str(int(100*tr/cheatsLen)) + "%)")
+        logging.warning("False Report: " + str(fr) + " (" + str(int(100*fr/legitsLen)) + "%)")
+        logging.warning("Cheats coverage: " + str(int(100*(tp+tr)/cheatsLen)) + "%")
+        logging.warning("Legits coverage: " + str(int(100*(tn)/legitsLen)) + "%")
 
         pprint(fpnames)
 

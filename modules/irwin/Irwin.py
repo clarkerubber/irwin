@@ -36,18 +36,18 @@ class Irwin(Evaluation):
     @staticmethod
     def activation(gameActivations):
         sortedGameActivations = sorted(gameActivations, reverse=True)
-        top30games = sortedGameActivations[:ceil(0.3*len(sortedGameActivations))]
-        top30gamesAvg = int(np.average(top30games)) if len(top30games) > 0 else 0
+        topXgames = sortedGameActivations[:ceil(0.1*len(sortedGameActivations))]
+        topXgamesAvg = int(np.average(topXgames)) if len(topXgames) > 0 else 0
 
-        above90 = len([a for a in sortedGameActivations if a > 90])
-        above80 = len([a for a in sortedGameActivations if a > 80])
+        aboveUpper = len([a for a in sortedGameActivations if a > 90])
+        aboveLower = len([a for a in sortedGameActivations if a > 70])
 
-        if above90 > 2:
-            result = top30gamesAvg # enough games to mark
-        elif above80 > 0:
-            result = min(90, top30gamesAvg) # Not enough games to mark
+        if aboveUpper > 2:
+            result = topXgamesAvg # enough games to mark
+        elif aboveLower > 0:
+            result = min(90, topXgamesAvg) # Not enough games to mark
         else:
-            result = min(60, top30gamesAvg) # Not enough games to report
+            result = min(60, topXgamesAvg) # Not enough games to report
 
         return result
 
