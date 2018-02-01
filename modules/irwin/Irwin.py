@@ -33,50 +33,62 @@ class Irwin(Evaluation):
         predictions = [int(100*np.asscalar(p)) for p in self.basicGameModel.model().predict(np.array([t for gid, t in gameTensors]))]
         return list(zip(gameIds, predictions))
 
-    def activation(self, predictions, gamesMoveActivations=None):
-        if gamesMoveActivations is None:
-            gamesMoveActivations = [[int(50*(p[0][0] + p[1][0])) for p in zip(list(prediction[1][0]), list(prediction[2][0]))] for prediction in predictions]
-        gamesPOverX = [Irwin.pOverX(moveActivations, 90) for moveActivations in gamesMoveActivations]
-        gameOverallPredictions = [100*p[0][0] for p in predictions]
-        sortedGameActivations = sorted([int(0.5*(a+o)) for a, o in zip(gamesPOverX, gameOverallPredictions)], reverse=True)
-
+    @staticmethod
+    def activation(gameActivations):
+        sortedGameActivations = sorted(gameActivations, reverse=True)
         top30games = sortedGameActivations[:ceil(0.3*len(sortedGameActivations))]
-        top30avgGames = int(np.average(top30games)) if len(top30games) > 0 else 0
+        top30gamesAvg = int(np.average(top30games)) if len(top30games) > 0 else 0
 
         above90 = len([a for a in sortedGameActivations if a > 90])
         above80 = len([a for a in sortedGameActivations if a > 80])
 
-        if len(gamesPOverX) < 6 or above90 < 3:
-            result = min(90, top30avgGames) # Not enough games to mark
-        elif above80 == 0:
-            result = min(60, top30avgGames) # Not enough games to report
+        if above90 > 2:
+            result = top30gamesAvg # enough games to mark
+        elif above80 > 0:
+            result = min(90, top30gamesAvg) # Not enough games to mark
         else:
-            result = top30avgGames # Normal activation
+            result = min(60, top30gamesAvg) # Not enough games to report
 
         return result
 
+    @staticmethod
+    def gameActivation(gamePredictions):
+        moveActivations = [Irwin.moveActivation(movePrediction) for movePrediction in Irwin.movePredictions(gamePredictions)]
+        gameOverall = 100*gamePredictions[0][0]
+        pOverX = Irwin.pOverX(moveActivations, 80)
+        top30avg = np.average(sorted(moveActivations, reverse=True)[:ceil(0.3*len(moveActivations))])
+        return int(np.average([gameOverall, pOverX, top30avg]))
+
+    @staticmethod
+    def movePredictions(gamePredictions):
+        return list(zip(list(gamePredictions[1][0]), list(gamePredictions[2][0])))
+
+    @staticmethod
+    def moveActivation(movePrediction):
+        return int(50*(movePrediction[0][0]+movePrediction[1][0]))
+
     def report(self, userId, gameAnalysisStore):
-        predictions = self.predictAnalysed(gameAnalysisStore.gameAnalysisTensors())
-        gamesMoveActivations = [[int(50*(p[0][0] + p[1][0])) for p in zip(list(prediction[1][0]), list(prediction[2][0]))] for prediction in predictions]
+        playerPredictions = self.predictAnalysed(gameAnalysisStore.gameAnalysisTensors())
+        gameActivations = [Irwin.gameActivation(gamePredictions) for gamePredictions in playerPredictions]
         report = {
             'userId': userId,
-            'activation': self.activation(predictions, gamesMoveActivations),
-            'games': [Irwin.gameReport(ga, p, ma) for ga, p, ma in zip(gameAnalysisStore.gameAnalyses, predictions, gamesMoveActivations)]
+            'activation': self.activation(gameActivations),
+            'games': [Irwin.gameReport(ga, a, gp) for ga, a, gp in zip(gameAnalysisStore.gameAnalyses, gameActivations, playerPredictions)]
         }
         return report
 
     @staticmethod
-    def gameReport(gameAnalysis, prediction, moveActivations):
+    def gameReport(gameAnalysis, gameActivation, gamePredictions):
         return {
             'gameId': gameAnalysis.gameId,
-            'activation': int(50*prediction[0][0] + 0.5*Irwin.top30avg(moveActivations)),
-            'moves': [Irwin.moveReport(am, p) for am, p in zip(gameAnalysis.moveAnalyses, moveActivations)]
+            'activation': gameActivation,
+            'moves': [Irwin.moveReport(am, p) for am, p in zip(gameAnalysis.moveAnalyses, Irwin.movePredictions(gamePredictions))]
         }
 
     @staticmethod
-    def moveReport(analysedMove, prediction):
+    def moveReport(analysedMove, movePrediction):
         return {
-            'a': prediction,
+            'a': Irwin.moveActivation(movePrediction),
             'r': analysedMove.trueRank(),
             'm': analysedMove.ambiguity(),
             'o': int(100*analysedMove.advantage()),
