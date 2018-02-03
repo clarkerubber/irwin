@@ -6,11 +6,14 @@ from chess import uci
 
 from modules.fishnet.fishnet import stockfish_command
 
-from modules.Api import Api
+from Api import Api
 
 from modules.core.Game import GameDB
 from modules.core.GameAnalysis import GameAnalysisDB
 from modules.core.Player import PlayerDB
+
+from modules.queue.BasicPlayerQueue import BasicPlayerQueueDB
+from modules.queue.DeepPlayerQueue import DeepPlayerQueueDB
 
 from modules.irwin.GameAnalysisActivation import GameAnalysisActivationDB
 
@@ -41,12 +44,18 @@ class Env:
         self.gameColl = self.db.game
         self.gameAnalysisColl = self.db.gameAnalysis
 
+        self.basicPlayerQueueColl = self.db.basicPlayerQueue
+        self.deepPlayerQueueColl = self.db.deepPlayerQueue
+
         self.gameAnalysisActivationColl = self.db.gameAnalysisActivation
 
         # database abstraction
         self.playerDB = PlayerDB(self.playerColl)
         self.gameDB = GameDB(self.gameColl)
         self.gameAnalysisDB = GameAnalysisDB(self.gameAnalysisColl)
+
+        self.basicPlayerQueueDB = BasicPlayerQueueDB(self.basicPlayerQueueColl)
+        self.deepPlayerQueueDB = DeepPlayerQueueDB(self.deepPlayerQueueColl)
 
         self.gameAnalysisActivationDB = GameAnalysisActivationDB(self.gameAnalysisActivationColl)
 

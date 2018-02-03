@@ -2,7 +2,21 @@ from collections import namedtuple
 
 class Player(namedtuple('Player', ['id', 'titled', 'engine', 'gamesPlayed', 'closedReports'])):
     def setEngine(self, status):
-        return Player(id=self.id, titled=self.titled, engine=status, gamesPlayed=self.gamesPlayed, closedReports=self.closedReports)
+        return Player(
+            id=self.id,
+            titled=self.titled,
+            engine=status,
+            gamesPlayed=self.gamesPlayed,
+            closedReports=self.closedReports)
+
+    @staticmethod
+    def fromPlayerData(data):
+        return Player(
+            id=data['user']['id'],
+            titled=data['user'].get('title') is not None,
+            engine=data['user'].get('engine') is not None,
+            gamesPlayed=sum([d.get('games', 0) for perf, d in data['user']['perfs'].items()]),
+            closedReports=len(data['assessment'].get('relatedCheaters', [])))
 
 class PlayerBSONHandler:
     @staticmethod
@@ -26,10 +40,8 @@ class PlayerBSONHandler:
 
 class PlayerDB(namedtuple('PlayerDB', ['playerColl'])):
     def byId(self, _id):
-        try:
-            return PlayerBSONHandler.reads(self.playerColl.find_one({'_id': _id}))
-        except:
-            return None
+        playerBSON = self.playerColl.find_one({'_id': _id})
+        return None if playerBSON is None else PlayerBSONHandler.reads(playerBSON)
 
     def balancedSample(self, size):
         pipelines = [[
