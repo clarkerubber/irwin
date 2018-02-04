@@ -12,6 +12,7 @@ from modules.queue.DeepPlayerQueue import DeepPlayerQueue
 
 from modules.core.Player import Player
 from modules.core.Game import Game
+from modules.core.GameAnalysis import GameAnalysis
 from modules.core.GameAnalysisStore import GameAnalysisStore
 
 from Env import Env
@@ -38,17 +39,19 @@ env = Env(config)
 
 while True:
     deepPlayerQueue = env.deepPlayerQueueDB.nextUnprocessed()
-    logging.info("Basic Queue: " + str(deepPlayerQueue))
     if deepPlayerQueue is None:
         # no entries in the queue. sleep and wait for line to fill
         sleep(30)
         continue
-    playerData = env.api.getPlayerData(deepPlayerQueue.id)
-    env.playerDB.write(Player.fromPlayerData(playerData))
+    logging.info("Deep Queue: " + str(deepPlayerQueue))
+    userId = deepPlayerQueue.id
+    playerData = env.api.getPlayerData(userId)
 
     if playerData is None:
         logging.warning("getPlayerData returned None in main.py")
         continue
+
+    env.playerDB.write(Player.fromPlayerData(playerData))
 
     # pull what we already have on the player
     gameAnalysisStore = GameAnalysisStore.new()

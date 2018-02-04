@@ -16,18 +16,21 @@ from modules.queue.BasicPlayerQueue import BasicPlayerQueueDB
 from modules.queue.DeepPlayerQueue import DeepPlayerQueueDB
 
 from modules.irwin.GameAnalysisActivation import GameAnalysisActivationDB
+from modules.irwin.GameBasicActivation import GameBasicActivationDB
 
 from modules.irwin.Irwin import Irwin
 
 class Env:
-    def __init__(self, settings):
+    def __init__(self, settings, engine=True):
         self.settings = settings
+        self.engine = engine
 
-        self.engine = uci.popen_engine(stockfish_command(settings['stockfish']['update']))
-        self.engine.setoption({'Threads': settings['stockfish']['threads'], 'Hash': settings['stockfish']['memory']})
-        self.engine.uci()
-        self.infoHandler = uci.InfoHandler()
-        self.engine.info_handlers.append(self.infoHandler)
+        if self.engine:
+            self.engine = uci.popen_engine(stockfish_command(settings['stockfish']['update']))
+            self.engine.setoption({'Threads': settings['stockfish']['threads'], 'Hash': settings['stockfish']['memory']})
+            self.engine.uci()
+            self.infoHandler = uci.InfoHandler()
+            self.engine.info_handlers.append(self.infoHandler)
 
         self.api = Api(settings['api']['url'], settings['api']['token'])
 
@@ -48,6 +51,7 @@ class Env:
         self.deepPlayerQueueColl = self.db.deepPlayerQueue
 
         self.gameAnalysisActivationColl = self.db.gameAnalysisActivation
+        self.gameBasicActivationColl = self.db.gameBasicActivation
 
         # database abstraction
         self.playerDB = PlayerDB(self.playerColl)
@@ -58,17 +62,19 @@ class Env:
         self.deepPlayerQueueDB = DeepPlayerQueueDB(self.deepPlayerQueueColl)
 
         self.gameAnalysisActivationDB = GameAnalysisActivationDB(self.gameAnalysisActivationColl)
+        self.gameBasicActivationDB = GameBasicActivationDB(self.gameBasicActivationColl)
 
         # Irwin
         self.irwin = Irwin(self)
 
     def restartEngine(self):
-        self.engine.kill()
-        self.engine = uci.popen_engine(stockfish_command(self.settings['stockfish']['update']))
-        self.engine.setoption({'Threads': self.settings['stockfish']['threads'], 'Hash': self.settings['stockfish']['memory']})
-        self.engine.uci()
-        self.infoHandler = uci.InfoHandler()
-        self.engine.info_handlers.append(self.infoHandler)
+        if self.engine:
+            self.engine.kill()
+            self.engine = uci.popen_engine(stockfish_command(self.settings['stockfish']['update']))
+            self.engine.setoption({'Threads': self.settings['stockfish']['threads'], 'Hash': self.settings['stockfish']['memory']})
+            self.engine.uci()
+            self.infoHandler = uci.InfoHandler()
+            self.engine.info_handlers.append(self.infoHandler)
 
     def __del__(self):
         logging.warning("Removing Env")

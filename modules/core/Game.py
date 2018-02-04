@@ -48,9 +48,9 @@ class Game(namedtuple('Game', ['id', 'white', 'black', 'pgn', 'emts', 'whiteBlur
         )
 
     @staticmethod
-    def fromPlayerData(dicts):
+    def fromPlayerData(playerData):
         """Returns a list of Game items from playerData json object from lichess api"""
-        return [Game.fromDict(gid, userId, g) for gid, g in playerData['games'].items() \
+        return [Game.fromDict(gid, playerData['user']['id'], g) for gid, g in playerData['games'].items() \
                  if g.get('initialFen') is None and g.get('variant') is None]
 
     def tensor(self, userId):

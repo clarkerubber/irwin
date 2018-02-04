@@ -34,15 +34,15 @@ with open('conf/config.json') as confFile:
 if config == {}:
     raise Exception('Config file empty or does not exist!')
 
-env = Env(config)
+env = Env(config, engine=False)
 
 while True:
     basicPlayerQueue = env.basicPlayerQueueDB.nextUnprocessed()
-    logging.info("Basic Queue: " + str(basicPlayerQueue))
     if basicPlayerQueue is None:
         # no entries in the queue. sleep and wait for line to fill
         sleep(30)
         continue
+    logging.info("Basic Queue: " + str(basicPlayerQueue))
     gameAnalysisStore = GameAnalysisStore.new()
     gameAnalysisStore.addGames(env.gameDB.byUserId(basicPlayerQueue.id))
     gameTensors = gameAnalysisStore.gameTensors(basicPlayerQueue.id)
@@ -50,9 +50,11 @@ while True:
         gamePredictions = env.irwin.predictBasicGames(gameTensors)
         activations = sorted([a[1] for a in gamePredictions], reverse=True)
         top30avg = ceil(np.average(activations[:ceil(0.3*len(activations))]))
-        if basicPlayerQueue.origin == report:
+        if basicPlayerQueue.origin == 'report':
             originPrecedence = 50
         else:
             originPrecedence = 0
-        env.deepPlayerQueueDB.write(DeepPlayerQueue(
-            id=basicPlayerQueue.id, origin=basicPlayerQueue.origin, precedence=top30avg+originPrecedence))
+        deepPlayerQueue = DeepPlayerQueue(
+            id=basicPlayerQueue.id, origin=basicPlayerQueue.origin, precedence=top30avg+originPrecedence)
+        logging.info("Writing DeepPlayerQueue: " + str(deepPlayerQueue))
+        env.deepPlayerQueueDB.write(deepPlayerQueue)

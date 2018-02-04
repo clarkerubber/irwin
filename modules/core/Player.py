@@ -11,12 +11,15 @@ class Player(namedtuple('Player', ['id', 'titled', 'engine', 'gamesPlayed', 'clo
 
     @staticmethod
     def fromPlayerData(data):
-        return Player(
-            id=data['user']['id'],
-            titled=data['user'].get('title') is not None,
-            engine=data['user'].get('engine') is not None,
-            gamesPlayed=sum([d.get('games', 0) for perf, d in data['user']['perfs'].items()]),
-            closedReports=len(data['assessment'].get('relatedCheaters', [])))
+        user = data.get('user')
+        if user is not None:
+            return Player(
+                id=user.get('id'),
+                titled=user.get('title') is not None,
+                engine=user.get('engine') is not None,
+                gamesPlayed=sum([d.get('games', 0) for perf, d in user.get('perfs', {}).items()]),
+                closedReports=len(data.get('assessment', {}).get('relatedCheaters', [])))
+        return None
 
 class PlayerBSONHandler:
     @staticmethod
@@ -57,6 +60,9 @@ class PlayerDB(namedtuple('PlayerDB', ['playerColl'])):
 
     def byEngine(self, engine):
         return [PlayerBSONHandler.reads(p) for p in self.playerColl.find({'engine': engine})]
+
+    def all(self):
+        return [PlayerBSONHandler.reads(p) for p in self.playerColl.find({})]
 
     def write(self, player):
         self.playerColl.update_one({'_id': player.id}, {'$set': PlayerBSONHandler.writes(player)}, upsert=True)

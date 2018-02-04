@@ -7,7 +7,7 @@ import json
 
 from modules.core.GameAnalysisStore import GameAnalysisStore
 
-from utils.UpdatePlayerDatabase import UpdatePlayerDatabase
+from utils.updatePlayerDatabase import updatePlayerDatabase
 
 from Env import Env
 
@@ -18,6 +18,7 @@ if config == {}:
     raise Exception('Config file empty or does not exist!')
 
 parser = argparse.ArgumentParser(description=__doc__)
+## Training
 parser.add_argument("--trainbasic", dest="trainbasic", nargs="?",
                     default=False, const=True, help="train basic game model")
 parser.add_argument("--trainanalysed", dest="trainanalysed", nargs="?",
@@ -27,13 +28,18 @@ parser.add_argument("--filtered", dest="filtered", nargs="?",
 parser.add_argument("--newmodel", dest="newmodel", nargs="?",
                     default=False, const=True, help="throw out current model. build new")
 
-parser.add_argument("--buildactivationtable", dest="buildactivationtable", nargs="?",
+## Database building
+parser.add_argument("--buildbasictable", dest="buildbasictable", nargs="?",
                     default=False, const=True,
-                    help="build table of game analysis that the network is confident in predicting")
+                    help="build table of basic game activations")
+parser.add_argument("--buildanalysedtable", dest="buildanalysedtable", nargs="?",
+                    default=False, const=True,
+                    help="build table of analysed game activations")
 parser.add_argument("--updatedatabase", dest="updatedatabase", nargs="?",
                     default=False, const=True,
                     help="collect game analyses for players. Build database collection")
 
+## Evaluation and testing
 parser.add_argument("--eval", dest="eval", nargs="?",
                     default=False, const=True,
                     help="evaluate the performance of neural networks")
@@ -56,15 +62,20 @@ logging.getLogger("modules.fishnet.fishnet").setLevel(logging.INFO)
 env = Env(config)
 
 if settings.updatedatabase:
-    UpdatePlayerDatabaseThread = UpdatePlayerDatabase(env)
-    UpdatePlayerDatabaseThread.start()
+    updatePlayerDatabase()
 
 # train on a single batch
 if settings.trainbasic:
-    env.irwin.basicGameModel.train(config['irwin']['train']['epochs'], settings.newmodel)
+    env.irwin.basicGameModel.train(
+        config['irwin']['train']['epochs'],
+        settings.filtered,
+        settings.newmodel)
 
-if settings.buildactivationtable:
-    env.irwin.buildActivationTable()
+if settings.buildbasictable:
+    env.irwin.buildBasicTable()
+
+if settings.buildanalysedtable:
+    env.irwin.buildAnalysedTable()
 
 if settings.trainanalysed:
     env.irwin.analysedGameModel.train(

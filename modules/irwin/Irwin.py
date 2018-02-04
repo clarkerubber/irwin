@@ -11,6 +11,7 @@ from modules.irwin.AnalysedGameModel import AnalysedGameModel
 from modules.irwin.BasicGameModel import BasicGameModel
 
 from modules.irwin.GameAnalysisActivation import GameAnalysisActivation
+from modules.irwin.GameBasicActivation import GameBasicActivation
 
 from modules.irwin.Evaluation import Evaluation
 
@@ -45,9 +46,9 @@ class Irwin(Evaluation):
         if aboveUpper > 2:
             result = topXgamesAvg # enough games to mark
         elif aboveLower > 0:
-            result = min(90, topXgamesAvg) # Not enough games to mark
+            result = min(89, topXgamesAvg) # Not enough games to mark
         else:
-            result = min(60, topXgamesAvg) # Not enough games to report
+            result = min(59, topXgamesAvg) # Not enough games to report
 
         return result
 
@@ -109,7 +110,7 @@ class Irwin(Evaluation):
         return res
 
     def discover(self):
-        # discover potential cheaters in the database of un-marked players
+        """discover potential cheaters in the database of un-marked players"""
         logging.warning("Discovering unprocessed players")
         logging.debug("getting players")
         players = self.env.playerDB.byEngine(None)
@@ -125,7 +126,8 @@ class Irwin(Evaluation):
                 sus.append((player.id, activation))
         pprint(sus)
 
-    def buildAnalysedActivationTable(self):
+    def buildAnalysedTable(self):
+        """Build table of activations for analysed games. used for training"""
         logging.warning("Building Analysed Activation Table")
         logging.debug("getting games")
         cheats = self.env.playerDB.byEngine(True)
@@ -144,30 +146,41 @@ class Irwin(Evaluation):
         cheatGamePredictions = self.predictAnalysed(cheatTensors)
         legitGamePredictions = self.predictAnalysed(legitTensors)
 
-        confidentCheats = [GameAnalysisActivation.fromGamesAnalysisandPrediction(gameAnalysis, int(100*prediction[0][0]), engine=True) for gameAnalysis, prediction in zip(cheatGameAnalyses, cheatGamePredictions)]
-        confidentLegits = [GameAnalysisActivation.fromGamesAnalysisandPrediction(gameAnalysis, int(100*prediction[0][0]), engine=False) for gameAnalysis, prediction in zip(legitGameAnalyses, legitGamePredictions)]
+        confidentCheats = [GameAnalysisActivation.fromGamesAnalysisandPrediction(
+            gameAnalysis,
+            int(100*prediction[0][0]),
+            engine=True) for gameAnalysis, prediction in zip(cheatGameAnalyses, cheatGamePredictions)]
+        confidentLegits = [GameAnalysisActivation.fromGamesAnalysisandPrediction(
+            gameAnalysis,
+            int(100*prediction[0][0]),
+            engine=False) for gameAnalysis, prediction in zip(legitGameAnalyses, legitGamePredictions)]
 
         logging.debug("writing to db")
         self.env.gameAnalysisActivationDB.lazyWriteMany(confidentCheats + confidentLegits)
 
-    def buildBasicActivationTable(self):
-        logging.warning("Building Basic Activation Table")
-        logging.debug("getting games")
+    def buildBasicTable(self):
+        """Build table of activations for basic games (analysed by lichess). used for training"""
+        logging.debug("Building Basic Activation Table")
+        logging.info("getting players")
         cheats = self.env.playerDB.byEngine(True)
         legits = self.env.playerDB.byEngine(False)
 
-        cheatTensorsByIdAndUser = []
-        legitTensorsByIdAndUser = []
+        gameBasicActivations = []
+        players = cheats+legits
+        lenPlayers = str(len(players))
 
-        for p in cheats + legits:
-            tensorsByIdAndUser = [(g.id, p.id, g.tensor(p.id)) for g in self.env.gameDB.byUserId(p.id)]
-            if p.engine:
-                cheatTensorsByIdAndUser.extend(tensorsByIdAndUser)
-            else:
-                legitTensorsByIdAndUser.extend(tensorsByIdAndUser)
+        logging.info("getting games and predicting")
+        for i, p in enumerate(players):
+            logging.info("predicting: " + p.id + "  -  " + str(i) + "/" + lenPlayers)
+            gameAnalysisStore = GameAnalysisStore(self.env.gameDB.byUserId(p.id), [])
+            gameTensors = gameAnalysisStore.gameTensors(p.id)
+            if len(gameTensors) > 0:
+                gamePredictions = self.predictBasicGames(gameTensors)
+                gameBasicActivations.extend([GameBasicActivation.fromPrediction(
+                    gameId=gameId,
+                    userId=p.id,
+                    prediction=prediction,
+                    engine=p.engine) for gameId, prediction in gamePredictions])
 
-        cheatGamePredictions = self.predictBasicGames([(g[0], g[2]) for g in cheatTensorsByIdAndUser])
-        legitGamePredictions = self.predictBasicGames([(g[0], g[2]) for g in legitTensorsByIdAndUser])
-
-        cheatPredictionsByIdAndUser = [(p[0], t[1], p[1]) for p, t in zip(cheatGamePredictions, cheatTensorsByIdAndUser)] # [(gameId, userId, prediction)]
-        legitPredictionsByIdAndUser = [(p[0], t[1], p[1]) for p, t in zip(legitGamePredictions, legitTensorsByIdAndUser)] # [(gameId, userId, prediction)]
+        logging.info("writing to db")
+        self.env.gameBasicActivationDB.lazyWriteMany(gameBasicActivations)

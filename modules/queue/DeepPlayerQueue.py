@@ -3,7 +3,7 @@ from collections import namedtuple
 from datetime import datetime
 import pymongo
 
-DeepPlayerQueue = namedtuple('DeepPlayerQueue', ['id', 'origin', 'precendence'])
+DeepPlayerQueue = namedtuple('DeepPlayerQueue', ['id', 'origin', 'precedence'])
 
 class DeepPlayerQueueBSONHandler:
     @staticmethod
@@ -11,14 +11,14 @@ class DeepPlayerQueueBSONHandler:
         return DeepPlayerQueue(
             id=bson['_id'],
             origin=bson['origin'],
-            precendence=bson['precendence'])
+            precedence=bson['precedence'])
 
     @staticmethod
     def writes(deepPlayerQueue):
         return {
             '_id': deepPlayerQueue.id,
             'origin': deepPlayerQueue.origin,
-            'precendence': deepPlayerQueue.precendence,
+            'precedence': deepPlayerQueue.precedence,
             'date': datetime.now()
         }
 
@@ -33,5 +33,5 @@ class DeepPlayerQueueDB(namedtuple('DeepPlayerQueueDB', ['deepPlayerQueueColl'])
             filter={},
             sort=[
                 ("precendence", pymongo.DESCENDING),
-                ("date", pymongo.DESCENDING)])
+                ("date", pymongo.ASCENDING)])
         return None if deepPlayerQueueBSON is None else DeepPlayerQueueBSONHandler.reads(deepPlayerQueueBSON)

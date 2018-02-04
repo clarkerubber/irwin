@@ -37,7 +37,7 @@ with open('conf/config.json') as confFile:
 if config == {}:
     raise Exception('Config file empty or does not exist!')
 
-env = Env(config)
+env = Env(config, engine=False)
 
 """
 Possible messages that lichess will emit
@@ -53,29 +53,34 @@ Possible messages that lichess will emit
 
 def handleLine(lineDict):
     playerData = env.api.getPlayerData(lineDict['user'])
-    env.playerDB.write(Player.fromPlayerData(playerData)) # this will cover updating the player status
-    env.gameDB.lazyWriteGames(Game.fromPlayerData(playerData)) # get games because data is king
+    if playerData is None:
+        return None
+    player = Player.fromPlayerData(playerData)
+    if player is not None:
+        env.playerDB.write(player) # this will cover updating the player status
+        env.gameDB.lazyWriteGames(Game.fromPlayerData(playerData)) # get games because data is king
 
-    if lineDict['t'] == 'request':
-        if lineDict['origin'] == 'moderator':
-            env.deepPlayerQueueDB.write(DeepPlayerQueue(
-                id=lineDict['user'], origin='moderator', 'precedence': 1000))
-        else:
-            env.basicPlayerQueueDB.write(BasicPlayerQueue(
-                id=lineDict['user'], origin=lineDict['origin']))
-    elif lineDict['t'] == 'reportCreated':
-        env.basicPlayerQueueDB.write(BasicPlayerQueue(id=lineDict['user'], origin='report'))
+        if lineDict['t'] == 'request':
+            if lineDict['origin'] == 'moderator':
+                env.deepPlayerQueueDB.write(DeepPlayerQueue(
+                    id=lineDict['user'], origin='moderator', precedence=1000))
+            else:
+                env.basicPlayerQueueDB.write(BasicPlayerQueue(
+                    id=lineDict['user'], origin=lineDict['origin']))
+        elif lineDict['t'] == 'reportCreated':
+            env.basicPlayerQueueDB.write(BasicPlayerQueue(id=lineDict['user'], origin='report'))
 
 
 while True:
     try:
-        r = requests.get(config['api']['url'] + 'irwin/stream?api_key=' + config['api']['token'], stream=True)
+        #r = requests.get(config['api']['url'] + 'irwin/stream?api_key=' + config['api']['token'], stream=True)
+        r = requests.get('https://listage.ovh/irwin/stream?api_key=' + config['api']['token'], stream=True)
         for line in r.iter_lines():
             lineDict = json.loads(line.decode("utf-8"))
             logging.info("received: " + str(lineDict))
             handleLine(lineDict)
     except ChunkedEncodingError:
-        logging.warning("WARNING: ChunkedEncodingError")
+        ## logging.warning("WARNING: ChunkedEncodingError") This happens often enough to silence
         sleep(10)
         continue
     except ConnectionError:

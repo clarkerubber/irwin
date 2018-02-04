@@ -27,5 +27,5 @@ class BasicPlayerQueueDB(namedtuple('BasicPlayerQueueDB', ['basicPlayerQueueColl
     def nextUnprocessed(self):
         basicPlayerQueueBSON = self.basicPlayerQueueColl.find_one_and_delete(
             filter={},
-            sort=[("date", pymongo.DESCENDING)])
+            sort=[("date", pymongo.ASCENDING)])
         return None if basicPlayerQueueBSON is None else BasicPlayerQueueBSONHandler.reads(basicPlayerQueueBSON)

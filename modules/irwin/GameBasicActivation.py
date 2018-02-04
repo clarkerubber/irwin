@@ -1,8 +1,9 @@
+"""Type used for pivot coll for basic game model training"""
 from collections import namedtuple
 
 class GameBasicActivation(namedtuple('GameBasicActivation', ['id', 'gameId', 'userId', 'engine', 'prediction'])):
     @staticmethod
-    def fromPredictionByIdAndUser(gameId, userId, prediction, engine):
+    def fromPrediction(gameId, userId, prediction, engine):
         return GameBasicActivation(
             id = gameId + '/' + userId,
             gameId = gameId,
