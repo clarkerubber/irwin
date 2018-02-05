@@ -31,5 +31,7 @@ class DeepPlayerQueueDB(namedtuple('DeepPlayerQueueDB', ['deepPlayerQueueColl'])
     def nextUnprocessed(self):
         deepPlayerQueueBSON = self.deepPlayerQueueColl.find_one_and_delete(
             filter={},
-            sort=[("precedence", pymongo.DESCENDING)])
+            sort=[
+                ("precedence", pymongo.DESCENDING),
+                ("date", pymongo.ASCENDING)])
         return None if deepPlayerQueueBSON is None else DeepPlayerQueueBSONHandler.reads(deepPlayerQueueBSON)
