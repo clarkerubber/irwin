@@ -76,8 +76,7 @@ def handleLine(lineDict):
 
 while True:
     try:
-        #r = requests.get(config['api']['url'] + 'irwin/stream?api_key=' + config['api']['token'], stream=True)
-        r = requests.get('https://listage.ovh/irwin/stream?api_key=' + config['api']['token'], stream=True)
+        r = requests.get(config['api']['url'] + 'irwin/stream?api_key=' + config['api']['token'], stream=True)
         for line in r.iter_lines():
             lineDict = json.loads(line.decode("utf-8"))
             logging.info("Received: " + str(lineDict))
