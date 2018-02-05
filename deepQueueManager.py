@@ -88,11 +88,12 @@ while True:
     # analyse games with SF
     gameAnalysisStore.addGameAnalyses([
         GameAnalysis.fromGame(
-            game,
-            env.engine,
-            env.infoHandler,
-            game.white == userId,
-            env.settings['stockfish']['nodes']) for game in gamesToAnalyse])
+            game=game,
+            engine=env.engine,
+            infoHandler=env.infoHandler,
+            white=game.white == userId,
+            nodes=env.settings['stockfish']['nodes'],
+            positionAnalysisDB=env.positionAnalysisDB) for game in gamesToAnalyse])
 
     env.gameAnalysisDB.lazyWriteGameAnalyses(gameAnalysisStore.gameAnalyses)
 

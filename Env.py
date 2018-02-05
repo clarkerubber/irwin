@@ -11,6 +11,7 @@ from Api import Api
 from modules.core.Game import GameDB
 from modules.core.GameAnalysis import GameAnalysisDB
 from modules.core.Player import PlayerDB
+from modules.core.PositionAnalysis import PositionAnalysisDB
 
 from modules.queue.BasicPlayerQueue import BasicPlayerQueueDB
 from modules.queue.DeepPlayerQueue import DeepPlayerQueueDB
@@ -46,6 +47,7 @@ class Env:
         self.playerColl = self.db.player
         self.gameColl = self.db.game
         self.gameAnalysisColl = self.db.gameAnalysis
+        self.positionAnalysisColl = self.db.positionAnalysis
 
         self.basicPlayerQueueColl = self.db.basicPlayerQueue
         self.deepPlayerQueueColl = self.db.deepPlayerQueue
@@ -57,6 +59,7 @@ class Env:
         self.playerDB = PlayerDB(self.playerColl)
         self.gameDB = GameDB(self.gameColl)
         self.gameAnalysisDB = GameAnalysisDB(self.gameAnalysisColl)
+        self.positionAnalysisDB = PositionAnalysisDB(self.positionAnalysisColl)
 
         self.basicPlayerQueueDB = BasicPlayerQueueDB(self.basicPlayerQueueColl)
         self.deepPlayerQueueDB = DeepPlayerQueueDB(self.deepPlayerQueueColl)

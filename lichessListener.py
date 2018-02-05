@@ -29,7 +29,7 @@ settings = parser.parse_args()
 logging.basicConfig(format="%(message)s", level=settings.loglevel, stream=sys.stdout)
 logging.getLogger("requests.packages.urllib3").setLevel(logging.WARNING)
 logging.getLogger("chess.uci").setLevel(logging.WARNING)
-logging.getLogger("modules.fishnet.fishnet").setLevel(logging.INFO)
+logging.getLogger("modules.fishnet.fishnet").setLevel(logging.WARNING)
 
 config = {}
 with open('conf/config.json') as confFile:
@@ -54,6 +54,7 @@ Possible messages that lichess will emit
 def handleLine(lineDict):
     playerData = env.api.getPlayerData(lineDict['user'])
     if playerData is None:
+        logging.warning("PlayerData is None. Returning None")
         return None
     player = Player.fromPlayerData(playerData)
     if player is not None:
@@ -69,6 +70,8 @@ def handleLine(lineDict):
                     id=lineDict['user'], origin=lineDict['origin']))
         elif lineDict['t'] == 'reportCreated':
             env.basicPlayerQueueDB.write(BasicPlayerQueue(id=lineDict['user'], origin='report'))
+    else:
+        logging.warning("player is None. Not proceeding.")
 
 
 while True:
@@ -77,7 +80,7 @@ while True:
         r = requests.get('https://listage.ovh/irwin/stream?api_key=' + config['api']['token'], stream=True)
         for line in r.iter_lines():
             lineDict = json.loads(line.decode("utf-8"))
-            logging.info("received: " + str(lineDict))
+            logging.info("Received: " + str(lineDict))
             handleLine(lineDict)
     except ChunkedEncodingError:
         ## logging.warning("WARNING: ChunkedEncodingError") This happens often enough to silence

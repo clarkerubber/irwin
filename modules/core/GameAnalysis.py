@@ -42,7 +42,7 @@ class GameAnalysis(namedtuple('GameAnalysis', ['id', 'userId', 'gameId', 'moveAn
         return (2*(moveNumber-1)) + (0 if white else 1)
 
     @staticmethod
-    def fromGame(game, engine, infoHandler, white, nodes):
+    def fromGame(game, engine, infoHandler, white, nodes, positionAnalysisDB):
         logging.warning("analysing: " + game.id)
         if len(game.pgn) < 40 or len(game.pgn) > 120:
             return None
@@ -64,25 +64,33 @@ class GameAnalysis(namedtuple('GameAnalysis', ['id', 'userId', 'gameId', 'moveAn
         while not node.is_end():
             nextNode = node.variation(0)
             if white == node.board().turn:
-                engine.setoption({'multipv': 5})
-                engine.position(node.board())
-                engine.go(nodes=nodes)
+                dbCache = positionAnalysisDB.byBoard(node.board())
+                if dbCache is not None:
+                    analyses = dbCache.analyses
+                else:
+                    engine.setoption({'multipv': 5})
+                    engine.position(node.board())
+                    engine.go(nodes=nodes)
 
-                analyses = list([
-                    Analysis(pv[1][0].uci(),
-                        Score(score[1].cp, score[1].mate)) for score, pv in zip(
-                            infoHandler.info['score'].items(),
-                            infoHandler.info['pv'].items())])
+                    analyses = list([
+                        Analysis(pv[1][0].uci(),
+                            Score(score[1].cp, score[1].mate)) for score, pv in zip(
+                                infoHandler.info['score'].items(),
+                                infoHandler.info['pv'].items())])
 
-                engine.setoption({'multipv': 1})
-                engine.position(nextNode.board())
-                engine.go(nodes=nodes)
+                dbCache = positionAnalysisDB.byBoard(nextNode.board())
+                if dbCache is not None:
+                    score = dbCache.analyses[0].score
+                else:
+                    engine.setoption({'multipv': 1})
+                    engine.position(nextNode.board())
+                    engine.go(nodes=nodes)
 
-                cp = infoHandler.info['score'][1].cp
-                mate = infoHandler.info['score'][1].mate
+                    cp = infoHandler.info['score'][1].cp
+                    mate = infoHandler.info['score'][1].mate
 
-                score = Score(-cp if cp is not None else None,
-                    -mate if mate is not None else None) # flipped because analysing from other player side
+                    score = Score(-cp if cp is not None else None,
+                        -mate if mate is not None else None) # flipped because analysing from other player side
 
                 moveNumber = node.board().fullmove_number
 
@@ -119,7 +127,10 @@ class GameAnalysisBSONHandler:
 
 class GameAnalysisDB(namedtuple('GameAnalysisDB', ['gameAnalysisColl'])):
     def write(self, gameAnalysis):
-        self.gameAnalysisColl.update_one({'_id': gameAnalysis.id}, {'$set': GameAnalysisBSONHandler.writes(gameAnalysis)}, upsert=True)
+        self.gameAnalysisColl.update_one(
+            {'_id': gameAnalysis.id},
+            {'$set': GameAnalysisBSONHandler.writes(gameAnalysis)},
+            upsert=True)
 
     def byUserId(self, userId):
         return [GameAnalysisBSONHandler.reads(ga) for ga in self.gameAnalysisColl.find({'userId': userId})]
