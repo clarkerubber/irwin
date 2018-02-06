@@ -63,7 +63,7 @@ class GameAnalysis(namedtuple('GameAnalysis', ['id', 'userId', 'gameId', 'moveAn
 
         while not node.is_end():
             nextNode = node.variation(0)
-            if white == node.board().turn:
+            if white == node.board().turn: ## if it is the turn of the player of interest
                 dbCache = positionAnalysisDB.byBoard(node.board())
                 if dbCache is not None:
                     analyses = dbCache.analyses
@@ -132,6 +132,9 @@ class GameAnalysisDB(namedtuple('GameAnalysisDB', ['gameAnalysisColl'])):
             {'$set': GameAnalysisBSONHandler.writes(gameAnalysis)},
             upsert=True)
 
+    def lazyWriteGameAnalyses(self, gameAnalyses):
+        [self.write(ga) for ga in gameAnalyses]
+
     def byUserId(self, userId):
         return [GameAnalysisBSONHandler.reads(ga) for ga in self.gameAnalysisColl.find({'userId': userId})]
 
@@ -141,5 +144,5 @@ class GameAnalysisDB(namedtuple('GameAnalysisDB', ['gameAnalysisColl'])):
     def byIds(self, ids):
         return [GameAnalysisBSONHandler.reads(ga) for ga in self.gameAnalysisColl.find({"_id": {"$in": ids}})]
 
-    def lazyWriteGameAnalyses(self, gameAnalyses):
-        [self.write(ga) for ga in gameAnalyses]
+    def allBatch(self, batch, batchSize=500):
+        return [GameAnalysisBSONHandler.reads(ga) for ga in self.gameAnalysisColl.find(skip=batch*batchSize, limit=batchSize)]

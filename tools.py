@@ -8,6 +8,7 @@ import json
 from modules.core.GameAnalysisStore import GameAnalysisStore
 
 from utils.updatePlayerDatabase import updatePlayerDatabase
+from utils.buildPositionAnalysisTable import buildPositionAnalysisTable
 
 from Env import Env
 
@@ -35,6 +36,9 @@ parser.add_argument("--buildbasictable", dest="buildbasictable", nargs="?",
 parser.add_argument("--buildanalysedtable", dest="buildanalysedtable", nargs="?",
                     default=False, const=True,
                     help="build table of analysed game activations")
+parser.add_argument("--buildpositiontable", dest="buildpositiontable", nargs="?",
+                    default=False, const=True,
+                    help="build table of analysed positions")
 parser.add_argument("--updatedatabase", dest="updatedatabase", nargs="?",
                     default=False, const=True,
                     help="collect game analyses for players. Build database collection")
@@ -76,6 +80,9 @@ if settings.buildbasictable:
 
 if settings.buildanalysedtable:
     env.irwin.buildAnalysedTable()
+
+if settings.buildpositiontable:
+    buildPositionAnalysisTable(env)
 
 if settings.trainanalysed:
     env.irwin.analysedGameModel.train(

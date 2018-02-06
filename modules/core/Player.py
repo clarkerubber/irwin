@@ -17,7 +17,7 @@ class Player(namedtuple('Player', ['id', 'titled', 'engine', 'gamesPlayed', 'clo
                 id=user.get('id'),
                 titled=user.get('title') is not None,
                 engine=user.get('engine') is not None,
-                gamesPlayed=sum([d.get('games', 0) for perf, d in user.get('perfs', {}).items()]),
+                gamesPlayed=data.get('assessment', {}).get('user', {}).get('games', 0),
                 closedReports=len(data.get('assessment', {}).get('relatedCheaters', [])))
         return None
 

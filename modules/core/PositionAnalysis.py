@@ -28,10 +28,13 @@ class PositionAnalysisBSONHandler:
 
 class PositionAnalysisDB(namedtuple('PositionAnalysisDB', ['positionAnalysisColl'])):
     def write(self, positionAnalysis):
-        self.positionAnalysisColl.insert(
+        self.positionAnalysisColl.update_one(
             {'_id': positionAnalysis.id},
             {'$set': PositionAnalysisBSONHandler.writes(positionAnalysis)},
             upsert=True)
+
+    def lazyWriteMany(self, positionAnalyses):
+        [self.write(positionAnalysis) for positionAnalysis in positionAnalyses]
 
     def byBoard(self, board):
         positionAnalysisBSON = self.positionAnalysisColl.find_one({'_id': PositionAnalysis.idFromBoard(board)})

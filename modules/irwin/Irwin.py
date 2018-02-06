@@ -37,7 +37,7 @@ class Irwin(Evaluation):
     @staticmethod
     def activation(gameActivations):
         sortedGameActivations = sorted(gameActivations, reverse=True)
-        topXgames = sortedGameActivations[:ceil(0.1*len(sortedGameActivations))]
+        topXgames = sortedGameActivations[:ceil(0.15*len(sortedGameActivations))]
         topXgamesAvg = int(np.average(topXgames)) if len(topXgames) > 0 else 0
 
         aboveUpper = len([a for a in sortedGameActivations if a > 90])
