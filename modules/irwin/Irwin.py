@@ -40,8 +40,8 @@ class Irwin(Evaluation):
         topXgames = sortedGameActivations[:ceil(0.15*len(sortedGameActivations))]
         topXgamesAvg = int(np.average(topXgames)) if len(topXgames) > 0 else 0
 
-        aboveUpper = len([a for a in sortedGameActivations if a > 90])
-        aboveLower = len([a for a in sortedGameActivations if a > 70])
+        aboveUpper = len([a for a in sortedGameActivations if a > 95])
+        aboveLower = len([a for a in sortedGameActivations if a > 90])
 
         if aboveUpper > 2:
             result = topXgamesAvg # enough games to mark
