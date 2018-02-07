@@ -18,7 +18,7 @@ class PositionAnalysisBSONHandler:
     def reads(bson):
         return PositionAnalysis(
             id=bson['_id'],
-            analyses=[AnalysisBSONHandler.reads(b) for b in bson['b']])
+            analyses=[AnalysisBSONHandler.reads(b) for b in bson['analyses']])
 
     def writes(positionAnalysis):
         return {

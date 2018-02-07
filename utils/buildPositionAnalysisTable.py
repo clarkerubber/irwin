@@ -5,7 +5,7 @@ import logging
 def buildPositionAnalysisTable(env):
     logging.info("buildPositionAnalysisColl")
     logging.info("Getting GameAnalyses")
-    batch = 743
+    batch = 908
     while True:
         logging.info("Processing Batch: " + str(batch))
         gameAnalyses = env.gameAnalysisDB.allBatch(batch)
