@@ -4,6 +4,7 @@ import numpy as np
 from pprint import pprint
 
 from modules.core.MoveAnalysis import MoveAnalysis, MoveAnalysisBSONHandler, Score, Analysis
+from modules.core.PositionAnalysis import PositionAnalysis
 
 from collections import namedtuple
 class GameAnalysis(namedtuple('GameAnalysis', ['id', 'userId', 'gameId', 'moveAnalyses'])):
@@ -66,7 +67,6 @@ class GameAnalysis(namedtuple('GameAnalysis', ['id', 'userId', 'gameId', 'moveAn
             if white == node.board().turn: ## if it is the turn of the player of interest
                 dbCache = positionAnalysisDB.byBoard(node.board())
                 if dbCache is not None:
-                    logging.debug("got hit on position " + dbCache.id)
                     analyses = dbCache.analyses
                 else:
                     engine.setoption({'multipv': 5})
@@ -78,6 +78,9 @@ class GameAnalysis(namedtuple('GameAnalysis', ['id', 'userId', 'gameId', 'moveAn
                             Score(score[1].cp, score[1].mate)) for score, pv in zip(
                                 infoHandler.info['score'].items(),
                                 infoHandler.info['pv'].items())])
+                    
+                    # write position to DB as it wasn't there before
+                    positionAnalysisDB.write(PositionAnalysis.fromBoardAndAnalyses(node.board(), analyses))
 
                 dbCache = positionAnalysisDB.byBoard(nextNode.board())
                 if dbCache is not None:
