@@ -44,11 +44,11 @@ class Irwin(Evaluation):
         aboveLower = len([a for a in sortedGameActivations if a > 90])
 
         if aboveUpper > 2:
-            result = topXgamesAvg # enough games to mark
+            result = topXgamesAvg # enough games to mark. raw result
         elif aboveLower > 0:
-            result = min(89, topXgamesAvg) # Not enough games to mark
+            result = min(94, topXgamesAvg) # Not enough games to mark
         else:
-            result = min(59, topXgamesAvg) # Not enough games to report
+            result = min(89, topXgamesAvg) # Not enough games to report
 
         return result
 
@@ -68,11 +68,12 @@ class Irwin(Evaluation):
     def moveActivation(movePrediction):
         return int(50*(movePrediction[0][0]+movePrediction[1][0]))
 
-    def report(self, userId, gameAnalysisStore):
+    def report(self, userId, gameAnalysisStore, owner='test'):
         playerPredictions = self.predictAnalysed(gameAnalysisStore.gameAnalysisTensors())
         gameActivations = [Irwin.gameActivation(gamePredictions, gameLength) for gamePredictions, gameLength in playerPredictions]
         report = {
             'userId': userId,
+            'owner': owner,
             'activation': self.activation(gameActivations),
             'games': [Irwin.gameReport(ga, a, gp) for ga, a, gp in zip(gameAnalysisStore.gameAnalyses, gameActivations, playerPredictions)]
         }

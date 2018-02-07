@@ -100,6 +100,9 @@ while True:
     env.gameAnalysisDB.lazyWriteGameAnalyses(gameAnalysisStore.gameAnalyses)
 
     logging.info('Posting report for ' + userId)
-    env.api.postReport(env.irwin.report(userId, gameAnalysisStore))
+    env.api.postReport(env.irwin.report(
+        userId=userId,
+        gameAnalysisStore=gameAnalysisStore,
+        owner=str(settings.name)))
     env.deepPlayerQueueDB.complete(deepPlayerQueue)
     env.restartEngine()
