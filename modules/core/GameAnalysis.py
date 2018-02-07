@@ -1,7 +1,6 @@
 from chess.pgn import read_game
 import logging
 import numpy as np
-from pprint import pprint
 
 from modules.core.MoveAnalysis import MoveAnalysis, MoveAnalysisBSONHandler, Score, Analysis
 from modules.core.PositionAnalysis import PositionAnalysis
@@ -82,15 +81,16 @@ class GameAnalysis(namedtuple('GameAnalysis', ['id', 'userId', 'gameId', 'moveAn
                     # write position to DB as it wasn't there before
                     positionAnalysisDB.write(PositionAnalysis.fromBoardAndAnalyses(node.board(), analyses))
 
-                engine.setoption({'multipv': 1})
-                engine.position(nextNode.board())
-                engine.go(nodes=nodes)
+                dbCache = positionAnalysisDB.byBoard(nextNode.board())
+                if dbCache is not None:
+                    score = dbCache.analyses[0].score.inverse()
+                else:
+                    engine.setoption({'multipv': 1})
+                    engine.position(nextNode.board())
+                    engine.go(nodes=nodes)
 
-                cp = infoHandler.info['score'][1].cp
-                mate = infoHandler.info['score'][1].mate
-
-                score = Score(-cp if cp is not None else None,
-                    -mate if mate is not None else None) # flipped because analysing from other player side
+                    score = Score(infoHandler.info['score'][1].cp,
+                        infoHandler.info['score'][1].mate).inverse() # flipped because analysing from other player side
 
                 moveNumber = node.board().fullmove_number
 

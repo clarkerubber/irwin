@@ -6,7 +6,11 @@ import numpy as np
 # For moves that have been analysed by stockfish
 
 Analysis = namedtuple('Analysis', ['uci', 'score'])
-Score = namedtuple('Score', ['cp', 'mate'])
+
+class Score(namedtuple('Score', ['cp', 'mate'])):
+    def inverse(self):
+        return Score(-self.cp if self.cp is not None else None,
+            -self.mate if self.mate is not None else None)
 
 class MoveAnalysis(namedtuple('MoveAnalysis', ['uci', 'move', 'emt', 'blur', 'score', 'analyses'])):
     def tensor(self, timeAvg, wclAvg):
