@@ -71,20 +71,15 @@ while True:
 
     # decide which games should be analysed
     gameTensors = gameAnalysisStore.gameTensorsWithoutAnalysis(userId)
-    gamesToAnalyse = []
 
-    if gameTensors is not None:
+    if len(gameTensors) > 0:
         gamePredictions = env.irwin.predictBasicGames(gameTensors) # [(gameId, prediction)]
-        if gamePredictions is None:
-            logging.warning("gamePredictions is None")
-        else:
-            gamePredictions.sort(key=lambda tup: -tup[1])
-            gids = [gid for gid, _ in gamePredictions][:5]
-            gamesFromPredictions = [gameAnalysisStore.gameById(gid) for gid in gids]
-            gamesFromPredictions = [g for g in gamesFromPredictions if g is not None] # just in case
-            gamesToAnalyse = gamesFromPredictions + gameAnalysisStore.randomGamesWithoutAnalysis(10 - len(gids), excludeIds=gamesFromPredictions)
-    
-    if len(gamesToAnalyse) == 0: ## if the prior step failed
+        gamePredictions.sort(key=lambda tup: -tup[1])
+        gids = [gid for gid, _ in gamePredictions][:5]
+        gamesFromPredictions = [gameAnalysisStore.gameById(gid) for gid in gids]
+        gamesFromPredictions = [g for g in gamesFromPredictions if g is not None] # just in case
+        gamesToAnalyse = gamesFromPredictions + gameAnalysisStore.randomGamesWithoutAnalysis(10 - len(gids), excludeIds=gamesFromPredictions)
+    else: ## if the prior step failed
         gamesToAnalyse = gameAnalysisStore.randomGamesWithoutAnalysis()
 
     # analyse games with SF

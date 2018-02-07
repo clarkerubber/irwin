@@ -29,7 +29,7 @@ class Irwin(Evaluation):
     def predictBasicGames(self, gameTensors):
         # game tensors is a list of tuples in the form: [(gameId, tensor), ...]
         if len(gameTensors) == 0:
-            return None
+            return []
         gameIds = [gid for gid, t in gameTensors]
         predictions = [int(100*np.asscalar(p)) for p in self.basicGameModel.model().predict(np.array([t for gid, t in gameTensors]))]
         return list(zip(gameIds, predictions))
