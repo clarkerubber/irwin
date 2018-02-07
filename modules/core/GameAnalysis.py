@@ -66,6 +66,7 @@ class GameAnalysis(namedtuple('GameAnalysis', ['id', 'userId', 'gameId', 'moveAn
             if white == node.board().turn: ## if it is the turn of the player of interest
                 dbCache = positionAnalysisDB.byBoard(node.board())
                 if dbCache is not None:
+                    logging.debug("got hit on position " + dbCache.id)
                     analyses = dbCache.analyses
                 else:
                     engine.setoption({'multipv': 5})
