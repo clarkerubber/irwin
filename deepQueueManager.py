@@ -48,7 +48,7 @@ while True:
     playerData = env.api.getPlayerData(userId)
 
     if playerData is None:
-        logging.warning("getPlayerData returned None in main.py")
+        logging.warning("getPlayerData returned None")
         continue
 
     env.playerDB.write(Player.fromPlayerData(playerData))
@@ -62,7 +62,7 @@ while True:
     try:
         gameAnalysisStore.addGames(Game.fromPlayerData(playerData))
     except KeyError:
-        logging.warning("KeyError warning when adding games to analysisStore in main.py")
+        logging.warning("KeyError warning when adding games to analysisStore")
         continue # if this doesn't gather any useful data, skip
 
     env.gameDB.lazyWriteGames(gameAnalysisStore.games)
@@ -71,18 +71,20 @@ while True:
 
     # decide which games should be analysed
     gameTensors = gameAnalysisStore.gameTensorsWithoutAnalysis(userId)
+    gamesToAnalyse = []
 
     if gameTensors is not None:
         gamePredictions = env.irwin.predictBasicGames(gameTensors) # [(gameId, prediction)]
         if gamePredictions is None:
-            logging.warning("gamePredictions is None in main.py")
-            continue
-        gamePredictions.sort(key=lambda tup: -tup[1])
-        gids = [gid for gid, _ in gamePredictions][:5]
-        gamesFromPredictions = [gameAnalysisStore.gameById(gid) for gid in gids]
-        gamesFromPredictions = [g for g in gamesFromPredictions if g is not None] # just in case
-        gamesToAnalyse = gamesFromPredictions + gameAnalysisStore.randomGamesWithoutAnalysis(10 - len(gids), excludeIds=gamesFromPredictions)
-    else:
+            logging.warning("gamePredictions is None")
+        else:
+            gamePredictions.sort(key=lambda tup: -tup[1])
+            gids = [gid for gid, _ in gamePredictions][:5]
+            gamesFromPredictions = [gameAnalysisStore.gameById(gid) for gid in gids]
+            gamesFromPredictions = [g for g in gamesFromPredictions if g is not None] # just in case
+            gamesToAnalyse = gamesFromPredictions + gameAnalysisStore.randomGamesWithoutAnalysis(10 - len(gids), excludeIds=gamesFromPredictions)
+    
+    if len(gamesToAnalyse) == 0: ## if the prior step failed
         gamesToAnalyse = gameAnalysisStore.randomGamesWithoutAnalysis()
 
     # analyse games with SF
