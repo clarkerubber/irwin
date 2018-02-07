@@ -55,6 +55,9 @@ while True:
         else:
             originPrecedence = 0
         deepPlayerQueue = DeepPlayerQueue(
-            id=basicPlayerQueue.id, origin=basicPlayerQueue.origin, precedence=top30avg+originPrecedence)
+            id=basicPlayerQueue.id,
+            origin=basicPlayerQueue.origin,
+            owner=None,
+            precedence=top30avg+originPrecedence)
         logging.info("Writing DeepPlayerQueue: " + str(deepPlayerQueue))
         env.deepPlayerQueueDB.write(deepPlayerQueue)

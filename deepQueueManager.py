@@ -19,10 +19,15 @@ from Env import Env
 
 parser = argparse.ArgumentParser(description=__doc__)
 
+parser.add_argument("--name", dest="name",
+                    default=None, type=str, help="name of the thread")
 parser.add_argument("--quiet", dest="loglevel",
                     default=logging.DEBUG, action="store_const", const=logging.INFO,
                     help="reduce the number of logged messages")
+
 settings = parser.parse_args()
+
+logging.info("Starting: " + str(settings.name))
 
 logging.basicConfig(format="%(message)s", level=settings.loglevel, stream=sys.stdout)
 logging.getLogger("requests.packages.urllib3").setLevel(logging.WARNING)
@@ -38,7 +43,7 @@ if config == {}:
 env = Env(config)
 
 while True:
-    deepPlayerQueue = env.deepPlayerQueueDB.nextUnprocessed()
+    deepPlayerQueue = env.deepPlayerQueueDB.nextUnprocessed(settings.name)
     if deepPlayerQueue is None:
         # no entries in the queue. sleep and wait for line to fill
         sleep(30)
@@ -79,7 +84,7 @@ while True:
         gamesFromPredictions = [gameAnalysisStore.gameById(gid) for gid in gids]
         gamesFromPredictions = [g for g in gamesFromPredictions if g is not None] # just in case
         gamesToAnalyse = gamesFromPredictions + gameAnalysisStore.randomGamesWithoutAnalysis(10 - len(gids), excludeIds=gamesFromPredictions)
-    else: ## if the prior step failed
+    else:
         gamesToAnalyse = gameAnalysisStore.randomGamesWithoutAnalysis()
 
     # analyse games with SF
@@ -96,4 +101,5 @@ while True:
 
     logging.info('Posting report for ' + userId)
     env.api.postReport(env.irwin.report(userId, gameAnalysisStore))
+    env.deepPlayerQueueDB.complete(deepPlayerQueue)
     env.restartEngine()
