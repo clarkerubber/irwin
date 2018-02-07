@@ -32,10 +32,10 @@ class DeepPlayerQueueDB(namedtuple('DeepPlayerQueueDB', ['deepPlayerQueueColl'])
 
     def complete(self, deepPlayerQueue):
         # remove a complete job from the queue
-        self.deepPlayerQueueColl.remove(DeepPlayerQueueBSONHandler.writes(deepPlayerQueue))
+        self.deepPlayerQueueColl.remove({'_id': deepPlayerQueue.id})
 
     def nextUnprocessed(self, name):
-        incompleteBSON = self.deepPlayerQueueColl.find({'owner': name})
+        incompleteBSON = self.deepPlayerQueueColl.find_one({'owner': name})
         if incompleteBSON is not None: # owner has unfinished business
             return DeepPlayerQueueBSONHandler.reads(incompleteBSON)
 
@@ -43,6 +43,5 @@ class DeepPlayerQueueDB(namedtuple('DeepPlayerQueueDB', ['deepPlayerQueueColl'])
             filter={'owner': None},
             update={'$set': {'owner': name}},
             sort=[("precedence", pymongo.DESCENDING),
-                ("date", pymongo.ASCENDING)],
-            return_document=pymongo.collections.ReturnDocument.AFTER)
+                ("date", pymongo.ASCENDING)])
         return None if deepPlayerQueueBSON is None else DeepPlayerQueueBSONHandler.reads(deepPlayerQueueBSON)
