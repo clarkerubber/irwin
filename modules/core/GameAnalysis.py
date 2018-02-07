@@ -78,23 +78,19 @@ class GameAnalysis(namedtuple('GameAnalysis', ['id', 'userId', 'gameId', 'moveAn
                             Score(score[1].cp, score[1].mate)) for score, pv in zip(
                                 infoHandler.info['score'].items(),
                                 infoHandler.info['pv'].items())])
-                    
+
                     # write position to DB as it wasn't there before
                     positionAnalysisDB.write(PositionAnalysis.fromBoardAndAnalyses(node.board(), analyses))
 
-                dbCache = positionAnalysisDB.byBoard(nextNode.board())
-                if dbCache is not None:
-                    score = dbCache.analyses[0].score
-                else:
-                    engine.setoption({'multipv': 1})
-                    engine.position(nextNode.board())
-                    engine.go(nodes=nodes)
+                engine.setoption({'multipv': 1})
+                engine.position(nextNode.board())
+                engine.go(nodes=nodes)
 
-                    cp = infoHandler.info['score'][1].cp
-                    mate = infoHandler.info['score'][1].mate
+                cp = infoHandler.info['score'][1].cp
+                mate = infoHandler.info['score'][1].mate
 
-                    score = Score(-cp if cp is not None else None,
-                        -mate if mate is not None else None) # flipped because analysing from other player side
+                score = Score(-cp if cp is not None else None,
+                    -mate if mate is not None else None) # flipped because analysing from other player side
 
                 moveNumber = node.board().fullmove_number
 
