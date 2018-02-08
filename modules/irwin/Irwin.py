@@ -55,10 +55,11 @@ class Irwin(Evaluation):
     @staticmethod
     def gameActivation(gamePredictions, gameLength):
         moveActivations = [Irwin.moveActivation(movePrediction) for movePrediction in Irwin.movePredictions(gamePredictions)][:gameLength]
-        gameOverall = 100*gamePredictions[0][0]
         pOverX = Irwin.pOverX(moveActivations, 80)
-        top30avg = np.average(sorted(moveActivations, reverse=True)[:ceil(0.3*len(moveActivations))])
-        return int(np.average([gameOverall, pOverX, top30avg]))
+        sortedMoveActivations = sorted(moveActivations, reverse=True)
+        topXavg = np.average(sortedMoveActivations[:ceil(0.3*len(moveActivations))]) # peak
+        topYavg = np.average(sortedMoveActivations[:ceil(0.9*len(moveActivations))]) # no outliers
+        return int(np.average([gameOverall, topXavg, topYavg]))
 
     @staticmethod
     def movePredictions(gamePredictions):
