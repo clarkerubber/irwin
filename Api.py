@@ -43,7 +43,7 @@ class Api(namedtuple('Api', ['url', 'token'])):
             try:
                 response = requests.get(self.url+'irwin/'+userId+'/assessment?api_key='+self.token)
                 try:
-                    output = json.loads(response.text)
+                    output = response.json()
                 except json.decoder.JSONDecodeError:
                     logging.warning('Error: JSONDecodeError in getPlayerData for user: ' + str(userId))
                     return None
