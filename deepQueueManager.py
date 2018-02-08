@@ -54,6 +54,7 @@ while True:
 
     if playerData is None:
         logging.warning("getPlayerData returned None")
+        env.deepPlayerQueueDB.complete(deepPlayerQueue)
         continue
 
     env.playerDB.write(Player.fromPlayerData(playerData))
@@ -68,6 +69,7 @@ while True:
         gameAnalysisStore.addGames(Game.fromPlayerData(playerData))
     except KeyError:
         logging.warning("KeyError warning when adding games to analysisStore")
+        env.deepPlayerQueueDB.complete(deepPlayerQueue)
         continue # if this doesn't gather any useful data, skip
 
     env.gameDB.lazyWriteGames(gameAnalysisStore.games)
