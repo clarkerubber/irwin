@@ -1,6 +1,8 @@
 from collections import namedtuple
 from modules.core.MoveAnalysis import AnalysisBSONHandler
 import chess.polyglot
+import pymongo
+import logging
 
 class PositionAnalysis(namedtuple('PositionAnalysis', ['id', 'analyses'])):
     @staticmethod
@@ -28,10 +30,13 @@ class PositionAnalysisBSONHandler:
 
 class PositionAnalysisDB(namedtuple('PositionAnalysisDB', ['positionAnalysisColl'])):
     def write(self, positionAnalysis):
-        self.positionAnalysisColl.update_one(
-            {'_id': positionAnalysis.id},
-            {'$set': PositionAnalysisBSONHandler.writes(positionAnalysis)},
-            upsert=True)
+        try:
+            self.positionAnalysisColl.update_one(
+                {'_id': positionAnalysis.id},
+                {'$set': PositionAnalysisBSONHandler.writes(positionAnalysis)},
+                upsert=True)
+        except pymongo.errors.DuplicateKeyError:
+            logging.warning("DuplicateKeyError when attempting to write position: " + str(positionAnalysis.id))
 
     def lazyWriteMany(self, positionAnalyses):
         [self.write(positionAnalysis) for positionAnalysis in positionAnalyses]
