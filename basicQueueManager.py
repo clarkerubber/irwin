@@ -38,26 +38,44 @@ env = Env(config, engine=False)
 
 while True:
     basicPlayerQueue = env.basicPlayerQueueDB.nextUnprocessed()
-    if basicPlayerQueue is None:
-        # no entries in the queue. sleep and wait for line to fill
-        sleep(30)
-        continue
-    logging.info("Basic Queue: " + str(basicPlayerQueue))
+    if basicPlayerQueue is not None:
+        logging.info("Basic Queue: " + str(basicPlayerQueue))
+        userId = userId
+        origin = basicPlayerQueue.origin
+    else:
+        # no entries in the queue. occupy time by scouring the DB
+        randomPlayer = env.playerDB.randomNonEngine()
+        logging.info("No jobs, found random non engine: " + str(randomPlayer))
+        userId = randomPlayer.id
+        origin = 'random'
+
+        # update player's data
+        playerData = env.api.getPlayerData(userId)
+        if playerData is None:
+            logging.warning("getPlayerData returned None")
+            continue
+
+        # write data to the db
+        env.playerDB.write(Player.fromPlayerData(playerData))
+        env.gameDB.lazyWriteGames(Game.fromPlayerData(playerData))
+    
     gameAnalysisStore = GameAnalysisStore.new()
-    gameAnalysisStore.addGames(env.gameDB.byUserId(basicPlayerQueue.id))
-    gameTensors = gameAnalysisStore.gameTensors(basicPlayerQueue.id)
+    gameAnalysisStore.addGames(env.gameDB.byUserId(userId))
+    gameTensors = gameAnalysisStore.gameTensors(userId)
     if len(gameTensors) > 0:
         gamePredictions = env.irwin.predictBasicGames(gameTensors)
         activations = sorted([a[1] for a in gamePredictions], reverse=True)
         top30avg = ceil(np.average(activations[:ceil(0.3*len(activations))]))
-        if basicPlayerQueue.origin == 'report':
+        if origin == 'report':
             originPrecedence = 50
         else:
             originPrecedence = 0
         deepPlayerQueue = DeepPlayerQueue(
-            id=basicPlayerQueue.id,
-            origin=basicPlayerQueue.origin,
+            id=userId,
+            origin=origin,
             owner=None,
             precedence=top30avg+originPrecedence)
         logging.info("Writing DeepPlayerQueue: " + str(deepPlayerQueue))
         env.deepPlayerQueueDB.write(deepPlayerQueue)
+    else:
+        logging.info("no game tensors")

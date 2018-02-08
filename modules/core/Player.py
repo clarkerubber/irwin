@@ -58,6 +58,10 @@ class PlayerDB(namedtuple('PlayerDB', ['playerColl'])):
         legits = [PlayerBSONHandler.reads(p) for p in self.playerColl.aggregate(pipelines[1])]
         return engines + legits
 
+    def randomNonEngine(self):
+        pipeline = [{'$match': {'$or': [{'engine': False}, {'engine': None}]}}, {'$sample': {'size': 1}}]
+        return [PlayerBSONHandler.reads(p) for p in self.playerColl.aggregate(pipeline)][0]
+
     def byEngine(self, engine):
         return [PlayerBSONHandler.reads(p) for p in self.playerColl.find({'engine': engine})]
 
