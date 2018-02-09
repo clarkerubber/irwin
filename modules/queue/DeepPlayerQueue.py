@@ -35,7 +35,7 @@ class DeepPlayerQueueDB(namedtuple('DeepPlayerQueueDB', ['deepPlayerQueueColl'])
         self.deepPlayerQueueColl.remove({'_id': deepPlayerQueue.id})
 
     def removeUserId(self, userId):
-        self.deepPlayerQueue.remove({'_id': userId})
+        self.deepPlayerQueueColl.remove({'_id': userId})
 
     def oldest(self):
         bson = self.deepPlayerQueueColl.find_one(
