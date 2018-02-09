@@ -40,7 +40,7 @@ while True:
     basicPlayerQueue = env.basicPlayerQueueDB.nextUnprocessed()
     if basicPlayerQueue is not None:
         logging.info("Basic Queue: " + str(basicPlayerQueue))
-        userId = userId
+        userId = basicPlayerQueue.id
         origin = basicPlayerQueue.origin
     else:
         logging.info("Basic Queue empty. Pausing")
