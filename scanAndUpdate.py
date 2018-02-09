@@ -47,8 +47,9 @@ def calcWriteDeepQueue(userId, origin='random'):
     env.gameDB.lazyWriteGames(Game.fromPlayerData(playerData))
 
     if player.engine and origin != 'moderator':
-        logging.info(userId + " is now an engine. Not processing")
-        return
+        logging.info(userId + " is now and engine. Removing all jobs")
+        env.deepPlayerQueue.removeUserId(userId)
+        continue
 
     gameAnalysisStore = GameAnalysisStore.new()
     gameAnalysisStore.addGames(env.gameDB.byUserId(userId))
@@ -74,7 +75,8 @@ def calcWriteDeepQueue(userId, origin='random'):
 def updateOldest():
     deepPlayerQueue = env.deepPlayerQueueDB.oldest()
     if deepPlayerQueue is not None:
-        calcWriteDeepQueue(deepPlayerQueue.id, deepPlayerQueue.origin)
+        if deepPlayerQueue.owner is None:
+            calcWriteDeepQueue(deepPlayerQueue.id, deepPlayerQueue.origin)
 
 def spotCheck():
     randomPlayer = env.playerDB.randomNonEngine()

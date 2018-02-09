@@ -34,6 +34,9 @@ class DeepPlayerQueueDB(namedtuple('DeepPlayerQueueDB', ['deepPlayerQueueColl'])
         # remove a complete job from the queue
         self.deepPlayerQueueColl.remove({'_id': deepPlayerQueue.id})
 
+    def removeUserId(self, userId):
+        self.deepPlayerQueue.remove({'_id': userId})
+
     def oldest(self):
         bson = self.deepPlayerQueueColl.find_one(
             filter={},
