@@ -46,6 +46,7 @@ while True:
     deepPlayerQueue = env.deepPlayerQueueDB.nextUnprocessed(settings.name)
     if deepPlayerQueue is None:
         # no entries in the queue. sleep and wait for line to fill
+        logging.info("No players in deepPlayerQueue to analyse. Waiting")
         sleep(30)
         continue
     logging.info("Deep Queue: " + str(deepPlayerQueue))

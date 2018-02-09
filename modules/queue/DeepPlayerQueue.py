@@ -34,6 +34,12 @@ class DeepPlayerQueueDB(namedtuple('DeepPlayerQueueDB', ['deepPlayerQueueColl'])
         # remove a complete job from the queue
         self.deepPlayerQueueColl.remove({'_id': deepPlayerQueue.id})
 
+    def oldest(self):
+        bson = self.deepPlayerQueueColl.find_one(
+            filter={},
+            sort=[('date', pymongo.ASCENDING)])
+        return None if bson is None else DeepPlayerQueueBSONHandler.reads(bson)
+
     def nextUnprocessed(self, name):
         incompleteBSON = self.deepPlayerQueueColl.find_one({'owner': name})
         if incompleteBSON is not None: # owner has unfinished business

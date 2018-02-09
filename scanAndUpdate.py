@@ -36,17 +36,20 @@ if config == {}:
 
 env = Env(config, engine=False)
 
-while True:
-    basicPlayerQueue = env.basicPlayerQueueDB.nextUnprocessed()
-    if basicPlayerQueue is not None:
-        logging.info("Basic Queue: " + str(basicPlayerQueue))
-        userId = userId
-        origin = basicPlayerQueue.origin
-    else:
-        logging.info("Basic Queue empty. Pausing")
-        sleep(10)
-        continue
-    
+def calcWriteDeepQueue(userId, origin='random'):
+    playerData = env.api.getPlayerData(userId)
+    if playerData is None:
+        logging.warning("getPlayerData returned None for " + userId)
+        return
+
+    player = Player.fromPlayerData(playerData)
+    env.playerDB.write(player)
+    env.gameDB.lazyWriteGames(Game.fromPlayerData(playerData))
+
+    if player.engine and origin != 'moderator':
+        logging.info(userId + " is now an engine. Not processing")
+        return
+
     gameAnalysisStore = GameAnalysisStore.new()
     gameAnalysisStore.addGames(env.gameDB.byUserId(userId))
     gameTensors = gameAnalysisStore.gameTensors(userId)
@@ -67,3 +70,19 @@ while True:
         env.deepPlayerQueueDB.write(deepPlayerQueue)
     else:
         logging.info("No gameTensors")
+
+def updateOldest():
+    deepPlayerQueue = env.deepPlayerQueueDB.oldest()
+    if deepPlayerQueue is not None:
+        calcWriteDeepQueue(deepPlayerQueue.id, deepPlayerQueue.origin)
+
+def spotCheck():
+    randomPlayer = env.playerDB.randomNonEngine()
+    if randomPlayer is not None:
+        calcWriteDeepQueue(randomPlayer.id)
+
+while True:
+    updateOldest()
+    sleep(2)
+    spotCheck()
+    sleep(2)
