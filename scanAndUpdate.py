@@ -58,6 +58,8 @@ def calcWriteDeepQueue(userId, origin='random'):
         gamePredictions = env.irwin.predictBasicGames(gameTensors)
         activations = sorted([a[1] for a in gamePredictions], reverse=True)
         top30avg = ceil(np.average(activations[:ceil(0.3*len(activations))]))
+        if origin == 'random' and top30avg < 80:
+            return
         if origin == 'report':
             originPrecedence = 50
         else:
