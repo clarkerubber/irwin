@@ -49,7 +49,7 @@ def calcWriteDeepQueue(userId, origin='random'):
     if player.engine and origin != 'moderator':
         logging.info(userId + " is now and engine. Removing all jobs")
         env.deepPlayerQueue.removeUserId(userId)
-        continue
+        return
 
     gameAnalysisStore = GameAnalysisStore.new()
     gameAnalysisStore.addGames(env.gameDB.byUserId(userId))
