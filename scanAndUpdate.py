@@ -47,7 +47,7 @@ def calcWriteDeepQueue(userId, origin='random'):
     env.gameDB.lazyWriteGames(Game.fromPlayerData(playerData))
 
     if player.engine and origin != 'moderator':
-        logging.info(userId + " is now and engine. Removing all jobs")
+        logging.info(userId + " is now an engine. Removing all jobs")
         env.deepPlayerQueueDB.removeUserId(userId)
         return
 
