@@ -48,7 +48,7 @@ while True:
         continue
     
     gameAnalysisStore = GameAnalysisStore.new()
-    gameAnalysisStore.addGames(env.gameDB.byUserId(userId))
+    gameAnalysisStore.addGames(env.gameDB.byUserIdAnalysed(userId))
     gameTensors = gameAnalysisStore.gameTensors(userId)
     if len(gameTensors) > 0:
         gamePredictions = env.irwin.predictBasicGames(gameTensors)

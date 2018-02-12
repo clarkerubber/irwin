@@ -93,7 +93,7 @@ if settings.trainanalysed:
 if settings.test:
     for userId in ['chess-network', 'clarkey', 'thibault', 'uyfadcrack']:
         gameAnalysisStore = GameAnalysisStore.new()
-        gameAnalysisStore.addGames(env.gameDB.byUserId(userId))
+        gameAnalysisStore.addGames(env.gameDB.byUserIdAnalysed(userId))
         gameAnalysisStore.addGameAnalyses(env.gameAnalysisDB.byUserId(userId))
         env.api.postReport(env.irwin.report(userId, gameAnalysisStore))
         logging.debug("posted")

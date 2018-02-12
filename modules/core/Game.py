@@ -140,7 +140,8 @@ class GameBSONHandler:
             'emts': game.emts,
             'whiteBlurs': BlursBSONHandler.writes(game.whiteBlurs),
             'blackBlurs': BlursBSONHandler.writes(game.blackBlurs),
-            'analysis': ScoreBSONHandler.writes(game.analysis)
+            'analysis': ScoreBSONHandler.writes(game.analysis),
+            'analysed': len(game.analysis) > 0
         }
 
 class GameDB(namedtuple('GameDB', ['gameColl'])):
@@ -152,6 +153,9 @@ class GameDB(namedtuple('GameDB', ['gameColl'])):
 
     def byUserId(self, uid):
         return list([GameBSONHandler.reads(g) for g in self.gameColl.find({"$or": [{"white": uid}, {"black": uid}]})])
+
+    def byUserIdAnalysed(self, uid):
+        return list([GameBSONHandler.reads(g) for g in self.gameColl.find({"analysed": True, "$or": [{"white": uid}, {"black": uid}]})])
 
     def write(self, game): # Game
         self.gameColl.update_one({'_id': game.id}, {'$set': GameBSONHandler.writes(game)}, upsert=True)

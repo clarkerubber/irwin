@@ -182,7 +182,7 @@ class Irwin(Evaluation):
         logging.info("getting games and predicting")
         for i, p in enumerate(players):
             logging.info("predicting: " + p.id + "  -  " + str(i) + "/" + lenPlayers)
-            gameAnalysisStore = GameAnalysisStore(self.env.gameDB.byUserId(p.id), [])
+            gameAnalysisStore = GameAnalysisStore(self.env.gameDB.byUserIdAnalysed(p.id), [])
             gameTensors = gameAnalysisStore.gameTensors(p.id)
             if len(gameTensors) > 0:
                 gamePredictions = self.predictBasicGames(gameTensors)

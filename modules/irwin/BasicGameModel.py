@@ -92,7 +92,7 @@ class BasicGameModel(namedtuple('BasicGameModel', ['env'])):
         if filtered:
             legits = self.env.playerDB.byEngine(False)
             for p in legits:
-                legitTensors.extend([g.tensor(p.id) for g in self.env.gameDB.byUserId(p.id)])
+                legitTensors.extend([g.tensor(p.id) for g in self.env.gameDB.byUserIdAnalysed(p.id)])
             cheatGameActivations = self.env.gameBasicActivationDB.byEngineAndPrediction(True, 70)
             cheatGames = self.env.gameDB.byIds([ga.gameId for ga in cheatGameActivations])
             cheatTensors.extend([g.tensor(ga.userId) for g, ga in zip(cheatGames, cheatGameActivations)])
@@ -101,9 +101,9 @@ class BasicGameModel(namedtuple('BasicGameModel', ['env'])):
             legits = self.env.playerDB.byEngine(False)
             for p in legits + cheats:
                 if p.engine:
-                    cheatTensors.extend([g.tensor(p.id) for g in self.env.gameDB.byUserId(p.id)])
+                    cheatTensors.extend([g.tensor(p.id) for g in self.env.gameDB.byUserIdAnalysed(p.id)])
                 else:
-                    legitTensors.extend([g.tensor(p.id) for g in self.env.gameDB.byUserId(p.id)])
+                    legitTensors.extend([g.tensor(p.id) for g in self.env.gameDB.byUserIdAnalysed(p.id)])
 
         cheatTensors = [t for t in cheatTensors if t is not None]
         legitTensors = [t for t in legitTensors if t is not None]
