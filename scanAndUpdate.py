@@ -45,12 +45,12 @@ def updatePlayerData(env, userId):
 
     return player
 
-def calcWriteDeepQueue(userId, origin='random'):
+def calcWriteDeepQueue(userId, origin):
     player = updatePlayerData(env, userId)
     if player is None:
         logging.warning(userId + " player is None")
         return
-    if player.engine and origin != 'moderator':
+    if player.engine and (origin != 'moderator' and origin != 'random'):
         logging.info(userId + " is now an engine. Removing all jobs")
         env.deepPlayerQueueDB.removeUserId(userId)
         return
@@ -87,7 +87,7 @@ def spotCheck():
     logging.info("Spot check")
     randomPlayer = env.playerDB.randomNonEngine()
     if randomPlayer is not None:
-        calcWriteDeepQueue(randomPlayer.id)
+        calcWriteDeepQueue(randomPlayer.id, 'random')
 
 while True:
     updateOldest()
