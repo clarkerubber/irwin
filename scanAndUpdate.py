@@ -75,6 +75,7 @@ def calcWriteDeepQueue(userId, origin):
 def updateOldest():
     logging.info("Updating oldest")
     deepPlayerQueue = env.deepPlayerQueueDB.oldest()
+    logging.info(str(deepPlayerQueue))
     if deepPlayerQueue is not None:
         if deepPlayerQueue.owner is None:
             calcWriteDeepQueue(deepPlayerQueue.id, deepPlayerQueue.origin)
