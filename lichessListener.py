@@ -64,7 +64,7 @@ def handleLine(lineDict):
         if lineDict['t'] == 'request':
             if lineDict['origin'] == 'moderator':
                 env.deepPlayerQueueDB.write(DeepPlayerQueue(
-                    id=lineDict['user'], origin='moderator', owner=None, precedence=10000))
+                    id=lineDict['user'], origin='moderator', owner=None, precedence=100000))
             else:
                 env.basicPlayerQueueDB.write(BasicPlayerQueue(
                     id=lineDict['user'], origin=lineDict['origin']))

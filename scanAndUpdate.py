@@ -74,9 +74,9 @@ def calcWriteDeepQueue(userId, origin):
         logging.info("No gameTensors")
 
 def updateOldest():
-    logging.info("Updating oldest")
+    logging.info("--Updating oldest--")
     deepPlayerQueue = env.deepPlayerQueueDB.oldest()
-    logging.info(str(deepPlayerQueue))
+    logging.info("Source: " + str(deepPlayerQueue))
     if deepPlayerQueue is not None:
         if deepPlayerQueue.owner is None:
             calcWriteDeepQueue(deepPlayerQueue.id, deepPlayerQueue.origin)
@@ -86,9 +86,9 @@ def updateOldest():
         logging.info("deepPlayerQueue is None")
 
 def spotCheck():
-    logging.info("Spot check")
+    logging.info("--Spot check--")
     randomPlayer = env.playerDB.randomNonEngine()
-    logging.info("Player " + str(randomPlayer))
+    logging.info("Player: " + str(randomPlayer))
     if randomPlayer is not None:
         calcWriteDeepQueue(randomPlayer.id, 'random')
 
