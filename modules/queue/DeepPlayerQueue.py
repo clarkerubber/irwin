@@ -12,9 +12,9 @@ class DeepPlayerQueue(namedtuple('DeepPlayerQueue', ['id', 'origin', 'precedence
         top30avg = ceil(np.average(activations[:ceil(0.3*len(activations))]))
         originPrecedence = 0
         if origin == 'report':
-            originPrecedence = 50
+            originPrecedence = 5000
         elif origin == 'moderator':
-            originPrecedence = 1000
+            originPrecedence = 10000
         return DeepPlayerQueue(
             id = userId,
             origin = origin,
