@@ -37,14 +37,18 @@ def updatePlayerData(env, userId):
     playerData = env.api.getPlayerData(userId)
     if playerData is None:
         logging.warning("getPlayerData returned None for " + userId)
-        return
+        return None
 
     player = Player.fromPlayerData(playerData)
     env.playerDB.write(player)
     env.gameDB.lazyWriteGames(Game.fromPlayerData(playerData))
 
+    return player
+
 def calcWriteDeepQueue(userId, origin='random'):
-    updatePlayerData(env, userId)
+    player = updatePlayerData(env, userId)
+    if player is None:
+        return
     if player.engine and origin != 'moderator':
         logging.info(userId + " is now an engine. Removing all jobs")
         env.deepPlayerQueueDB.removeUserId(userId)
