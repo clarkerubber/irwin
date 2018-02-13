@@ -63,7 +63,7 @@ def calcWriteDeepQueue(userId, origin='random'):
             userId=userId,
             origin=origin,
             gamePredictions=gamePredictions)
-        if origin == 'random' and deepPlayerQueue.precedence < 80:
+        if origin == 'random' and deepPlayerQueue.precedence < 5000:
             return # not worth performing spot check
         logging.info("Writing DeepPlayerQueue: " + str(deepPlayerQueue))
         env.deepPlayerQueueDB.write(deepPlayerQueue)
@@ -71,17 +71,18 @@ def calcWriteDeepQueue(userId, origin='random'):
         logging.info("No gameTensors")
 
 def updateOldest():
+    logging.info("Updating oldest")
     deepPlayerQueue = env.deepPlayerQueueDB.oldest()
     if deepPlayerQueue is not None:
         if deepPlayerQueue.owner is None:
             calcWriteDeepQueue(deepPlayerQueue.id, deepPlayerQueue.origin)
 
 def spotCheck():
+    logging.info("Spot check")
     randomPlayer = env.playerDB.randomNonEngine()
     if randomPlayer is not None:
         calcWriteDeepQueue(randomPlayer.id)
 
 while True:
-    sleep(2)
     updateOldest()
     spotCheck()

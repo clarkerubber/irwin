@@ -1,4 +1,5 @@
 from collections import namedtuple
+from datetime import datetime
 
 class Player(namedtuple('Player', ['id', 'titled', 'engine', 'gamesPlayed', 'closedReports'])):
     def setEngine(self, status):
@@ -38,7 +39,8 @@ class PlayerBSONHandler:
             'titled': player.titled,
             'engine': player.engine,
             'gamesPlayed': player.gamesPlayed,
-            'closedReports': player.closedReports
+            'closedReports': player.closedReports,
+            'date': datetime.now()
         }
 
 class PlayerDB(namedtuple('PlayerDB', ['playerColl'])):

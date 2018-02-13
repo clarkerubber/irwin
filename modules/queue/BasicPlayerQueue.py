@@ -22,7 +22,10 @@ class BasicPlayerQueueBSONHandler:
 
 class BasicPlayerQueueDB(namedtuple('BasicPlayerQueueDB', ['basicPlayerQueueColl'])):
     def write(self, basicPlayerQueue):
-        self.basicPlayerQueueColl.update_one({'_id': basicPlayerQueue.id}, {'$set': BasicPlayerQueueBSONHandler.writes(basicPlayerQueue)}, upsert=True)
+        self.basicPlayerQueueColl.update_one(
+            {'_id': basicPlayerQueue.id}, 
+            {'$set': BasicPlayerQueueBSONHandler.writes(basicPlayerQueue)},
+            upsert=True)
 
     def nextUnprocessed(self):
         basicPlayerQueueBSON = self.basicPlayerQueueColl.find_one_and_delete(

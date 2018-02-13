@@ -31,8 +31,9 @@ class Irwin(Evaluation):
         if len(gameTensors) == 0:
             return []
         gameIds = [gid for gid, t in gameTensors]
-        predictions = [int(100*np.asscalar(p)) for p in self.basicGameModel.model().predict(np.array([t for gid, t in gameTensors]))]
-        return list(zip(gameIds, predictions))
+        predictions = self.basicGameModel.model().predict(np.array([t for gid, t in gameTensors]))
+        activations = [int(100*np.asscalar(p)) for p in predictions]
+        return list(zip(gameIds, activations))
 
     @staticmethod
     def activation(gameActivations):
@@ -45,9 +46,9 @@ class Irwin(Evaluation):
         # 2 games > 95 and 3 > 90
         # 2 games > 95 and 5 > 85
 
-        aboveUpper = len([a for a in sortedGameActivations if a > 95])
-        aboveMid = len([a for a in sortedGameActivations if a > 90])
-        aboveLower = len([a for a in sortedGameActivations if a > 85])
+        aboveUpper = len([a for a in sortedGameActivations if a > 94])
+        aboveMid = len([a for a in sortedGameActivations if a > 89])
+        aboveLower = len([a for a in sortedGameActivations if a > 79])
 
         if (aboveUpper > 2
             or aboveUpper > 1 and aboveMid > 2
@@ -56,13 +57,13 @@ class Irwin(Evaluation):
         elif aboveLower > 0:
             result = min(94, topXgamesAvg) # Not enough games to mark
         else:
-            result = min(89, topXgamesAvg) # Not enough games to report
+            result = min(84, topXgamesAvg) # Not enough games to report
 
         return result
 
     @staticmethod
     def gameActivation(gamePredictions, gameLength):
-        moveActivations = [Irwin.moveActivation(movePrediction) for movePrediction in Irwin.movePredictions(gamePredictions)][:gameLength]
+        moveActivations = [Irwin.moveActivation(mp) for mp in Irwin.movePredictions(gamePredictions)][:gameLength]
         pOverX = Irwin.pOverX(moveActivations, 80)
         sortedMoveActivations = sorted(moveActivations, reverse=True)
         topXavg = np.average(sortedMoveActivations[:ceil(0.3*len(moveActivations))]) # peak
