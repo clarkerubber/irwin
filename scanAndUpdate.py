@@ -65,7 +65,7 @@ def calcWriteDeepQueue(userId, origin):
             origin=origin,
             gamePredictions=gamePredictions)
         if origin == 'random' and deepPlayerQueue.precedence < 5000:
-            env.deepPlayerQueue.removeUserId(userId)
+            env.deepPlayerQueueDB.removeUserId(userId)
             logging.info("origin random and precedence < 5000")
             return # not worth performing spot check
         logging.info("Writing DeepPlayerQueue: " + str(deepPlayerQueue))
