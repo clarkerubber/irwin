@@ -4,9 +4,6 @@ import logging
 import json
 import sys
 from time import sleep
-from math import ceil
-
-import numpy as np
 
 from modules.queue.DeepPlayerQueue import DeepPlayerQueue
 
@@ -36,7 +33,7 @@ if config == {}:
 
 env = Env(config, engine=False)
 
-def calcWriteDeepQueue(userId, origin='random'):
+def updatePlayerData(env, userId):
     playerData = env.api.getPlayerData(userId)
     if playerData is None:
         logging.warning("getPlayerData returned None for " + userId)
@@ -46,6 +43,8 @@ def calcWriteDeepQueue(userId, origin='random'):
     env.playerDB.write(player)
     env.gameDB.lazyWriteGames(Game.fromPlayerData(playerData))
 
+def calcWriteDeepQueue(userId, origin='random'):
+    updatePlayerData(env, userId)
     if player.engine and origin != 'moderator':
         logging.info(userId + " is now an engine. Removing all jobs")
         env.deepPlayerQueueDB.removeUserId(userId)
@@ -56,19 +55,12 @@ def calcWriteDeepQueue(userId, origin='random'):
     gameTensors = gameAnalysisStore.gameTensors(userId)
     if len(gameTensors) > 0:
         gamePredictions = env.irwin.predictBasicGames(gameTensors)
-        activations = sorted([a[1] for a in gamePredictions], reverse=True)
-        top30avg = ceil(np.average(activations[:ceil(0.3*len(activations))]))
-        if origin == 'random' and top30avg < 80:
-            return
-        if origin == 'report':
-            originPrecedence = 50
-        else:
-            originPrecedence = 0
-        deepPlayerQueue = DeepPlayerQueue(
-            id=userId,
+        deepPlayerQueue = DeepPlayerQueue.new(
+            userId=userId,
             origin=origin,
-            owner=None,
-            precedence=top30avg+originPrecedence)
+            gamePredictions=gamePredictions)
+        if origin == 'random' and deepPlayerQueue.precedence < 80:
+            return # not worth performing spot check
         logging.info("Writing DeepPlayerQueue: " + str(deepPlayerQueue))
         env.deepPlayerQueueDB.write(deepPlayerQueue)
     else:
@@ -86,7 +78,6 @@ def spotCheck():
         calcWriteDeepQueue(randomPlayer.id)
 
 while True:
+    sleep(2)
     updateOldest()
-    sleep(2)
     spotCheck()
-    sleep(2)

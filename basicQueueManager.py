@@ -4,9 +4,6 @@ import logging
 import json
 import sys
 from time import sleep
-from math import ceil
-
-import numpy as np
 
 from modules.queue.DeepPlayerQueue import DeepPlayerQueue
 
@@ -52,17 +49,10 @@ while True:
     gameTensors = gameAnalysisStore.gameTensors(userId)
     if len(gameTensors) > 0:
         gamePredictions = env.irwin.predictBasicGames(gameTensors)
-        activations = sorted([a[1] for a in gamePredictions], reverse=True)
-        top30avg = ceil(np.average(activations[:ceil(0.3*len(activations))]))
-        if origin == 'report':
-            originPrecedence = 50
-        else:
-            originPrecedence = 0
-        deepPlayerQueue = DeepPlayerQueue(
-            id=userId,
+        deepPlayerQueue = DeepPlayerQueue.new(
+            userId=userId,
             origin=origin,
-            owner=None,
-            precedence=top30avg+originPrecedence)
+            gamePredictions=gamePredictions)
         logging.info("Writing DeepPlayerQueue: " + str(deepPlayerQueue))
         env.deepPlayerQueueDB.write(deepPlayerQueue)
     else:

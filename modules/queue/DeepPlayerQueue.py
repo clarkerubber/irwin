@@ -1,9 +1,25 @@
 """Queue item for basic analysis by irwin"""
 from collections import namedtuple
 from datetime import datetime
+from math import ceil
 import pymongo
+import numpy as np
 
-DeepPlayerQueue = namedtuple('DeepPlayerQueue', ['id', 'origin', 'precedence', 'owner'])
+class DeepPlayerQueue(namedtuple('DeepPlayerQueue', ['id', 'origin', 'precedence', 'owner'])):
+    @staticmethod
+    def new(userId, origin, gamePredictions):
+        activations = sorted([((a[1]**2)/10000) for a in gamePredictions], reverse=True)
+        top30avg = ceil(np.average(activations[:ceil(0.3*len(activations))]))
+        originPrecedence = 0
+        if origin == 'report':
+            originPrecedence = 50
+        elif origin == 'moderator':
+            originPrecedence = 1000
+        return DeepPlayerQueue(
+            id = userId,
+            origin = origin,
+            precedence = top30avg+originPrecedence,
+            owner = None)
 
 class DeepPlayerQueueBSONHandler:
     @staticmethod

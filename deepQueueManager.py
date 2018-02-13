@@ -4,11 +4,6 @@ import logging
 import json
 import sys
 from time import sleep
-from math import ceil
-
-import numpy as np
-
-from modules.queue.DeepPlayerQueue import DeepPlayerQueue
 
 from modules.core.Player import Player
 from modules.core.Game import Game
