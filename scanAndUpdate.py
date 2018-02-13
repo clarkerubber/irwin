@@ -48,6 +48,7 @@ def updatePlayerData(env, userId):
 def calcWriteDeepQueue(userId, origin='random'):
     player = updatePlayerData(env, userId)
     if player is None:
+        logging.warning(userId + " player is None")
         return
     if player.engine and origin != 'moderator':
         logging.info(userId + " is now an engine. Removing all jobs")
@@ -64,6 +65,7 @@ def calcWriteDeepQueue(userId, origin='random'):
             origin=origin,
             gamePredictions=gamePredictions)
         if origin == 'random' and deepPlayerQueue.precedence < 5000:
+            logging.info("origin random and precedence < 5000")
             return # not worth performing spot check
         logging.info("Writing DeepPlayerQueue: " + str(deepPlayerQueue))
         env.deepPlayerQueueDB.write(deepPlayerQueue)
@@ -76,6 +78,10 @@ def updateOldest():
     if deepPlayerQueue is not None:
         if deepPlayerQueue.owner is None:
             calcWriteDeepQueue(deepPlayerQueue.id, deepPlayerQueue.origin)
+        else:
+            logging.info("deepPlayerQueue owner is not None")
+    else:
+        logging.info("deepPlayerQueue is None")
 
 def spotCheck():
     logging.info("Spot check")
