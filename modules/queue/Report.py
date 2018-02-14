@@ -9,7 +9,7 @@ class Report(namedtuple('Report', ['id', 'processed', 'created'])):
         return Report(
             id=userId,
             processed=False,
-            created=datetime.now)
+            created=datetime.now())
 
 class ReportBSONHandler:
     @staticmethod
