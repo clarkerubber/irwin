@@ -4,6 +4,7 @@ import logging
 import json
 import sys
 from time import sleep
+from random import randint
 
 from modules.queue.DeepPlayerQueue import DeepPlayerQueue
 
@@ -50,10 +51,11 @@ def calcWriteDeepQueue(userId, origin):
     if player is None:
         logging.warning(userId + " player is None")
         return
-    if player.engine and (origin != 'moderator' and origin != 'random'):
-        logging.info(userId + " is now an engine. Removing all jobs")
-        env.deepPlayerQueueDB.removeUserId(userId)
-        return
+    if player.engine:
+        if ((origin != 'moderator' and origin != 'random')
+            or (origin == 'random' and randint(0,9) != 5)): # 1/10 chance of old engine getting analysed
+            logging.info(userId + " is now an engine. Removing all jobs")
+            env.deepPlayerQueueDB.removeUserId(userId)
 
     gameAnalysisStore = GameAnalysisStore.new()
     gameAnalysisStore.addGames(env.gameDB.byUserIdAnalysed(userId))
