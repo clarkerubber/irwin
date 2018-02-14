@@ -27,6 +27,9 @@ class BasicPlayerQueueDB(namedtuple('BasicPlayerQueueDB', ['basicPlayerQueueColl
             {'$set': BasicPlayerQueueBSONHandler.writes(basicPlayerQueue)},
             upsert=True)
 
+    def removeUserId(self, userId):
+        self.basicPlayerQueueColl.remove({'_id': userId})
+
     def nextUnprocessed(self):
         basicPlayerQueueBSON = self.basicPlayerQueueColl.find_one_and_delete(
             filter={},

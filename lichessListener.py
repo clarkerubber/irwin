@@ -13,6 +13,7 @@ from time import sleep
 
 from modules.queue.BasicPlayerQueue import BasicPlayerQueue
 from modules.queue.DeepPlayerQueue import DeepPlayerQueue
+from modules.queue.Report import Report
 
 from modules.core.Player import Player
 from modules.core.Game import Game
@@ -52,24 +53,36 @@ Possible messages that lichess will emit
 """
 
 def handleLine(lineDict):
-    playerData = env.api.getPlayerData(lineDict['user'])
+    messageType = lineDict['t']
+    userId = lineDict['user']
+
+    playerData = env.api.getPlayerData(userId)
     if playerData is None:
         logging.warning("PlayerData is None. Returning None")
         return None
     player = Player.fromPlayerData(playerData)
+
     if player is not None:
         env.playerDB.write(player) # this will cover updating the player status
         env.gameDB.lazyWriteGames(Game.fromPlayerData(playerData)) # get games because data is king
 
-        if lineDict['t'] == 'request':
-            if lineDict['origin'] == 'moderator':
+        if messageType == 'request':
+            if lineDict['origin'] == 'moderator': # skip the basic queue
                 env.deepPlayerQueueDB.write(DeepPlayerQueue(
-                    id=lineDict['user'], origin='moderator', owner=None, precedence=100000))
+                    id=userId, origin='moderator', owner=None, precedence=100000))
             else:
                 env.basicPlayerQueueDB.write(BasicPlayerQueue(
-                    id=lineDict['user'], origin=lineDict['origin']))
-        elif lineDict['t'] == 'reportCreated':
-            env.basicPlayerQueueDB.write(BasicPlayerQueue(id=lineDict['user'], origin='report'))
+                    id=userId, origin=lineDict['origin']))
+
+        elif messageType == 'reportCreated':
+            if not env.reportDB.isOpen(userId): # don't update these if a report is still open
+                env.basicPlayerQueueDB.write(BasicPlayerQueue(id=userId, origin='report'))
+                env.reportDB.write(Report.new(userId))
+
+        elif messageType == 'reportProcessed' or messageType == 'mark':
+            env.basicPlayerQueueDB.removeUserId(userId)
+            env.deepPlayerQueueDB.removeUserId(userId)
+            env.reportDB.close(userId)
     else:
         logging.warning("player is None. Not proceeding.")
 
@@ -82,30 +95,29 @@ while True:
             logging.info("Received: " + str(lineDict))
             handleLine(lineDict)
     except ChunkedEncodingError:
-        ## logging.warning("WARNING: ChunkedEncodingError") This happens often enough to silence
-        sleep(10)
+        sleep(5)
         continue
     except ConnectionError:
         logging.warning("WARNING: ConnectionError")
-        sleep(10)
+        sleep(5)
         continue
     except NewConnectionError:
         logging.warning("WARNING: NewConnectionError")
-        sleep(10)
+        sleep(5)
         continue
     except ProtocolError:
         logging.warning("WARNING: ProtocolError")
-        sleep(10)
+        sleep(5)
         continue
     except MaxRetryError:
         logging.warning("WARNING: MaxRetryError")
-        sleep(10)
+        sleep(5)
         continue
     except IncompleteRead:
         logging.warning("WARNING: IncompleteRead")
-        sleep(10)
+        sleep(5)
         continue
     except gaierror:
         logging.warning("WARNING: gaierror")
-        sleep(10)
+        sleep(5)
         continue

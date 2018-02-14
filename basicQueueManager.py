@@ -43,6 +43,9 @@ while True:
         logging.info("Basic Queue empty. Pausing")
         sleep(10)
         continue
+
+    if env.deepPlayerQueueDB.exists(userId):
+        continue
     
     gameAnalysisStore = GameAnalysisStore.new()
     gameAnalysisStore.addGames(env.gameDB.byUserIdAnalysed(userId))

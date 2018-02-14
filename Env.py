@@ -15,6 +15,7 @@ from modules.core.PositionAnalysis import PositionAnalysisDB
 
 from modules.queue.BasicPlayerQueue import BasicPlayerQueueDB
 from modules.queue.DeepPlayerQueue import DeepPlayerQueueDB
+from modules.queue.Report import ReportDB
 
 from modules.irwin.GameAnalysisActivation import GameAnalysisActivationDB
 from modules.irwin.GameBasicActivation import GameBasicActivationDB
@@ -51,6 +52,7 @@ class Env:
 
         self.basicPlayerQueueColl = self.db.basicPlayerQueue
         self.deepPlayerQueueColl = self.db.deepPlayerQueue
+        self.reportColl = self.db.report
 
         self.gameAnalysisActivationColl = self.db.gameAnalysisActivation
         self.gameBasicActivationColl = self.db.gameBasicActivation
@@ -63,6 +65,7 @@ class Env:
 
         self.basicPlayerQueueDB = BasicPlayerQueueDB(self.basicPlayerQueueColl)
         self.deepPlayerQueueDB = DeepPlayerQueueDB(self.deepPlayerQueueColl)
+        self.reportDB = ReportDB(self.reportColl)
 
         self.gameAnalysisActivationDB = GameAnalysisActivationDB(self.gameAnalysisActivationColl)
         self.gameBasicActivationDB = GameBasicActivationDB(self.gameBasicActivationColl)
