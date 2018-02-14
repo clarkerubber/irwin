@@ -45,7 +45,7 @@ class ReportDB(namedtuple('ReportDB', ['reportColl'])):
         reportBSON = self.reportColl.find_one({'_id': userId})
         processed = False
         if reportBSON is not None:
-            processed = reportBSON.processed
+            processed = reportBSON['processed']
         return processed
 
     def oldestUnprocessed(self):
