@@ -3,7 +3,6 @@ import argparse
 import logging
 import json
 import sys
-from time import sleep
 from random import randint
 
 from modules.queue.DeepPlayerQueue import DeepPlayerQueue
@@ -34,7 +33,7 @@ if config == {}:
 
 env = Env(config, engine=False)
 
-def updatePlayerData(env, userId):
+def updatePlayerData(userId):
     playerData = env.api.getPlayerData(userId)
     if playerData is None:
         logging.warning("getPlayerData returned None for " + userId)
