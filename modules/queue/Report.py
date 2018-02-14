@@ -42,7 +42,7 @@ class ReportDB(namedtuple('ReportDB', ['reportColl'])):
             upsert=False)
 
     def isOpen(self, userId):
-        reportBSON = self.report.find_one({'_id': userId})
+        reportBSON = self.reportColl.find_one({'_id': userId})
         processed = False
         if reportBSON is not None:
             processed = reportBSON.processed
