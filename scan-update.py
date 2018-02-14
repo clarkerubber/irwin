@@ -125,6 +125,11 @@ def updateOldestReport():
     logging.info("Report: " + str(report))
     if report is not None:
         userId = report.id
+
+        if env.deepPlayerQueueDB.owned(userId):
+            logging.info("DeepPlayerQueue object exists and has owner")
+            return
+
         player = updatePlayerData(userId)
 
         if player is None:
@@ -144,7 +149,7 @@ def updateOldestReport():
 
         deepPlayerQueue = DeepPlayerQueue.new(
             userId=userId,
-            origin='report',
+            origin='reportupdate',
             gamePredictions=predictions)
 
         env.deepPlayerQueueDB.write(deepPlayerQueue)

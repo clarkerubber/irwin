@@ -13,6 +13,8 @@ class DeepPlayerQueue(namedtuple('DeepPlayerQueue', ['id', 'origin', 'precedence
         originPrecedence = 0
         if origin == 'report':
             originPrecedence = 5000
+        elif origin == 'reportupdate':
+            originPrecedence = 2000
         elif origin == 'moderator':
             originPrecedence = 100000
         return DeepPlayerQueue(
@@ -55,6 +57,14 @@ class DeepPlayerQueueDB(namedtuple('DeepPlayerQueueDB', ['deepPlayerQueueColl'])
 
     def exists(self, userId):
         return self.deepPlayerQueueColl.find_one({'_id': userId}) is not None
+
+    def owned(self, userId):
+        """Does any deep player queue for userId have an owner"""
+        bson = self.deepPlayerQueueColl.find_one({'_id': userId, 'owner': None})
+        hasOwner = False
+        if bson is not None:
+            hasOwner = bson['owner'] is not None
+        return hasOwner
 
     def oldest(self):
         bson = self.deepPlayerQueueColl.find_one(
