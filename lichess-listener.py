@@ -67,12 +67,13 @@ def handleLine(lineDict):
         env.gameDB.lazyWriteGames(Game.fromPlayerData(playerData)) # get games because data is king
 
         if messageType == 'request':
-            if lineDict['origin'] == 'moderator': # skip the basic queue
-                env.deepPlayerQueueDB.write(DeepPlayerQueue(
-                    id=userId, origin='moderator', owner=None, precedence=100000))
+            origin = lineDict['origin']
+            if origin == 'moderator': # skip the basic queue
+                env.deepPlayerQueueDB.write(
+                    DeepPlayerQueue(id=userId, origin='moderator', owner=None, precedence=100000))
             else:
-                env.basicPlayerQueueDB.write(BasicPlayerQueue(
-                    id=userId, origin=lineDict['origin']))
+                env.basicPlayerQueueDB.write(
+                    BasicPlayerQueue(id=userId, origin=origin))
 
         elif messageType == 'reportCreated':
             if not env.reportDB.isOpen(userId): # don't update these if a report is still open

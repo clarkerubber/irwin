@@ -14,7 +14,7 @@ class DeepPlayerQueue(namedtuple('DeepPlayerQueue', ['id', 'origin', 'precedence
         if origin == 'report':
             originPrecedence = 5000
         elif origin == 'moderator':
-            originPrecedence = 10000
+            originPrecedence = 100000
         return DeepPlayerQueue(
             id = userId,
             origin = origin,
@@ -54,8 +54,7 @@ class DeepPlayerQueueDB(namedtuple('DeepPlayerQueueDB', ['deepPlayerQueueColl'])
         self.deepPlayerQueueColl.remove({'_id': userId})
 
     def exists(self, userId):
-        b = self.deepPlayerQueueColl.find_one({'_id': userId})
-        return b is not None
+        return self.deepPlayerQueueColl.find_one({'_id': userId}) is not None
 
     def oldest(self):
         bson = self.deepPlayerQueueColl.find_one(
