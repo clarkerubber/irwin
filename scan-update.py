@@ -84,7 +84,7 @@ def updateOldestPlayerQueue():
             deepPlayerQueue = DeepPlayerQueue.new(
                 userId=userId,
                 origin=deepPlayerQueue.origin,
-                gamePredictions=gamePredictions)
+                gamePredictions=predictions)
             env.deepPlayerQueueDB.write(deepPlayerQueue)
 
 def spotCheck():
