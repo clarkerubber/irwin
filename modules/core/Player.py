@@ -1,5 +1,6 @@
 from collections import namedtuple
 from datetime import datetime
+import pymongo
 
 class Player(namedtuple('Player', ['id', 'titled', 'engine', 'gamesPlayed', 'closedReports'])):
     def setEngine(self, status):
@@ -63,6 +64,13 @@ class PlayerDB(namedtuple('PlayerDB', ['playerColl'])):
     def randomNonEngine(self):
         pipeline = [{'$match': {'$or': [{'engine': False}, {'engine': None}]}}, {'$sample': {'size': 1}}]
         return [PlayerBSONHandler.reads(p) for p in self.playerColl.aggregate(pipeline)][0]
+
+    def oldestNonEngine(self):
+        playerBSON = self.playerColl.find_one_and_update(
+            filter={'$or': [{'engine': False}, {'engine': None}]},
+            update={'$set': {'date': datetime.now()}},
+            sort=[('date', pymongo.ASCENDING)])
+        return None if playerBSON is None else PlayerBSONHandler.reads(playerBSON)
 
     def byEngine(self, engine):
         return [PlayerBSONHandler.reads(p) for p in self.playerColl.find({'engine': engine})]

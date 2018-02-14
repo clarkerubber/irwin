@@ -89,7 +89,7 @@ def updateOldest():
 
 def spotCheck():
     logging.info("--Spot check--")
-    randomPlayer = env.playerDB.randomNonEngine()
+    randomPlayer = env.playerDB.oldestNonEngine()
     logging.info("Player: " + str(randomPlayer))
     if randomPlayer is not None:
         calcWriteDeepQueue(randomPlayer.id, 'random')
