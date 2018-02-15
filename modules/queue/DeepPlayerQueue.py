@@ -13,8 +13,6 @@ class DeepPlayerQueue(namedtuple('DeepPlayerQueue', ['id', 'origin', 'precedence
         originPrecedence = 0
         if origin == 'report':
             originPrecedence = 5000
-        elif origin == 'reportupdate':
-            originPrecedence = 2000
         elif origin == 'moderator':
             originPrecedence = 100000
         return DeepPlayerQueue(
@@ -49,13 +47,15 @@ class DeepPlayerQueueDB(namedtuple('DeepPlayerQueueDB', ['deepPlayerQueueColl'])
             {'$set': DeepPlayerQueueBSONHandler.writes(deepPlayerQueue)}, upsert=True)
 
     def complete(self, deepPlayerQueue):
-        # remove a complete job from the queue
+        """remove a complete job from the queue"""
         self.removeUserId(deepPlayerQueue.id)
 
     def removeUserId(self, userId):
+        """remove all jobs related to userId"""
         self.deepPlayerQueueColl.remove({'_id': userId})
 
     def exists(self, userId):
+        """userId has a deepPlayerQueue object against their name"""
         return self.deepPlayerQueueColl.find_one({'_id': userId}) is not None
 
     def owned(self, userId):
@@ -73,6 +73,7 @@ class DeepPlayerQueueDB(namedtuple('DeepPlayerQueueDB', ['deepPlayerQueueColl'])
         return None if bson is None else DeepPlayerQueueBSONHandler.reads(bson)
 
     def nextUnprocessed(self, name):
+        """find the next job to process"""
         incompleteBSON = self.deepPlayerQueueColl.find_one({'owner': name})
         if incompleteBSON is not None: # owner has unfinished business
             return DeepPlayerQueueBSONHandler.reads(incompleteBSON)

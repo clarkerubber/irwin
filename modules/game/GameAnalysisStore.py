@@ -1,7 +1,7 @@
 from collections import namedtuple
 from pprint import pprint
 
-from modules.core.GameAnalysis import GameAnalysis
+from modules.game.GameAnalysis import GameAnalysis
 
 import numpy as np
 import math

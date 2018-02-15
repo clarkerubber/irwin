@@ -7,9 +7,9 @@ from random import randint
 
 from modules.queue.DeepPlayerQueue import DeepPlayerQueue
 
-from modules.core.Player import Player
-from modules.core.Game import Game
-from modules.core.GameAnalysisStore import GameAnalysisStore
+from modules.game.Player import Player
+from modules.game.Game import Game
+from modules.game.GameAnalysisStore import GameAnalysisStore
 
 from Env import Env
 
@@ -85,7 +85,13 @@ def updateOldestPlayerQueue():
                 userId=userId,
                 origin=deepPlayerQueue.origin,
                 gamePredictions=predictions)
-            env.deepPlayerQueueDB.write(deepPlayerQueue)
+
+            if (deepPlayerQueue.precedence < 4000
+                and deepPlayerQueue.origin not in ['report', 'moderator']):
+                env.deepPlayerQueueDB.write(deepPlayerQueue)
+            else:
+                logging.info("DeepPlayerQueue is insignificant. Removing")
+                env.deepPlayerQueueDB.removeUserId(userId)
 
 def spotCheck():
     logging.info("--Spot check on player DB--")

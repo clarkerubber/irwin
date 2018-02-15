@@ -15,7 +15,7 @@ from modules.irwin.GameBasicActivation import GameBasicActivation
 
 from modules.irwin.Evaluation import Evaluation
 
-from modules.core.GameAnalysisStore import GameAnalysisStore
+from modules.game.GameAnalysisStore import GameAnalysisStore
 
 class Irwin(Evaluation):
     def __init__(self, env):
@@ -140,34 +140,25 @@ class Irwin(Evaluation):
     def buildAnalysedTable(self):
         """Build table of activations for analysed games. used for training"""
         logging.warning("Building Analysed Activation Table")
-        logging.debug("getting games")
+        logging.debug("getting players")
         cheats = self.env.playerDB.byEngine(True)
         legits = self.env.playerDB.byEngine(False)
 
-        cheatGameAnalyses = []
-        [cheatGameAnalyses.extend(ga) for ga in self.env.gameAnalysisDB.byUserIds([u.id for u in cheats])]
-        legitGameAnalyses = []
-        [legitGameAnalyses.extend(ga) for ga in self.env.gameAnalysisDB.byUserIds([u.id for u in legits])]
+        players = cheats + legits
+        lenPlayers = str(len(players))
 
-        logging.debug("getting moveAnalysisTensors")
-        cheatTensors = [tga.moveAnalysisTensors() for tga in cheatGameAnalyses]
-        legitTensors = [tga.moveAnalysisTensors() for tga in legitGameAnalyses]
+        logging.info("gettings games and predicting")
 
-        logging.debug("predicting the things")
-        cheatGamePredictions = self.predictAnalysed(cheatTensors)
-        legitGamePredictions = self.predictAnalysed(legitTensors)
-
-        confidentCheats = [GameAnalysisActivation.fromGamesAnalysisandPrediction(
-            gameAnalysis,
-            int(100*prediction[0][0]),
-            engine=True) for gameAnalysis, prediction in zip(cheatGameAnalyses, cheatGamePredictions)]
-        confidentLegits = [GameAnalysisActivation.fromGamesAnalysisandPrediction(
-            gameAnalysis,
-            int(100*prediction[0][0]),
-            engine=False) for gameAnalysis, prediction in zip(legitGameAnalyses, legitGamePredictions)]
-
-        logging.debug("writing to db")
-        self.env.gameAnalysisActivationDB.lazyWriteMany(confidentCheats + confidentLegits)
+        for i, p in enumerate(players):
+            logging.info("predicting: " + p.id + "  -  " + str(i) + '/' + lenPlayers)
+            gameAnalyses = self.env.gameAnalysisDB.byUserId(p.id)
+            tensors = [(ga.moveAnalysisTensors(), ga.length()) for ga in gameAnalyses]
+            predictions = self.predictAnalysed(tensors)
+            gameAnalysisActivations = [GameAnalysisActivation.fromGamesAnalysisandPrediction(
+                gameAnalysis,
+                int(100*prediction[0][0]),
+                engine=p.engine) for gameAnalysis, prediction in zip(gameAnalyses, predictions)]
+            self.env.gameAnalysisActivationDB.lazyWriteMany(gameAnalysisActivations)
 
     def buildBasicTable(self):
         """Build table of activations for basic games (analysed by lichess). used for training"""
@@ -177,7 +168,7 @@ class Irwin(Evaluation):
         legits = self.env.playerDB.byEngine(False)
 
         gameBasicActivations = []
-        players = cheats+legits
+        players = cheats + legits
         lenPlayers = str(len(players))
 
         logging.info("getting games and predicting")

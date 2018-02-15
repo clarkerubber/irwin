@@ -6,12 +6,12 @@ from chess import uci
 
 from modules.fishnet.fishnet import stockfish_command
 
-from Api import Api
+from modules.lichess.Api import Api
 
-from modules.core.Game import GameDB
-from modules.core.GameAnalysis import GameAnalysisDB
-from modules.core.Player import PlayerDB
-from modules.core.PositionAnalysis import PositionAnalysisDB
+from modules.game.Game import GameDB
+from modules.game.GameAnalysis import GameAnalysisDB
+from modules.game.Player import PlayerDB
+from modules.game.PositionAnalysis import PositionAnalysisDB
 
 from modules.queue.BasicPlayerQueue import BasicPlayerQueueDB
 from modules.queue.DeepPlayerQueue import DeepPlayerQueueDB

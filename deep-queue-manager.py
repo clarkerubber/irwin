@@ -5,10 +5,10 @@ import json
 import sys
 from time import sleep
 
-from modules.core.Player import Player
-from modules.core.Game import Game
-from modules.core.GameAnalysis import GameAnalysis
-from modules.core.GameAnalysisStore import GameAnalysisStore
+from modules.game.Player import Player
+from modules.game.Game import Game
+from modules.game.GameAnalysis import GameAnalysis
+from modules.game.GameAnalysisStore import GameAnalysisStore
 
 from Env import Env
 

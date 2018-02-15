@@ -1,5 +1,5 @@
 from collections import namedtuple
-from modules.core.MoveAnalysis import AnalysisBSONHandler
+from modules.game.MoveAnalysis import AnalysisBSONHandler
 import chess.polyglot
 import pymongo
 import logging

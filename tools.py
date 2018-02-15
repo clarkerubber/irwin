@@ -5,7 +5,7 @@ import sys
 import logging
 import json
 
-from modules.core.GameAnalysisStore import GameAnalysisStore
+from modules.game.GameAnalysisStore import GameAnalysisStore
 
 from utils.updatePlayerDatabase import updatePlayerDatabase
 from utils.buildPositionAnalysisTable import buildPositionAnalysisTable

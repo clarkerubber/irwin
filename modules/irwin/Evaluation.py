@@ -1,7 +1,7 @@
 import logging
 from pprint import pprint
 
-from modules.core.GameAnalysisStore import GameAnalysisStore
+from modules.game.GameAnalysisStore import GameAnalysisStore
 
 class Evaluation:
     def getEvaluationDataset(self, batchSize):

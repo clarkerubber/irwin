@@ -1,5 +1,5 @@
 from chess.pgn import read_game
-from modules.core.PositionAnalysis import PositionAnalysis
+from modules.game.PositionAnalysis import PositionAnalysis
 import logging
 
 def buildPositionAnalysisTable(env):

@@ -15,8 +15,8 @@ from modules.queue.BasicPlayerQueue import BasicPlayerQueue
 from modules.queue.DeepPlayerQueue import DeepPlayerQueue
 from modules.queue.Report import Report
 
-from modules.core.Player import Player
-from modules.core.Game import Game
+from modules.game.Player import Player
+from modules.game.Game import Game
 
 from Env import Env
 
@@ -67,20 +67,23 @@ def handleLine(lineDict):
         env.gameDB.lazyWriteGames(Game.fromPlayerData(playerData)) # get games because data is king
 
         if messageType == 'request':
-            origin = lineDict['origin']
-            if origin == 'moderator': # skip the basic queue
+            if lineDict['origin'] == 'moderator': # moderator request, skip the queue
                 env.deepPlayerQueueDB.write(
                     DeepPlayerQueue(id=userId, origin='moderator', owner=None, precedence=100000))
-            else:
+            elif not env.deepPlayerQueueDB.exists(userId):
+                # any other type of request that doesn't have an open queue item
                 env.basicPlayerQueueDB.write(
-                    BasicPlayerQueue(id=userId, origin=origin))
+                    BasicPlayerQueue(id=userId, origin=lineDict['origin']))
 
-        elif messageType == 'reportCreated':
+        if messageType == 'reportCreated':
             if not env.reportDB.isOpen(userId): # don't update these if a report is still open
                 env.basicPlayerQueueDB.write(BasicPlayerQueue(id=userId, origin='report'))
                 env.reportDB.write(Report.new(userId))
+            else:
+                logging.info("report already open")
 
-        elif messageType == 'reportProcessed' or messageType == 'mark':
+        if messageType == 'reportProcessed' or messageType == 'mark':
+            logging.info("removing all queue items")
             env.basicPlayerQueueDB.removeUserId(userId)
             env.deepPlayerQueueDB.removeUserId(userId)
             env.reportDB.close(userId)

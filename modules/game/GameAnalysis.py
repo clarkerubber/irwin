@@ -2,8 +2,8 @@ from chess.pgn import read_game
 import logging
 import numpy as np
 
-from modules.core.MoveAnalysis import MoveAnalysis, MoveAnalysisBSONHandler, Score, Analysis
-from modules.core.PositionAnalysis import PositionAnalysis
+from modules.game.MoveAnalysis import MoveAnalysis, MoveAnalysisBSONHandler, Score, Analysis
+from modules.game.PositionAnalysis import PositionAnalysis
 
 from collections import namedtuple
 class GameAnalysis(namedtuple('GameAnalysis', ['id', 'userId', 'gameId', 'moveAnalyses'])):
