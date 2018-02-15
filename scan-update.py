@@ -86,8 +86,8 @@ def updateOldestPlayerQueue():
                 origin=deepPlayerQueue.origin,
                 gamePredictions=predictions)
 
-            if (deepPlayerQueue.precedence < 4000
-                and deepPlayerQueue.origin not in ['report', 'moderator']):
+            if (deepPlayerQueue.precedence > 4000
+                and deepPlayerQueue.origin in ['report', 'moderator']):
                 env.deepPlayerQueueDB.write(deepPlayerQueue)
             else:
                 logging.info("DeepPlayerQueue is insignificant. Removing")

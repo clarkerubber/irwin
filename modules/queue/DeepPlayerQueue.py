@@ -1,6 +1,6 @@
 """Queue item for basic analysis by irwin"""
 from collections import namedtuple
-from datetime import datetime
+from datetime import datetime, timedelta
 from math import ceil
 import pymongo
 import numpy as np
@@ -68,7 +68,7 @@ class DeepPlayerQueueDB(namedtuple('DeepPlayerQueueDB', ['deepPlayerQueueColl'])
 
     def oldest(self):
         bson = self.deepPlayerQueueColl.find_one(
-            filter={},
+            filter={'date': {'$lt': datetime.now() - timedelta(days=2)}},
             sort=[('date', pymongo.ASCENDING)])
         return None if bson is None else DeepPlayerQueueBSONHandler.reads(bson)
 
