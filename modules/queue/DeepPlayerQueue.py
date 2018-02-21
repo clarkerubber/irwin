@@ -5,7 +5,7 @@ from math import ceil
 import pymongo
 import numpy as np
 
-class DeepPlayerQueue(namedtuple('DeepPlayerQueue', ['id', 'origin', 'precedence', 'owner'])):
+class DeepPlayerQueue(namedtuple('DeepPlayerQueue', ['id', 'origin', 'precedence', 'owner', 'date'])):
     @staticmethod
     def new(userId, origin, gamePredictions):
         activations = sorted([(a[1]*a[1]) for a in gamePredictions], reverse=True)
@@ -19,7 +19,8 @@ class DeepPlayerQueue(namedtuple('DeepPlayerQueue', ['id', 'origin', 'precedence
             id = userId,
             origin = origin,
             precedence = top30avg+originPrecedence,
-            owner = None)
+            owner = None,
+            date = datetime.now())
 
 class DeepPlayerQueueBSONHandler:
     @staticmethod
@@ -28,7 +29,8 @@ class DeepPlayerQueueBSONHandler:
             id=bson['_id'],
             origin=bson['origin'],
             precedence=bson['precedence'],
-            owner=bson.get('owner'))
+            owner=bson.get('owner'),
+            date=bson.get('date'))
 
     @staticmethod
     def writes(deepPlayerQueue):
@@ -84,3 +86,10 @@ class DeepPlayerQueueDB(namedtuple('DeepPlayerQueueDB', ['deepPlayerQueueColl'])
             sort=[("precedence", pymongo.DESCENDING),
                 ("date", pymongo.ASCENDING)])
         return None if deepPlayerQueueBSON is None else DeepPlayerQueueBSONHandler.reads(deepPlayerQueueBSON)
+
+    def top(self, amount=20):
+        bsons = self.deepPlayerQueueColl.find(
+            filter={},
+            sort=[("precedence", pymongo.DESCENDING),
+                ("date", pymongo.ASCENDING)]).limit(amount)
+        return [DeepPlayerQueueBSONHandler.reads(b) for b in bsons]

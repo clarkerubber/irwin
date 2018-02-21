@@ -1,5 +1,4 @@
 """Update data on players in the database"""
-import threading
 import logging
 
 from modules.game.Player import Player

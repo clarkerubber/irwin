@@ -1,0 +1,54 @@
+{% import 'macros/base.html' as base %}
+{% import 'macros/nav.html' as nav %}
+<!doctype html>
+<html lang="en">
+{{ base.header(playerObj.id + ' - Player Analysis Queue') }}
+  <body>
+    {{ nav.search() }}
+    {{ nav.sidebar('player') }}
+    <main role="main" class="col-md-9 ml-sm-auto col-lg-10 pt-3 px-4">
+      <h1>{{ playerObj.id }}</h1>
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Titled</th>
+              <th>Engine</th>
+              <th>Games Played</th>
+              <th># Closed Reports</th>
+            </tr>
+          </thead>
+          <tr>
+            <td>{{playerObj.titled}}</td>
+            <td>{{playerObj.engine}}</td>
+            <td>{{playerObj.gamesPlayed}}</td>
+            <td>{{playerObj.closedReports}}</td>
+          </tr>
+        </table>
+      </div>
+
+      <h2>Irwin Reports</h2>
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>Report ID</th>
+              <th>Activation</th>
+              <th>Owner</th>
+              <th>Created</th>
+            </tr>
+          </thead>
+          {% for report in playerReports %}
+          <tr>
+            <td>#{{report.id}}</td>
+            <td>{{report.activation}}%</td>
+            <td>{{report.owner}}</td>
+            <td>{{report.date}}</td>
+          </tr>
+          {% endfor %}
+        </table>  
+      </div>
+    </main>
+  {{ base.scripts() }}
+  </body>
+</html>

@@ -3,14 +3,6 @@ from datetime import datetime
 import pymongo
 
 class Player(namedtuple('Player', ['id', 'titled', 'engine', 'gamesPlayed', 'closedReports'])):
-    def setEngine(self, status):
-        return Player(
-            id=self.id,
-            titled=self.titled,
-            engine=status,
-            gamesPlayed=self.gamesPlayed,
-            closedReports=self.closedReports)
-
     @staticmethod
     def fromPlayerData(data):
         user = data.get('user')
@@ -45,8 +37,8 @@ class PlayerBSONHandler:
         }
 
 class PlayerDB(namedtuple('PlayerDB', ['playerColl'])):
-    def byId(self, _id):
-        playerBSON = self.playerColl.find_one({'_id': _id})
+    def byId(self, userId):
+        playerBSON = self.playerColl.find_one({'_id': userId})
         return None if playerBSON is None else PlayerBSONHandler.reads(playerBSON)
 
     def balancedSample(self, size):
@@ -60,10 +52,6 @@ class PlayerDB(namedtuple('PlayerDB', ['playerColl'])):
         engines = [PlayerBSONHandler.reads(p) for p in self.playerColl.aggregate(pipelines[0])]
         legits = [PlayerBSONHandler.reads(p) for p in self.playerColl.aggregate(pipelines[1])]
         return engines + legits
-
-    def randomNonEngine(self):
-        pipeline = [{'$match': {'$or': [{'engine': False}, {'engine': None}]}}, {'$sample': {'size': 1}}]
-        return [PlayerBSONHandler.reads(p) for p in self.playerColl.aggregate(pipeline)][0]
 
     def oldestNonEngine(self):
         playerBSON = self.playerColl.find_one_and_update(

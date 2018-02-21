@@ -1,0 +1,39 @@
+{% import 'macros/base.html' as base %}
+{% import 'macros/nav.html' as nav %}
+<!doctype html>
+<html lang="en">
+{{ base.header('Player Analysis Queue') }}
+  <body>
+    {{ nav.search() }}
+    {{ nav.sidebar('queue') }}
+    <main role="main" class="col-md-9 ml-sm-auto col-lg-10 pt-3 px-4">
+      <h2>Deep Player Analysis Queue</h2>
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>Precedence</th>
+                  <th>Username</th>
+                  <th>Origin</th>
+                  <th>Created</th>
+                  <th>Owner</th>
+                </tr>
+              </thead>
+              {% for queue in top %}
+              <tr>
+                <td>{{queue.precedence}}</td>
+                <td>{{queue.id}}</td>
+                <td>{{queue.origin}}</td>
+                <td>{{queue.date}}</td>
+                {% if queue.owner is not none %}
+                <td>{{queue.owner}}</td>
+                {% else %}
+                <td></td>
+                {% endif %}
+              {% endfor %}
+            </table>
+          </div>
+    </main>
+  {{ base.scripts() }}
+  </body>
+</html>

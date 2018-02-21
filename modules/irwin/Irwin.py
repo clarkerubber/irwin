@@ -15,6 +15,8 @@ from modules.irwin.GameBasicActivation import GameBasicActivation
 
 from modules.irwin.Evaluation import Evaluation
 
+from modules.irwin.AnalysisReport import PlayerReport, GameReport, moveActivation, movePredictions
+
 from modules.game.GameAnalysisStore import GameAnalysisStore
 
 class Irwin(Evaluation):
@@ -63,49 +65,30 @@ class Irwin(Evaluation):
 
     @staticmethod
     def gameActivation(gamePredictions, gameLength):
-        moveActivations = [Irwin.moveActivation(mp) for mp in Irwin.movePredictions(gamePredictions)][:gameLength]
+        moveActivations = [moveActivation(mp) for mp in movePredictions(gamePredictions)][:gameLength]
         pOverX = Irwin.pOverX(moveActivations, 80)
         sortedMoveActivations = sorted(moveActivations, reverse=True)
         topXavg = np.average(sortedMoveActivations[:ceil(0.3*len(moveActivations))]) # peak
         topYavg = np.average(sortedMoveActivations[:ceil(0.9*len(moveActivations))]) # no outliers
         return int(np.average([pOverX, topXavg, topYavg]))
 
-    @staticmethod
-    def movePredictions(gamePredictions):
-        return list(zip(list(gamePredictions[1][0]), list(gamePredictions[2][0])))
-
-    @staticmethod
-    def moveActivation(movePrediction):
-        return int(50*(movePrediction[0][0]+movePrediction[1][0]))
-
     def report(self, userId, gameAnalysisStore, owner='test'):
         playerPredictions = self.predictAnalysed(gameAnalysisStore.gameAnalysisTensors())
         gameActivations = [Irwin.gameActivation(gamePredictions, gameLength) for gamePredictions, gameLength in playerPredictions]
-        report = {
-            'userId': userId,
-            'owner': owner,
-            'activation': self.activation(gameActivations),
-            'games': [Irwin.gameReport(ga, a, gp) for ga, a, gp in zip(gameAnalysisStore.gameAnalyses, gameActivations, playerPredictions)]
-        }
-        return report
 
-    @staticmethod
-    def gameReport(gameAnalysis, gameActivation, gamePredictions):
-        return {
-            'gameId': gameAnalysis.gameId,
-            'activation': gameActivation,
-            'moves': [Irwin.moveReport(am, p) for am, p in zip(gameAnalysis.moveAnalyses, Irwin.movePredictions(gamePredictions[0]))]
-        }
+        playerReport = PlayerReport.new(
+            userId=userId,
+            owner=owner,
+            activation=self.activation(gameActivations))
 
-    @staticmethod
-    def moveReport(analysedMove, movePrediction):
-        return {
-            'a': Irwin.moveActivation(movePrediction),
-            'r': analysedMove.trueRank(),
-            'm': analysedMove.ambiguity(),
-            'o': int(100*analysedMove.advantage()),
-            'l': int(100*analysedMove.winningChancesLoss())
-        }
+        gameReports = [GameReport.new(ga, a, gp, playerReport.id, userId)
+            for ga, a, gp
+            in zip(gameAnalysisStore.gameAnalyses, gameActivations, playerPredictions)]
+
+        self.env.playerReportDB.write(playerReport)
+        self.env.gameReportDB.lazyWriteMany(gameReports)
+
+        return playerReport.reportDict(gameReports)
 
     @staticmethod
     def pOverX(moveActivations, x): # percentage of moveActivations > X in the list

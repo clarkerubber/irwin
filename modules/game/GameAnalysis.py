@@ -6,6 +6,7 @@ from modules.game.MoveAnalysis import MoveAnalysis, MoveAnalysisBSONHandler, Sco
 from modules.game.PositionAnalysis import PositionAnalysis
 
 from collections import namedtuple
+
 class GameAnalysis(namedtuple('GameAnalysis', ['id', 'userId', 'gameId', 'moveAnalyses'])):
     def moveAnalysisTensors(self, length=60):
         emtAvg = self.emtAverage()

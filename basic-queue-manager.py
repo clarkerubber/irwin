@@ -7,8 +7,6 @@ from time import sleep
 
 from modules.queue.DeepPlayerQueue import DeepPlayerQueue
 
-from modules.game.Player import Player
-from modules.game.Game import Game
 from modules.game.GameAnalysisStore import GameAnalysisStore
 
 from Env import Env
