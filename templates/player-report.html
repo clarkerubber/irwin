@@ -1,0 +1,49 @@
+{% import 'macros/base.html' as base %}
+{% import 'macros/nav.html' as nav %}
+<!doctype html>
+<html lang="en">
+{{ base.header('Player Report - ' + playerReport.id) }}
+  <body>
+    {{ nav.search() }}
+    {{ nav.sidebar('player') }}
+    <main role="main" class="col-md-9 ml-sm-auto col-lg-10 pt-3 px-4">
+      <h1>Player Report  - {{ playerReport.id }}</h1>
+      <h2>{{ playerReport.userId }}</h2>
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Activation</th>
+              <th>Owner</th>
+              <th>Created</th>
+            </tr>
+          </thead>
+          <tr>
+            <td>{{playerReport.activation}}%</td>
+            <td>{{playerReport.owner}}</td>
+            <td>{{playerReport.date}}</td>
+          </tr>
+        </table>
+      </div>
+
+      <h2>Game Reports</h2>
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>Game ID</th>
+              <th>Activation</th>
+            </tr>
+          </thead>
+          {% for gameReport in gameReports %}
+          <tr class='clickable-row' data-href='{{url_for("gameReport", reportId=gameReport.id)}}'>
+            <td>#{{gameReport.gameId}}</td>
+            <td>{{gameReport.activation}}%</td>
+          </tr>
+          {% endfor %}
+        </table>  
+      </div>
+    </main>
+  {{ base.scripts() }}
+  </body>
+</html>

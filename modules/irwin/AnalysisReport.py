@@ -138,6 +138,14 @@ class PlayerReportDB(namedtuple('PlayerReportDB', ['playerReportColl'])):
         bson = self.playerReportColl.find_one(
             filter={'userId': userId},
             sort=[('date', pymongo.DESCENDING)])
+        return None if bson is None else PlayerReportBSONHandler.reads(bson)
+
+    def byUserIds(self, userIds):
+        return [self.newestByUserId(userId) for userId in userIds]
+
+    def newest(self, amount=50):
+        return [PlayerReportBSONHandler.reads(bson) 
+            for bson in self.playerReportColl.find(sort=[('date', pymongo.DESCENDING)], limit=amount)]
 
     def byId(self, reportId):
         bson = self.playerReportColl.find_one({'_id': reportId})
@@ -150,6 +158,10 @@ class PlayerReportDB(namedtuple('PlayerReportDB', ['playerReportColl'])):
             upsert=True)
 
 class GameReportDB(namedtuple('GameReportDB', ['gameReportColl'])):
+    def byId(self, id):
+        bson = self.gameReportColl.find_one({'_id': id})
+        return None if bson is None else GameReportBSONHandler.reads(bson)
+
     def byReportId(self, reportId):
         return [GameReportBSONHandler.reads(bson) for bson in self.gameReportColl.find({'reportId': reportId})]
 

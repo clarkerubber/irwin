@@ -2,37 +2,18 @@
 {% import 'macros/nav.html' as nav %}
 <!doctype html>
 <html lang="en">
-{{ base.header(playerObj.id + ' - Player Analysis Queue') }}
+{{ base.header('Recent Reports') }}
   <body>
     {{ nav.search() }}
-    {{ nav.sidebar('player') }}
+    {{ nav.sidebar('recent-reports') }}
     <main role="main" class="col-md-9 ml-sm-auto col-lg-10 pt-3 px-4">
-      <h1>{{ playerObj.id }}</h1>
-      <div class="table-responsive">
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Titled</th>
-              <th>Engine</th>
-              <th>Games Played</th>
-              <th># Closed Reports</th>
-            </tr>
-          </thead>
-          <tr>
-            <td>{{playerObj.titled}}</td>
-            <td>{{playerObj.engine}}</td>
-            <td>{{playerObj.gamesPlayed}}</td>
-            <td>{{playerObj.closedReports}}</td>
-          </tr>
-        </table>
-      </div>
-
-      <h2>Irwin Reports</h2>
+      <h1>Recently Sent Reports</h1>
       <div class="table-responsive">
         <table class="table table-hover">
           <thead>
             <tr>
               <th>Report ID</th>
+              <th>User ID</th>
               <th>Activation</th>
               <th>Owner</th>
               <th>Created</th>
@@ -40,13 +21,14 @@
           </thead>
           {% for report in playerReports %}
           <tr class='clickable-row' data-href='{{url_for("playerReport", reportId=report.id)}}'>
-            <td>#{{report.id}}</td>
+            <td>{{report.id}}</td>
+            <td>{{report.userId}}</td>
             <td>{{report.activation}}%</td>
             <td>{{report.owner}}</td>
             <td>{{report.date}}</td>
           </tr>
           {% endfor %}
-        </table>  
+        </table>
       </div>
     </main>
   {{ base.scripts() }}

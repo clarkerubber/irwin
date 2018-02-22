@@ -70,7 +70,7 @@ def updateOldestPlayerQueue():
 
             if player.engine:
                 logging.info("Player is now engine. Closing all reports.")
-                env.reportDB.close(userId)
+                env.modReportDB.close(userId)
                 if deepPlayerQueue.origin != 'moderator':
                     logging.info("And not requested by a moderator. Closing analysis")
                     env.deepPlayerQueueDB.removeUserId(userId)
@@ -127,7 +127,7 @@ def spotCheck():
 
 def updateOldestReport():
     logging.info("--Updating Oldest Report--")
-    report = env.reportDB.oldestUnprocessed()
+    report = env.modReportDB.oldestUnprocessed()
     logging.info("Report: " + str(report))
     if report is not None:
         userId = report.id
@@ -144,7 +144,7 @@ def updateOldestReport():
 
         if player.engine:
             logging.info("Player is now engine")
-            env.reportDB.close(userId)
+            env.modReportDB.close(userId)
             return
 
         predictions = predictPlayer(userId)

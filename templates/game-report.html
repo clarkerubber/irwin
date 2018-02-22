@@ -1,0 +1,53 @@
+{% import 'macros/base.html' as base %}
+{% import 'macros/nav.html' as nav %}
+<!doctype html>
+<html lang="en">
+{{ base.header('Game Report - ' + gameReport.id) }}
+  <body>
+    {{ nav.search() }}
+    {{ nav.sidebar('player') }}
+    <main role="main" class="col-md-9 ml-sm-auto col-lg-10 pt-3 px-4">
+      <h1>Game Report - {{ gameReport.id }}</h1>
+      <h2>{{ gameReport.userId }}</h2>
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Activation</th>
+              <th>Game ID</th>
+            </tr>
+          </thead>
+          <tr>
+            <td>{{gameReport.activation}}%</td>
+            <td>{{gameReport.gameId}}</td>
+          </tr>
+        </table>
+      </div>
+
+      <h2>Moves</h2>
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Activation</th>
+              <th>Rank (PV Selected)</th>
+              <th>Ambiguity (# Good Moves)</th>
+              <th>Advantage</th>
+              <th>Loss</th>
+            </tr>
+          </thead>
+          {% for move in gameReport.moves %}
+          <tr>
+            <td>{{move.activation}}%</td>
+            <td>{{move.rank}}</td>
+            <td>{{move.ambiguity}}</td>
+            <td>{{move.advantage}}%</td>
+            <td>{{move.loss}}%</td>
+          </tr>
+          {% endfor %}
+        </table>  
+      </div>
+    </main>
+  {{ base.scripts() }}
+  </body>
+</html>

@@ -13,7 +13,7 @@ from time import sleep
 
 from modules.queue.BasicPlayerQueue import BasicPlayerQueue
 from modules.queue.DeepPlayerQueue import DeepPlayerQueue
-from modules.queue.Report import Report
+from modules.queue.ModReport import ModReport
 
 from modules.game.Player import Player
 from modules.game.Game import Game
@@ -76,9 +76,9 @@ def handleLine(lineDict):
                     BasicPlayerQueue(id=userId, origin=lineDict['origin']))
 
         if messageType == 'reportCreated':
-            if not env.reportDB.isOpen(userId): # don't update these if a report is still open
+            if not env.modReportDB.isOpen(userId): # don't update these if a report is still open
                 env.basicPlayerQueueDB.write(BasicPlayerQueue(id=userId, origin='report'))
-                env.reportDB.write(Report.new(userId))
+                env.modReportDB.write(ModReport.new(userId))
             else:
                 logging.info("report already open")
 
@@ -86,7 +86,7 @@ def handleLine(lineDict):
             logging.info("removing all queue items")
             env.basicPlayerQueueDB.removeUserId(userId)
             env.deepPlayerQueueDB.removeUserId(userId)
-            env.reportDB.close(userId)
+            env.modReportDB.close(userId)
     else:
         logging.warning("player is None. Not proceeding.")
 
