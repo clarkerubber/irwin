@@ -62,9 +62,9 @@ def modReports():
     playerReports = env.playerReportDB.byUserIds([r.id for r in modReports])
 
     players = list(zip(modReports, playerReports))
-    players.sort(key=lambda obj: -obj[1].activation if obj[1] is not None else -150)
+    players.sort(key=lambda obj: -obj[1].activation if obj[1] is not None else 150)
 
     return render_template('mod-reports.html', players=players)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0')
+    app.run(host='0.0.0.0', ssl_context='adhoc')
