@@ -36,7 +36,7 @@
             </tr>
           </thead>
           {% for gameReport in gameReports %}
-          <tr class='clickable-row' data-href='{{url_for("gameReport", reportId=gameReport.id)}}'>
+          <tr class='clickable-row' data-href='{{url_for("gameReport", gameId=gameReport.id, reportId=gameReport.reportId)}}'>
             <td>#{{gameReport.gameId}}</td>
             <td>{{gameReport.activation}}%</td>
           </tr>
