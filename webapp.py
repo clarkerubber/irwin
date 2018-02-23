@@ -67,4 +67,4 @@ def modReports():
     return render_template('mod-reports.html', players=players)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', ssl_context='adhoc', port=8080)
+    app.run(host='0.0.0.0')
