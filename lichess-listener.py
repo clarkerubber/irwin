@@ -9,6 +9,7 @@ import json
 import argparse
 import logging
 import sys
+from datetime import datetime
 from time import sleep
 
 from modules.queue.BasicPlayerQueue import BasicPlayerQueue
@@ -62,9 +63,18 @@ def handleLine(lineDict):
         return None
     player = Player.fromPlayerData(playerData)
 
+    timeSinceUpdated = env.playerReportDB.timeSinceUpdated(userId)
+
     if player is not None:
         env.playerDB.write(player) # this will cover updating the player status
         env.gameDB.lazyWriteGames(Game.fromPlayerData(playerData)) # get games because data is king
+
+        tooSoon = False
+        if timeSinceUpdated is not None:
+            if ((messageType == 'request' and lineDict['origin'] == 'moderator')
+                or timeSinceUpdated > timedelta(weeks=1)):
+                    logging.info("Too Soon " + str(timeSinceUpdated))
+                    tooSoon = True
 
         if messageType == 'request':
             if lineDict['origin'] == 'moderator': # moderator request, skip the queue
@@ -72,15 +82,18 @@ def handleLine(lineDict):
                     DeepPlayerQueue(id=userId, origin='moderator', owner=None, precedence=100000))
             elif not env.deepPlayerQueueDB.exists(userId):
                 # any other type of request that doesn't have an open queue item
-                env.basicPlayerQueueDB.write(
-                    BasicPlayerQueue(id=userId, origin=lineDict['origin']))
+                if not tooSoon:
+                    env.basicPlayerQueueDB.write(
+                        BasicPlayerQueue(id=userId, origin=lineDict['origin']))
+                else:
+                    logging.info("Too Soon " + str(timeSinceUpdated))
 
         if messageType == 'reportCreated':
-            if not env.modReportDB.isOpen(userId): # don't update these if a report is still open
+            if not env.modReportDB.isOpen(userId) and not tooSoon: # don't update these if a report is still open
                 env.basicPlayerQueueDB.write(BasicPlayerQueue(id=userId, origin='report'))
                 env.modReportDB.write(ModReport.new(userId))
             else:
-                logging.info("report already open")
+                logging.info("report already open or too soon")
 
         if messageType == 'reportProcessed' or messageType == 'mark':
             logging.info("removing all queue items")
