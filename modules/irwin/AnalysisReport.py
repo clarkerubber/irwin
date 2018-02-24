@@ -157,6 +157,12 @@ class PlayerReportDB(namedtuple('PlayerReportDB', ['playerReportColl'])):
             {'$set': PlayerReportBSONHandler.writes(playerReport)},
             upsert=True)
 
+    def timeSinceUpdated(self, userId):
+        report = self.newestByUserId(userId)
+        if report is None:
+            return None
+        return datetime.now() - report.date
+
 class GameReportDB(namedtuple('GameReportDB', ['gameReportColl'])):
     def byId(self, id):
         bson = self.gameReportColl.find_one({'_id': id})
