@@ -1,6 +1,7 @@
 from flask import Flask, render_template, url_for, redirect
 from WebEnv import Env
 from pprint import pprint
+import numpy as np
 import json
 
 app = Flask(__name__)
@@ -65,16 +66,43 @@ def playerReport(reportId):
               'rgba(214, 183, 116, 0.9)',
               'rgba(214, 116, 116, 0.9)'][int(playerReport.activation/10)]
 
+    lossByMove = [[int(move.loss) for move in gameReport.moves] for gameReport in gameReports]
+    longest = max([len(game) for game in lossByMove])
+    lossesByMove = [[] for i in range(longest)]
+    for i in range(longest):
+        for game in lossByMove:
+            try:
+                lossesByMove[i].append(game[i])
+            except IndexError:
+                continue
 
+    averageLossByMove = [np.average(move) for move in lossesByMove]
 
+    rankByMove = [[(10 if move.rank is None else move.rank) for move in gameReport.moves] for gameReport in gameReports]
+    longest = max([len(game) for game in rankByMove])
+    ranksByMove = [[] for i in range(longest)]
+    for i in range(longest):
+        for game in rankByMove:
+            try:
+                ranksByMove[i].append(game[i])
+            except IndexError:
+                continue
+
+    averageRankByMove = [np.average(move) for move in ranksByMove]
+    print(averageRankByMove)
+            
     gameMoveActivations = [(
         gameReport.gameId,
         [move.activation for move in gameReport.moves],
         [i+1 for i in range(len(gameReport.moves))],
         [lightColours[int(move.activation/10)] for move in gameReport.moves],
-        lightColours[int(gameReport.activation/10)]) for gameReport in gameReports]
+        lightColours[int(gameReport.activation/10)],
+        [int(move.loss) for move in gameReport.moves],
+        [('null' if move.rank is None else move.rank) for move in gameReport.moves]) for gameReport in gameReports]
 
-    combinedLabels = list(range(max([len(gameReport.moves) for gameReport in gameReports])))
+    #print(gameMoveActivations[0][6])
+
+    combinedLabels = list(range(1, max([len(gameReport.moves) for gameReport in gameReports])+1))
 
     return render_template('player-report.html',
         playerReport=playerReport,
@@ -83,7 +111,9 @@ def playerReport(reportId):
         graphColour=graphColour,
         overallActivation=overallActivation,
         gameMoveActivations=gameMoveActivations,
-        combinedLabels=combinedLabels)
+        combinedLabels=combinedLabels,
+        averageLossByMove=averageLossByMove,
+        averageRankByMove=averageRankByMove)
 
 @app.route('/game-report/<gameId>/<reportId>')
 def gameReport(gameId, reportId):

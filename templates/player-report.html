@@ -15,8 +15,16 @@
           <canvas id="overall" height="200em"></canvas>
         </div>
         <div class="col-9">
-          <h3>Combined Games</h3>
-          <canvas id="combined" height="70em"></canvas>
+          <div class="row">
+            <h3>Combined Games Activation</h3>
+            <canvas id="combined-activation" height="70em"></canvas>
+          </div>
+          <div class="row">
+            <h3>Average Loss By Move</h3>
+            <canvas id="combined-loss" height="40em"></canvas>
+            <h3>Average Rank By Move</h3>
+            <canvas id="combined-rank" height="40em"></canvas>
+          </div>
         </div>
       </div>
       <h2>Game Reports</h2>
@@ -96,10 +104,10 @@
       }
     });
 
-    //// Combined ==========================
-    var combinedCtx = document.getElementById("combined").getContext("2d");
+    //// Combined Activation ==========================
+    var combinedActivationCtx = document.getElementById("combined-activation").getContext("2d");
 
-    var combinedChart = new Chart(combinedCtx, {
+    var combinedActivationChart = new Chart(combinedActivationCtx, {
       type: 'line',
       data: {
         labels: {{combinedLabels}},
@@ -110,6 +118,87 @@
             borderColor: '{{moveActivations[4]}}',
             fill: false
           },{% endfor %}]
+      },
+      options: {
+        scales: {
+          yAxes: [{
+            ticks: {
+              min: 0,
+              max: 100
+            }
+          }]
+        }
+      }
+    });
+    //// Combined Loss ==========================
+    var combinedLossCtx = document.getElementById("combined-loss").getContext("2d");
+
+    var combinedLossChart = new Chart(combinedLossCtx, {
+      type: 'line',
+      data: {
+        labels: {{combinedLabels}},
+        datasets:[
+          {
+            label: 'Average',
+            data: {{averageLossByMove}},
+            borderColor: 'rgba(240, 0, 0, 0.8)',
+            fill: false,
+            lineWidth: 2
+          },
+        {% for moveActivations in gameMoveActivations %}
+          {
+            label: '{{moveActivations[0]}}',
+            data: {{moveActivations[5]}},
+            borderColor: 'rgba(20,20,20,0.1)',
+            fill: false
+          },{% endfor %}]
+      },
+      options: {
+        scales: {
+          yAxes: [{
+            ticks: {
+              min: 0,
+              max: 20
+            }
+          }]
+        }
+      }
+    });
+    //// Combined Rank ==========================
+    var combinedRankCtx = document.getElementById("combined-rank").getContext("2d");
+
+    var combinedRankChart = new Chart(combinedRankCtx, {
+      type: 'line',
+      data: {
+        labels: {{combinedLabels}},
+        datasets:[
+          {
+            label: 'Average',
+            data: {{averageRankByMove}},
+            borderColor: 'rgba(240, 0, 0, 0.8)',
+            fill: false,
+            lineWidth: 2
+          },
+        {% for moveActivations in gameMoveActivations %}
+          {
+            label: '{{moveActivations[0]}}',
+            data: [{% for rank in moveActivations[6] %}
+              {{rank}},{% endfor %}
+            ],
+            borderColor: 'rgba(20,20,20,0.1)',
+            fill: false
+          },{% endfor %}]
+      },
+      options: {
+        //spanGaps: true,
+        scales: {
+          yAxes: [{
+            ticks: {
+              min: 1,
+              max: 8
+            }
+          }]
+        }
       }
     });
     //// Games =============================
@@ -126,12 +215,16 @@
           pointRadius: 5,
           backgroundColor: '{{moveActivations[4]}}',
           pointBackgroundColor: [{% for color in moveActivations[3] %}
-          '{{color}}',{% endfor%}],
-          legend: false
+          '{{color}}',{% endfor%}]
         }],
         options: {
           legend: {
             display: false
+          },
+          scales: {
+            ticks: {
+              beginAtZero: true
+            }
           }
         }
       }
