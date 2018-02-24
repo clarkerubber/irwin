@@ -7,25 +7,18 @@
     {{ nav.search() }}
     {{ nav.sidebar('player') }}
     <main role="main" class="col-md-9 ml-sm-auto col-lg-10 pt-3 px-4">
-      <h1>Player Report  - {{ playerReport.id }}</h1>
-      <h2>{{ playerReport.userId }}</h2>
-      <div class="table-responsive">
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Activation</th>
-              <th>Owner</th>
-              <th>Created</th>
-            </tr>
-          </thead>
-          <tr>
-            <td>{{playerReport.activation}}%</td>
-            <td>{{playerReport.owner}}</td>
-            <td>{{playerReport.date}}</td>
-          </tr>
-        </table>
+      <h1>{{ playerReport.userId }}</h1>
+      <h3>Player Report  - {{ playerReport.id }}</h3>
+      <div class="row">
+        <div class="col-3">
+          <h3>Activation <span style="color: {{overallActivation}}">{{playerReport.activation}}%</span></h3>
+          <canvas id="overall" height="200em"></canvas>
+        </div>
+        <div class="col-9">
+          <h3>Combined Games</h3>
+          <canvas id="combined" height="70em"></canvas>
+        </div>
       </div>
-
       <h2>Game Reports</h2>
       <div class="table-responsive">
         <table class="table table-hover">
@@ -33,17 +26,118 @@
             <tr>
               <th>Game ID</th>
               <th>Activation</th>
+              <th>Evolution</th>
             </tr>
           </thead>
           {% for gameReport in gameReports %}
-          <tr class='clickable-row' data-href='{{url_for("gameReport", gameId=gameReport.id, reportId=gameReport.reportId)}}'>
+          <tr class='clickable-row' data-href='{{url_for("gameReport", gameId=gameReport.gameId, reportId=gameReport.reportId)}}'>
             <td>#{{gameReport.gameId}}</td>
             <td>{{gameReport.activation}}%</td>
+            <td><canvas id="gameReport{{gameReport.gameId}}" height="30px"></canvas></td>
           </tr>
           {% endfor %}
         </table>  
       </div>
     </main>
   {{ base.scripts() }}
+  <script>
+    Chart.defaults.global.legend.display = false;
+    //// Overall ===========================
+    // bar chart data
+    var barData = {
+      datasets : [
+        {
+          hoverBorderColor: 'rgba(50, 50, 50, 0.2)',
+          borderColor: 'rgba(50, 50, 50, 0.2)',
+          backgroundColor: [
+            '{{graphColour}}',
+            'rgba(50, 50, 50, 0.2)'
+          ],
+          data : [{{playerReport.activation}}, {{100 - playerReport.activation}}]
+        },
+        {
+          hoverBorderColor: 'rgba(50, 50, 50, 0.2)',
+          borderColor: 'rgba(50, 50, 50, 0.2)',
+          backgroundColor: [
+            'rgba(214, 116, 116, 0.52)',
+            'rgba(214, 183, 116, 0.52)',
+            'rgba(214, 190, 116, 0.52)',
+            'rgba(203, 214, 116, 0.52)',
+            'rgba(165, 214, 116, 0.52)',
+            'rgba(116, 214, 121, 0.52)',
+            'rgba(116, 214, 173, 0.52)',
+            'rgba(116, 198, 214, 0.52)',
+            'rgba(116, 154, 214, 0.52)',
+            'rgba(126, 116, 214, 0.52)'
+          ],
+          data : {{breakdownData}}
+        }
+      ],
+      labels : [
+        "activation",
+        "to go"
+      ]
+    };
+   
+     // get bar chart canvas
+    var overallChart = document.getElementById("overall").getContext("2d");
+
+     // draw bar chart
+    var activationGauge = new Chart(overallChart, {
+      type: 'doughnut',
+      data: barData,
+      options: {
+        cutoutPercentage: 60,
+        legend: false,
+        tooltips: {
+          enabled: false
+        },
+        rotation: Math.PI
+      }
+    });
+
+    //// Combined ==========================
+    var combinedCtx = document.getElementById("combined").getContext("2d");
+
+    var combinedChart = new Chart(combinedCtx, {
+      type: 'line',
+      data: {
+        labels: {{combinedLabels}},
+        datasets:[{% for moveActivations in gameMoveActivations %}
+          {
+            label: '{{moveActivations[0]}}',
+            data: {{moveActivations[1]}},
+            borderColor: '{{moveActivations[4]}}',
+            fill: false
+          },{% endfor %}]
+      }
+    });
+    //// Games =============================
+    {% for moveActivations in gameMoveActivations %}
+    // Game {{moveActivations[0]}}
+    var moveActivationsChart{{moveActivations[0]}} = document.getElementById("gameReport{{moveActivations[0]}}").getContext("2d");
+
+    var moveActivations{{moveActivations[0]}} = new Chart(moveActivationsChart{{moveActivations[0]}}, {
+      type: 'line',
+      data: {
+        labels: {{moveActivations[2]}},
+        datasets: [{
+          data: {{moveActivations[1]}},
+          pointRadius: 5,
+          backgroundColor: '{{moveActivations[4]}}',
+          pointBackgroundColor: [{% for color in moveActivations[3] %}
+          '{{color}}',{% endfor%}],
+          legend: false
+        }],
+        options: {
+          legend: {
+            display: false
+          }
+        }
+      }
+    });
+    {% endfor %}
+    //// End
+  </script>
   </body>
 </html>
