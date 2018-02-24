@@ -2,7 +2,6 @@ from flask import Flask, render_template, url_for, redirect
 from WebEnv import Env
 from pprint import pprint
 import json
-from math import ceil
 
 app = Flask(__name__)
 
@@ -53,7 +52,7 @@ def playerReport(reportId):
               'rgba(214, 183, 116, 0.52)',
               'rgba(214, 116, 116, 0.52)']
 
-    graphColour = lightColours[ceil(playerReport.activation/10)]
+    graphColour = lightColours[int(playerReport.activation/10)]
 
     overallActivation = ['rgba(126, 116, 214, 0.9)',
               'rgba(116, 154, 214, 0.9)',
@@ -64,7 +63,7 @@ def playerReport(reportId):
               'rgba(203, 214, 116, 0.9)',
               'rgba(214, 190, 116, 0.9)',
               'rgba(214, 183, 116, 0.9)',
-              'rgba(214, 116, 116, 0.9)'][ceil(playerReport.activation/10)]
+              'rgba(214, 116, 116, 0.9)'][int(playerReport.activation/10)]
 
 
 
