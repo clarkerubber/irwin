@@ -63,16 +63,15 @@ def handleLine(lineDict):
         return None
     player = Player.fromPlayerData(playerData)
 
-    timeSinceUpdated = env.playerReportDB.timeSinceUpdated(userId)
-
     if player is not None:
         env.playerDB.write(player) # this will cover updating the player status
         env.gameDB.lazyWriteGames(Game.fromPlayerData(playerData)) # get games because data is king
 
+        timeSinceUpdated = env.playerReportDB.timeSinceUpdated(userId)
         tooSoon = False
         if timeSinceUpdated is not None:
             if ((messageType == 'request' and lineDict['origin'] == 'moderator')
-                or timeSinceUpdated > timedelta(weeks=1)):
+                or timeSinceUpdated > datetime.timedelta(weeks=1)):
                     logging.info("Too Soon " + str(timeSinceUpdated))
                     tooSoon = True
 
