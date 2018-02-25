@@ -28,8 +28,40 @@ class GameAnalysis(namedtuple('GameAnalysis', ['id', 'userId', 'gameId', 'moveAn
     def emts(self):
         return [m.emt for m in self.moveAnalyses]
 
+    def emtSeconds(self):
+        return [emt/100 for emt in self.emts()]
+
     def winningChances(self):
         return [m.advantage() for m in self.moveAnalyses]
+
+    def winningChancesPercent(self):
+        return [100*m.advantage() for m in self.moveAnalyses]
+
+    def winningChancesLossPercent(self):
+        return [100*m.winningChancesLoss() for m in self.moveAnalyses]
+
+    def winningChancesLossByPV(self):
+        """ for generating graphs """
+        pvs = [(
+            'PV'+str(i+1),
+            'rgba(20, 20, 20, ' + str(0.6 - i*0.1) + ')',
+            []) for i in range(5)] # one entry per PV
+        for moveAnalysis in self.moveAnalyses:
+            losses = moveAnalysis.PVsWinningChancesLoss()
+            for i in range(5):
+                try:
+                    pvs[i][2].append(max(0, 100*losses[i]))
+                except IndexError:
+                    pvs[i][2].append('null')
+        return pvs
+
+    def ranks(self):
+        """ for generating graphs """
+        return [('null' if move.trueRank() is None else move.trueRank()) for move in self.moveAnalyses]
+
+    def ambiguities(self):
+        """ for generating graphs """
+        return [move.ambiguity() for move in self.moveAnalyses]
 
     def length(self):
         return len(self.moveAnalyses)
@@ -147,3 +179,7 @@ class GameAnalysisDB(namedtuple('GameAnalysisDB', ['gameAnalysisColl'])):
 
     def allBatch(self, batch, batchSize=500):
         return [GameAnalysisBSONHandler.reads(ga) for ga in self.gameAnalysisColl.find(skip=batch*batchSize, limit=batchSize)]
+
+    def byGameIdAndUserId(self, gameId, userId):
+        bson = self.gameAnalysisColl.find_one({'gameId': gameId, 'userId': userId})
+        return None if bson is None else GameAnalysisBSONHandler.reads(bson)

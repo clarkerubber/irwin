@@ -40,6 +40,25 @@ class GameReport(namedtuple('GameReport', ['id', 'reportId', 'gameId', 'activati
             'moves': [move.reportDict() for move in self.moves]
         }
 
+    def activations(self):
+        return [move.activation for move in self.moves]
+
+    def ranks(self):
+        return [move.rank for move in self.moves]
+
+    def losses(self):
+        return [move.loss for move in self.moves]
+
+    def moveNumbers(self):
+        return [i+1 for i in range(len(self.moves))]
+
+    def binnedActivations(self):
+        bins = [0 for i in range(10)]
+        for move in self.moves:
+            bins[int(move.activation/10)] += 1
+        return bins[::-1]
+
+
 class MoveReport(namedtuple('MoveReport', ['activation', 'rank', 'ambiguity', 'advantage', 'loss'])):
     @staticmethod
     def new(analysedMove, movePrediction):

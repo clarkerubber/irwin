@@ -14,6 +14,28 @@ if config == {}:
 
 env = Env(config)
 
+lightColours = ['rgba(126, 116, 214, 0.52)',
+          'rgba(116, 154, 214, 0.52)',
+          'rgba(116, 198, 214, 0.52)',
+          'rgba(116, 214, 173, 0.52)',
+          'rgba(116, 214, 121, 0.52)',
+          'rgba(165, 214, 116, 0.52)',
+          'rgba(203, 214, 116, 0.52)',
+          'rgba(214, 190, 116, 0.52)',
+          'rgba(214, 183, 116, 0.52)',
+          'rgba(214, 116, 116, 0.52)']
+
+darkColours = ['rgba(126, 116, 214, 0.8)',
+          'rgba(116, 154, 214, 0.8)',
+          'rgba(116, 198, 214, 0.8)',
+          'rgba(116, 214, 173, 0.8)',
+          'rgba(116, 214, 121, 0.8)',
+          'rgba(165, 214, 116, 0.8)',
+          'rgba(203, 214, 116, 0.8)',
+          'rgba(214, 190, 116, 0.8)',
+          'rgba(214, 183, 116, 0.8)',
+          'rgba(214, 116, 116, 0.8)']
+
 @app.route('/')
 def home():
     return render_template('home.html')
@@ -42,31 +64,12 @@ def playerReport(reportId):
         return ('Report not found', 404)
 
     breakdownData = [sum([int(gameReport.activation in range(i,i+10)) for gameReport in gameReports]) for i in range(0, 100, 10)][::-1]
-    lightColours = ['rgba(126, 116, 214, 0.52)',
-              'rgba(116, 154, 214, 0.52)',
-              'rgba(116, 198, 214, 0.52)',
-              'rgba(116, 214, 173, 0.52)',
-              'rgba(116, 214, 121, 0.52)',
-              'rgba(165, 214, 116, 0.52)',
-              'rgba(203, 214, 116, 0.52)',
-              'rgba(214, 190, 116, 0.52)',
-              'rgba(214, 183, 116, 0.52)',
-              'rgba(214, 116, 116, 0.52)']
 
     graphColour = lightColours[int(playerReport.activation/10)]
 
-    overallActivation = ['rgba(126, 116, 214, 0.9)',
-              'rgba(116, 154, 214, 0.9)',
-              'rgba(116, 198, 214, 0.9)',
-              'rgba(116, 214, 173, 0.9)',
-              'rgba(116, 214, 121, 0.9)',
-              'rgba(165, 214, 116, 0.9)',
-              'rgba(203, 214, 116, 0.9)',
-              'rgba(214, 190, 116, 0.9)',
-              'rgba(214, 183, 116, 0.9)',
-              'rgba(214, 116, 116, 0.9)'][int(playerReport.activation/10)]
+    overallActivation = darkColours[int(playerReport.activation/10)]
 
-    lossByMove = [[int(move.loss) for move in gameReport.moves] for gameReport in gameReports]
+    lossByMove = [gameReport.losses() for gameReport in gameReports]
     longest = max([len(game) for game in lossByMove])
     lossesByMove = [[] for i in range(longest)]
     for i in range(longest):
@@ -89,18 +92,13 @@ def playerReport(reportId):
                 continue
 
     averageRankByMove = [np.average(move) for move in ranksByMove]
-    print(averageRankByMove)
             
     gameMoveActivations = [(
-        gameReport.gameId,
-        [move.activation for move in gameReport.moves],
-        [i+1 for i in range(len(gameReport.moves))],
+        gameReport,
         [lightColours[int(move.activation/10)] for move in gameReport.moves],
         lightColours[int(gameReport.activation/10)],
-        [int(move.loss) for move in gameReport.moves],
+        darkColours[int(gameReport.activation/10)],
         [('null' if move.rank is None else move.rank) for move in gameReport.moves]) for gameReport in gameReports]
-
-    #print(gameMoveActivations[0][6])
 
     combinedLabels = list(range(1, max([len(gameReport.moves) for gameReport in gameReports])+1))
 
@@ -117,13 +115,33 @@ def playerReport(reportId):
 
 @app.route('/game-report/<gameId>/<reportId>')
 def gameReport(gameId, reportId):
-    reportId = gameId + '/' + reportId
-    gameReport = env.gameReportDB.byId(reportId)
+    gameReportId = gameId + '/' + reportId
+    playerReport = env.playerReportDB.byId(reportId)
+    gameReport = env.gameReportDB.byId(gameReportId)
 
     if gameReport is None:
         return ('Game report not found', 404)
 
-    return render_template('game-report.html', gameReport=gameReport)
+    game = env.gameDB.byId(gameId)
+    gameAnalysis = env.gameAnalysisDB.byGameIdAndUserId(gameId, playerReport.userId)
+
+    if game is None or gameAnalysis is None:
+        return ('Game or GameAnalysis not found', 404)
+
+    graphColor = lightColours[int(gameReport.activation/10)]
+    overallActivationColor = darkColours[int(gameReport.activation/10)]
+    pointColors = [darkColours[int(activation/10)] for activation in gameReport.activations()]
+
+    lossesByTimes = list(zip(gameAnalysis.emtSeconds(), gameAnalysis.winningChancesLossPercent(), pointColors))
+    return render_template('game-report.html',
+        gameReport=gameReport,
+        game=game,
+        gameAnalysis=gameAnalysis,
+        playerReport=playerReport,
+        overallActivationColor=overallActivationColor,
+        graphColor=graphColor,
+        pointColors=pointColors,
+        lossesByTimes=lossesByTimes)
 
 @app.route('/recent-reports')
 def recentReports():

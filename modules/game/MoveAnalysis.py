@@ -49,8 +49,11 @@ class MoveAnalysis(namedtuple('MoveAnalysis', ['uci', 'move', 'emt', 'blur', 'sc
             return winningChances(self.analyses[tr].score) - self.advantage()
         return 0
 
+    def PVsWinningChancesLoss(self):
+        return [winningChances(self.top().score) - winningChances(a.score) for a in self.analyses]
+
     def averageWinningChancesLoss(self):
-        return np.average([winningChances(self.top().score) - winningChances(a.score) for a in self.analyses])
+        return np.average(self.PVsWinningChancesLoss())
 
     def winningChancesLoss(self):
         return max(0, winningChances(self.top().score) - self.advantage())

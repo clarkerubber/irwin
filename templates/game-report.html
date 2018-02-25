@@ -7,47 +7,280 @@
     {{ nav.search() }}
     {{ nav.sidebar('player') }}
     <main role="main" class="col-md-9 ml-sm-auto col-lg-10 pt-3 px-4">
-      <h1>Game Report - {{ gameReport.id }}</h1>
-      <h2>{{ gameReport.userId }}</h2>
-      <div class="table-responsive">
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Activation</th>
-              <th>Game ID</th>
-            </tr>
-          </thead>
-          <tr>
-            <td>{{gameReport.activation}}%</td>
-            <td>{{gameReport.gameId}}</td>
-          </tr>
-        </table>
+      <h4>Game Report ID: {{ gameReport.id }}</h4>
+      <h1><b>{{ playerReport.userId }}</b></h1>
+      <div class="row">
+        <div class="col-3">
+          <h3>Activation <span style="color: {{overallActivationColor}}"><b>{{gameReport.activation}}%</b></span></h3>
+          <canvas id="overall" height="200em"></canvas>
+        </div>
+        <div class="col-9">
+          <div class="row">
+            <h3>Move Activations</h3>
+            <canvas id="move-activations" height="40em"></canvas>
+          </div>
+          <div class="row">
+            <h3><span style="color: rgba(240, 0, 0, 0.8)">Winning Chances</span> &amp; <span style="color: rgba(88, 186, 232, 0.8)"> Move Times</span></h3>
+            <canvas id="advantage-chart" height="40em"></canvas>
+          </div>
+          <div class="row">
+            <h3>Winning Chances Loss By Move</h3>
+            <canvas id="loss-chart" height="40em"></canvas>
+          </div>
+          <div class="row">
+            <h3>PV Rank By Move</h3>
+            <canvas id="rank-chart" height="40em"></canvas>
+          </div>
+        </div>
       </div>
-
-      <h2>Moves</h2>
-      <div class="table-responsive">
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Activation</th>
-              <th>Rank (PV Selected)</th>
-              <th>Ambiguity (# Good Moves)</th>
-              <th>Advantage</th>
-              <th>Loss</th>
-            </tr>
-          </thead>
-          {% for move in gameReport.moves %}
-          <tr>
-            <td>{{move.activation}}%</td>
-            <td>{{move.rank}}</td>
-            <td>{{move.ambiguity}}</td>
-            <td>{{move.advantage}}%</td>
-            <td>{{move.loss}}%</td>
-          </tr>
-          {% endfor %}
-        </table>  
+      <div class="row">
+        <div class="col">
+          <h3>Loss By MoveTime</h3>
+          <canvas id="loss-by-move-time"></canvas>
+        </div>
+        <div class="col">
+          <canvas></canvas>
+        </div>
+        <div class="col">
+          <canvas></canvas>
+        </div>
       </div>
     </main>
   {{ base.scripts() }}
+  <script>
+    Chart.defaults.global.legend.display = false;
+    //// Overall ===========================
+    // bar chart data
+    // get bar chart canvas
+    var overallChart = document.getElementById("overall").getContext("2d");
+
+     // draw bar chart
+    var activationGauge = new Chart(overallChart, {
+      type: 'doughnut',
+      data: {
+        datasets : [
+          {
+            hoverBorderColor: 'rgba(50, 50, 50, 0.2)',
+            borderColor: 'rgba(50, 50, 50, 0.2)',
+            backgroundColor: [
+              '{{graphColor}}',
+              'rgba(50, 50, 50, 0.2)'
+            ],
+            data : [{{gameReport.activation}}, {{100 - gameReport.activation}}]
+          },
+          {
+            hoverBorderColor: 'rgba(50, 50, 50, 0.2)',
+            borderColor: 'rgba(50, 50, 50, 0.2)',
+            backgroundColor: [
+              'rgba(214, 116, 116, 0.52)',
+              'rgba(214, 183, 116, 0.52)',
+              'rgba(214, 190, 116, 0.52)',
+              'rgba(203, 214, 116, 0.52)',
+              'rgba(165, 214, 116, 0.52)',
+              'rgba(116, 214, 121, 0.52)',
+              'rgba(116, 214, 173, 0.52)',
+              'rgba(116, 198, 214, 0.52)',
+              'rgba(116, 154, 214, 0.52)',
+              'rgba(126, 116, 214, 0.52)'
+            ],
+            data : {{gameReport.binnedActivations()}}
+          }
+        ]
+      },
+      options: {
+        cutoutPercentage: 60,
+        legend: false,
+        tooltips: {
+          enabled: false
+        },
+        rotation: Math.PI
+      }
+    });
+
+    //// Move Activations ==========================
+    var moveActivationCtx = document.getElementById("move-activations").getContext("2d");
+
+    var moveActivationChart = new Chart(moveActivationCtx, {
+      type: 'line',
+      data: {
+        labels: {{gameReport.moveNumbers()}},
+        datasets:[
+          {
+            label: 'Activation',
+            data: {{gameReport.activations()}},
+            borderColor: '{{overallActivationColor}}',
+            backgroundColor: '{{graphColor}}',
+            pointBackgroundColor: [{% for color in pointColors %}
+            '{{color}}',{% endfor %}
+            ],
+            pointRadius: 5
+          }]
+      },
+      options: {
+        scales: {
+          yAxes: [{
+            ticks: {
+              min: 0,
+              max: 100
+            }
+          }]
+        }
+      }
+    });
+    //// Winning Chances Loss By Move ==========================
+    var moveLossCtx = document.getElementById("loss-chart").getContext("2d");
+
+    var moveLossChart = new Chart(moveLossCtx, {
+      type: 'line',
+      data: {
+        labels: {{gameReport.moveNumbers()}},
+        datasets:[
+          {
+            label: 'Played Move',
+            data: {{gameAnalysis.winningChancesLossPercent()}},
+            borderColor: 'rgba(240, 0, 0, 0.8)',
+            fill: false,
+            lineWidth: 2
+          },{% for pvLosses in gameAnalysis.winningChancesLossByPV() %}
+          {
+            label: '{{pvLosses[0]}}',
+            data: [{% for pv in pvLosses[2] %}
+            {{pv}},{% endfor %}],
+            borderColor: '{{pvLosses[1]}}',
+            fill: false
+          },
+          {% endfor %}]
+      },
+      options: {
+        scales: {
+          yAxes: [{
+            ticks: {
+              min: 0,
+              max: 10
+            }
+          }]
+        }
+      }
+    });
+    //// Rank By Move ==========================
+    var moveRankCtx = document.getElementById("rank-chart").getContext("2d");
+
+    var moveRankChart = new Chart(moveRankCtx, {
+      type: 'line',
+      data: {
+        labels: {{gameReport.moveNumbers()}},
+        datasets:[
+          {
+            label: 'Played Move Rank',
+            data: [{% for rank in gameAnalysis.ranks() %}
+            {{rank}},{% endfor %}
+            ],
+            borderColor: 'rgba(240, 0, 0, 0.8)',
+            fill: false,
+            lineWidth: 2
+          },
+          {
+            label: 'Good Moves',
+            data: {{gameAnalysis.ambiguities()}},
+            borderColor: 'rgba(20,20,20,0.3)',
+            fill: false
+          }]
+      },
+      options: {
+        scales: {
+          yAxes: [{
+            ticks: {
+              min: 1,
+              max: 5
+            }
+          }]
+        }
+      }
+    });
+    //// Move Times ==========================
+    var moveTimesCtx = document.getElementById("advantage-chart").getContext("2d");
+
+    var moveTimesChart = new Chart(moveTimesCtx, {
+      type: 'line',
+      data: {
+        labels: {{gameReport.moveNumbers()}},
+        datasets:[
+          {
+            label: 'Winning Chances',
+            data: {{gameAnalysis.winningChancesPercent()}},
+            borderColor: 'rgba(240, 0, 0, 0.8)',
+            fill: false
+          },
+          {
+            label: 'Elapsed Move Time',
+            data: {{gameAnalysis.emtSeconds()}},
+            borderColor: 'rgba(88, 186, 232, 0.8)',
+            fill: false,
+            lineWidth: 2
+          }
+        ],
+        options: {
+          scales: {
+            yAxes: [
+            {
+              position: 'left',
+              display: true,
+              ticks: {
+                min: 0,
+                max: 100
+              }
+            }]
+          }
+        }
+      }
+    });
+    //// Loss By Move Times ==========================
+    var lossByMovetimeCtx = document.getElementById("loss-by-move-time").getContext("2d");
+
+    var lossByMovetimeChart = new Chart(lossByMovetimeCtx, {
+      type: 'scatter',
+      data: {
+        labels: {{gameReport.moveNumbers()}},
+        datasets:[
+          {
+            data: [{% for lossByTime in lossesByTimes %}
+              {
+                x: {{lossByTime[0]}},
+                y: {{lossByTime[1]}}
+              },{% endfor %}],
+            pointBackgroundColor: [{% for lossByTime in lossesByTimes %}
+              '{{lossByTime[2]}}',{% endfor %}],
+            pointRadius: 10,
+            fill: false,
+            showLine: false
+          }
+        ],
+        /*
+        options: {
+          scales: {
+            xAxes: [{
+              display: true,
+              labelString: '% Loss',
+              position: 'left'
+            }],
+            yAxes: [{
+              display: true,
+              labelString: ' sec',
+              type: 'linear',
+              position: 'bottom'
+            }]
+          },
+          tooltips: {
+            callbacks: {
+              label: function(tooltipItem, data) {
+                var label = data.labels[tooltipItem.index];
+                return label + ': (' + tooltipItem.xLabel + ', ' + tooltipItem.yLabel + ')';
+              }
+            }
+          }
+        }*/
+      }
+    });
+  </script>
   </body>
 </html>
