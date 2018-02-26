@@ -48,8 +48,8 @@ class ModReportDB(namedtuple('ModReportDB', ['modReportColl'])):
             processed = modReportBSON['processed']
         return processed
 
-    def allOpen(self):
-        return [ModReportBSONHandler.reads(bson) for bson in self.modReportColl.find({'processed': False})]
+    def allOpen(self, limit=None):
+        return [ModReportBSONHandler.reads(bson) for bson in self.modReportColl.find({'processed': False}, batch_size=limit)]
 
     def oldestUnprocessed(self):
         modReportBSON = self.modReportColl.find_one_and_update(

@@ -14,27 +14,29 @@ if config == {}:
 
 env = Env(config)
 
-lightColours = ['rgba(126, 116, 214, 0.52)',
-          'rgba(116, 154, 214, 0.52)',
-          'rgba(116, 198, 214, 0.52)',
-          'rgba(116, 214, 173, 0.52)',
-          'rgba(116, 214, 121, 0.52)',
-          'rgba(165, 214, 116, 0.52)',
-          'rgba(203, 214, 116, 0.52)',
-          'rgba(214, 190, 116, 0.52)',
-          'rgba(214, 183, 116, 0.52)',
-          'rgba(214, 116, 116, 0.52)']
+lightColours = [
+          'rgba(84, 231, 96, 0.6)',
+          'rgba(109, 231, 84, 0.6)',
+          'rgba(131, 231, 84, 0.6)',
+          'rgba(163, 231, 84, 0.6)',
+          'rgba(197, 231, 84, 0.6)',
+          'rgba(231, 229, 84, 0.6)',
+          'rgba(231, 194, 84, 0.6)',
+          'rgba(231, 158, 84, 0.6)',
+          'rgba(231, 118, 84, 0.6)',
+          'rgba(231, 84, 84, 0.6)']
 
-darkColours = ['rgba(126, 116, 214, 0.8)',
-          'rgba(116, 154, 214, 0.8)',
-          'rgba(116, 198, 214, 0.8)',
-          'rgba(116, 214, 173, 0.8)',
-          'rgba(116, 214, 121, 0.8)',
-          'rgba(165, 214, 116, 0.8)',
-          'rgba(203, 214, 116, 0.8)',
-          'rgba(214, 190, 116, 0.8)',
-          'rgba(214, 183, 116, 0.8)',
-          'rgba(214, 116, 116, 0.8)']
+darkColours = [
+          'rgba(84, 231, 96, 0.8)',
+          'rgba(109, 231, 84, 0.8)',
+          'rgba(131, 231, 84, 0.8)',
+          'rgba(163, 231, 84, 0.8)',
+          'rgba(197, 231, 84, 0.8)',
+          'rgba(231, 229, 84, 0.8)',
+          'rgba(231, 194, 84, 0.8)',
+          'rgba(231, 158, 84, 0.8)',
+          'rgba(231, 118, 84, 0.8)',
+          'rgba(231, 84, 84, 0.8)']
 
 @app.route('/')
 def home():
@@ -196,11 +198,13 @@ def gameReport(gameId, reportId):
 @app.route('/recent-reports')
 def recentReports():
     playerReports = env.playerReportDB.newest()
-    return render_template('recent-reports.html', playerReports=playerReports)
+    reportColors = [lightColours[int(playerReport.activation/10)] for playerReport in playerReports]
+    reportsAndColors = list(zip(playerReports, reportColors))
+    return render_template('recent-reports.html', reportsAndColors=reportsAndColors)
 
 @app.route('/mod-reports')
 def modReports():
-    modReports = env.modReportDB.allOpen()
+    modReports = env.modReportDB.allOpen(300)
     playerReports = env.playerReportDB.byUserIds([r.id for r in modReports])
 
     players = list(zip(modReports, playerReports))

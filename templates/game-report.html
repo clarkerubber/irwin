@@ -298,6 +298,7 @@
             pointBackgroundColor: [{% for lossByTime in lossesByTimes %}
               '{{lossByTime[2]}}',{% endfor %}],
             pointRadius: 10,
+            pointHoverRadius: 12,
             fill: false,
             showLine: false
           }
@@ -342,6 +343,7 @@
             pointBackgroundColor: [{% for rankByTime in ranksByTimes %}{% if rankByTime[0] != 'null' %}
               '{{rankByTime[2]}}', {% endif %}{% endfor %}],
             pointRadius: 10,
+            pointHoverRadius: 12,
             fill: false,
             showLine: false
           }
@@ -387,6 +389,7 @@
             pointBackgroundColor: [{% for lossByRank in lossesByRanks %}{% if lossByRank[0] != 'null' %}
               '{{lossByRank[2]}}', {% endif %}{% endfor %}],
             pointRadius: 10,
+            pointHoverRadius: 12,
             fill: false,
             showLine: false
           }

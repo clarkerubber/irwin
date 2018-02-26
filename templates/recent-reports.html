@@ -19,13 +19,13 @@
               <th>Created</th>
             </tr>
           </thead>
-          {% for report in playerReports %}
-          <tr class='clickable-row' data-href='{{url_for("playerReport", reportId=report.id)}}'>
-            <td>{{report.id}}</td>
-            <td>{{report.userId}}</td>
-            <td>{{report.activation}}%</td>
-            <td>{{report.owner}}</td>
-            <td>{{report.date}}</td>
+          {% for report in reportsAndColors %}
+          <tr class='clickable-row' data-href='{{url_for("playerReport", reportId=report[0].id)}}' style="background-color: {{report[1]}}">
+            <td>{{report[0].id}}</td>
+            <td>{{report[0].userId}}</td>
+            <td>{{report[0].activation}}%</td>
+            <td>{{report[0].owner}}</td>
+            <td>{{report[0].date}}</td>
           </tr>
           {% endfor %}
         </table>
