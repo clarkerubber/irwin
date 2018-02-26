@@ -25,6 +25,9 @@ class GameAnalysis(namedtuple('GameAnalysis', ['id', 'userId', 'gameId', 'moveAn
     def gameLength(self):
         return len(self.moveAnalyses)
 
+    def blurs(self):
+        return [move.blur for move in self.moveAnalyses]
+
     def emts(self):
         return [m.emt for m in self.moveAnalyses]
 

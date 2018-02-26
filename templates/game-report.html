@@ -8,7 +8,7 @@
     {{ nav.sidebar('player') }}
     <main role="main" class="col-md-9 ml-sm-auto col-lg-10 pt-3 px-4">
       <h4>Game Report ID: {{ gameReport.id }}</h4>
-      <h1><b>{{ playerReport.userId }}</b></h1>
+      <h1><b>{{ playerReport.userId }}</b><a href="{{gameUrl}}" target="_blank"> in {{gameReport.gameId}}</a></h1>
       <div class="row">
         <div class="col-3">
           <h3>Activation <span style="color: {{overallActivationColor}}"><b>{{gameReport.activation}}%</b></span></h3>
@@ -35,14 +35,30 @@
       </div>
       <div class="row">
         <div class="col">
-          <h3>Loss By MoveTime</h3>
+          <h3>Loss By Move-Time</h3>
           <canvas id="loss-by-move-time"></canvas>
         </div>
         <div class="col">
-          <canvas></canvas>
+          <h3>PV Rank By Move-Time</h3>
+          <canvas id="rank-by-move-time"></canvas>
         </div>
         <div class="col">
-          <canvas></canvas>
+          <h3>Loss By Rank</h3>
+          <canvas id="loss-by-rank-time"></canvas>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col">
+          <h3>Move-Times Distribution</h3>
+          <canvas id="move-time-dist"></canvas>
+        </div>
+        <div class="col">
+          <h3>Winning Chances Loss Distribution</h3>
+          <canvas id="loss-dist"></canvas>
+        </div>
+        <div class="col">
+          <h3>PV Distribution</h3>
+          <canvas id="pv-dist"></canvas>
         </div>
       </div>
     </main>
@@ -121,7 +137,10 @@
           yAxes: [{
             ticks: {
               min: 0,
-              max: 100
+              max: 100,
+              callback: function(value, index, values) {
+                return value + '%';
+              }
             }
           }]
         }
@@ -156,7 +175,10 @@
           yAxes: [{
             ticks: {
               min: 0,
-              max: 10
+              max: 10,
+              callback: function(value, index, values) {
+                return '-' + value + '%';
+              }
             }
           }]
         }
@@ -191,7 +213,10 @@
           yAxes: [{
             ticks: {
               min: 1,
-              max: 5
+              max: 5,
+              callback: function(value, index, values) {
+                return 'PV ' + value;
+              }
             }
           }]
         }
@@ -209,28 +234,50 @@
             label: 'Winning Chances',
             data: {{gameAnalysis.winningChancesPercent()}},
             borderColor: 'rgba(240, 0, 0, 0.8)',
-            fill: false
+            fill: false,
+            yAxisID: 'winning-chances'
           },
           {
             label: 'Elapsed Move Time',
             data: {{gameAnalysis.emtSeconds()}},
             borderColor: 'rgba(88, 186, 232, 0.8)',
             fill: false,
-            lineWidth: 2
+            lineWidth: 2,
+            yAxisID: 'move-time',
+            pointStyle: [{% for shape in blursToShapes %}
+            '{{ shape }}',{% endfor %}]
           }
-        ],
-        options: {
-          scales: {
-            yAxes: [
-            {
-              position: 'left',
-              display: true,
-              ticks: {
-                min: 0,
-                max: 100
+        ]
+      },
+      options: {
+        scales: {
+          yAxes: [
+          {
+            id: 'winning-chances',
+            position: 'left',
+            display: true,
+            ticks: {
+              min: 0,
+              max: 100,
+              step: 10,
+              callback: function(value, index, values) {
+                return value + '%';
               }
-            }]
-          }
+            }
+          },
+          {
+            id: 'move-time',
+            position: 'right',
+            display: true,
+            gridLines: {
+              display: false
+            },
+            ticks: {
+              callback: function(value, index, values) {
+                return value + ' sec';
+              }
+            }
+          }]
         }
       }
     });
@@ -245,8 +292,8 @@
           {
             data: [{% for lossByTime in lossesByTimes %}
               {
-                x: {{lossByTime[0]}},
-                y: {{lossByTime[1]}}
+                x: {{lossByTime[1]}},
+                y: {{lossByTime[0]}}
               },{% endfor %}],
             pointBackgroundColor: [{% for lossByTime in lossesByTimes %}
               '{{lossByTime[2]}}',{% endfor %}],
@@ -254,31 +301,214 @@
             fill: false,
             showLine: false
           }
-        ],
-        /*
-        options: {
-          scales: {
-            xAxes: [{
-              display: true,
-              labelString: '% Loss',
-              position: 'left'
-            }],
-            yAxes: [{
-              display: true,
-              labelString: ' sec',
-              type: 'linear',
-              position: 'bottom'
-            }]
-          },
-          tooltips: {
-            callbacks: {
-              label: function(tooltipItem, data) {
-                var label = data.labels[tooltipItem.index];
-                return label + ': (' + tooltipItem.xLabel + ', ' + tooltipItem.yLabel + ')';
+        ]},
+      options: {
+        scales: {
+          xAxes: [{
+            ticks: {
+              callback: function(value, index, values)  {
+                return value.toFixed(1) + ' sec';
               }
             }
+          }],
+          yAxes: [{
+            ticks: {
+              min:0,
+              max:10,
+              stepSize:2,
+              callback: function(value, index, values) {
+                return '-' + value + '%';
+              }
+            }
+          }]
+        }
+      }
+    });
+    //// Loss By Move Times ==========================
+    var rankByMovetimeCtx = document.getElementById("rank-by-move-time").getContext("2d");
+
+    var rankByMovetimeChart = new Chart(rankByMovetimeCtx, {
+      type: 'scatter',
+      data: {
+        labels: {{gameReport.moveNumbers()}},
+        datasets:[
+          {
+            data: [{% for rankByTime in ranksByTimes %}
+              {% if rankByTime[0] != 'null' %}
+              {
+                x: {{rankByTime[1]}},
+                y: {{rankByTime[0]}}
+              },{% endif %}{% endfor %}],
+            pointBackgroundColor: [{% for rankByTime in ranksByTimes %}{% if rankByTime[0] != 'null' %}
+              '{{rankByTime[2]}}', {% endif %}{% endfor %}],
+            pointRadius: 10,
+            fill: false,
+            showLine: false
           }
-        }*/
+        ]
+      },
+      options: {
+        scales: {
+          xAxes: [{
+            ticks: {
+              callback: function(value, index, values)  {
+                return value.toFixed(1) + ' sec';
+              }
+            }
+          }],
+          yAxes: [{
+            ticks: {
+              min:1,
+              max:5,
+              stepSize: 1,
+              callback: function(value, index, values) {
+                return 'PV ' + value;
+              }
+            }
+          }]
+        }
+      }
+    });
+    //// Loss By Move Times ==========================
+    var rankByMovetimeCtx = document.getElementById("loss-by-rank-time").getContext("2d");
+
+    var rankByMovetimeChart = new Chart(rankByMovetimeCtx, {
+      type: 'scatter',
+      data: {
+        labels: {{gameReport.moveNumbers()}},
+        datasets:[
+          {
+            data: [{% for lossByRank in lossesByRanks %}
+              {% if lossByRank[0] != 'null' %}
+              {
+                x: {{lossByRank[0]}},
+                y: {{lossByRank[1]}}
+              },{% endif %}{% endfor %}],
+            pointBackgroundColor: [{% for lossByRank in lossesByRanks %}{% if lossByRank[0] != 'null' %}
+              '{{lossByRank[2]}}', {% endif %}{% endfor %}],
+            pointRadius: 10,
+            fill: false,
+            showLine: false
+          }
+        ]
+      },
+      options: {
+        scales: {
+          xAxes: [{
+            ticks: {
+              min:1,
+              max:5,
+              stepSize:1,
+              callback: function(value, index, values) {
+                return 'PV ' + value;
+              }
+            }
+          }],
+          yAxes: [{
+            ticks: {
+              min:0,
+              max:10,
+              stepSize:2,
+              callback: function(value, index, values) {
+                return '-' + value + '%';
+              }
+            }
+          }]
+        }
+      }
+    });
+    //// Move Time Distribution ==========================
+    var moveTimeDistCtx = document.getElementById("move-time-dist").getContext("2d");
+
+    var moveTimeDistChart = new Chart(moveTimeDistCtx, {
+      type: 'bar',
+      data: {
+        labels: [{% for binnedLabel in binnedSecondsLabels %}
+        '{{binnedLabel}}',{% endfor %}],
+        datasets:[
+          {
+            data: {{ binnedSeconds }},
+            backgroundColor: 'rgba(126, 116, 214, 0.5)',
+            borderColor: 'rgba(126, 116, 214, 0.8)',
+            borderWidth: 2
+          }
+        ]
+      },
+      options: {
+        scales: {
+          yAxes: [{
+            ticks: {
+              callback: function(value, index, values) {
+                return '∑ ' + value;
+              }
+            }
+          }]
+        }
+      }
+    });
+    //// Loss Distribution ==========================
+    var lossDistCtx = document.getElementById("loss-dist").getContext("2d");
+
+    var lossDistChart = new Chart(lossDistCtx, {
+      type: 'bar',
+      data: {
+        labels: [{% for binnedLabel in binnedLossesLabels %}
+        '{{binnedLabel}}',{% endfor %}],
+        datasets:[
+          {
+            data: {{ binnedLosses }},
+            backgroundColor: 'rgba(116, 198, 214, 0.5)',
+            borderColor: 'rgba(116, 198, 214, 0.8)',
+            borderWidth: 2
+          }
+        ]
+      },
+      options: {
+        scales: {
+          xAxes: [{
+            ticks: {
+              callback: function(value, index, values) {
+                return '-' + value + '%';
+              }
+            }
+          }],
+          yAxes: [{
+            ticks: {
+              callback: function(value, index, values) {
+                return '∑ ' + value + '%';
+              }
+            }
+          }]
+        }
+      }
+    });
+    //// Move Time Distribution ==========================
+    var pvDistCtx = document.getElementById("pv-dist").getContext("2d");
+
+    var pvDistChart = new Chart(pvDistCtx, {
+      type: 'bar',
+      data: {
+        labels: [{% for binnedLabel in binnedPVsLabels %}
+        '{{binnedLabel}}',{% endfor %}],
+        datasets:[
+          {
+            data: {{ binnedPVs }},
+            backgroundColor: 'rgba(165, 214, 116, 0.5)',
+            borderColor: 'rgba(165, 214, 116, 0.8)',
+            borderWidth: 2
+          }
+        ]
+      },
+      options: {
+        scales: {
+          yAxes: [{
+            ticks: {
+              callback: function(value, index, values) {
+                return '∑ ' + value;
+              }
+            }
+          }]
+        }
       }
     });
   </script>

@@ -132,7 +132,47 @@ def gameReport(gameId, reportId):
     overallActivationColor = darkColours[int(gameReport.activation/10)]
     pointColors = [darkColours[int(activation/10)] for activation in gameReport.activations()]
 
-    lossesByTimes = list(zip(gameAnalysis.emtSeconds(), gameAnalysis.winningChancesLossPercent(), pointColors))
+    seconds = gameAnalysis.emtSeconds()
+
+    lossesByTimes = list(zip(gameAnalysis.winningChancesLossPercent(), seconds, pointColors))
+    ranksByTimes = list(zip(gameAnalysis.ranks(), seconds, pointColors))
+    lossesByRanks = list(zip(gameAnalysis.ranks(), gameAnalysis.winningChancesLossPercent(), pointColors))
+    blursToShapes = [('rect' if blur else 'circle') for blur in gameAnalysis.blurs()]
+
+    # Binned seconds
+    emts = gameAnalysis.emts()
+    steps = 10
+    minSec = min(emts)
+    maxSec = max(emts)
+    step = int((maxSec-minSec)/steps)
+    binnedSeconds = [[] for i in range(steps)]
+    binnedSecondsLabels = [[] for i in range(steps)]
+    for i, stepStart in enumerate(range(minSec, maxSec, step)):
+        l = len([a for a in emts if a >= stepStart and a <= stepStart+step])
+        binnedSeconds[min(9,i)] = l
+        binnedSecondsLabels[min(9, i)] = str(int(stepStart/100)) +\
+            '-' + str(int((stepStart+step)/100)) + 's'
+
+    # Binned losses
+    losses = gameAnalysis.winningChancesLossPercent()
+    binnedLosses = [[] for i in range(steps)]
+    binnedLossesLabels = [[] for i in range(steps)]
+    for i in range(0, 20, 1):
+        l = len([a for a in losses if i == int(a)])
+        binnedLosses[min(9,i)] = int(100*l/len(losses))
+        binnedLossesLabels[min(9, i)] = i
+
+    # Binned pvs
+    steps = 6
+    pvs = gameAnalysis.ranks()
+    binnedPVs = [[] for i in range(steps)]
+    binnedPVsLabels = [[] for i in range(steps)]
+    for i, p in enumerate([1, 2, 3, 4, 5, 'null']):
+        binnedPVs[i] = len([1 for pv in pvs if pv == p])
+    binnedPVsLabels = ['PV 1', 'PV 2', 'PV 3', 'PV 4', 'PV 5', 'Other']
+
+    gameUrl = 'https://lichess.org/' + gameReport.gameId
+
     return render_template('game-report.html',
         gameReport=gameReport,
         game=game,
@@ -141,7 +181,17 @@ def gameReport(gameId, reportId):
         overallActivationColor=overallActivationColor,
         graphColor=graphColor,
         pointColors=pointColors,
-        lossesByTimes=lossesByTimes)
+        lossesByTimes=lossesByTimes,
+        ranksByTimes=ranksByTimes,
+        lossesByRanks=lossesByRanks,
+        gameUrl=gameUrl,
+        blursToShapes=blursToShapes,
+        binnedSeconds=binnedSeconds,
+        binnedSecondsLabels=binnedSecondsLabels,
+        binnedLosses=binnedLosses,
+        binnedLossesLabels=binnedLossesLabels,
+        binnedPVs=binnedPVs,
+        binnedPVsLabels=binnedPVsLabels)
 
 @app.route('/recent-reports')
 def recentReports():
