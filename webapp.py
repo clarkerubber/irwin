@@ -164,13 +164,14 @@ def gameReport(gameId, reportId):
             '-' + str(round_sig((stepStart+step)/100)) + 's'
 
     # Binned losses
+    steps = 11
     losses = gameAnalysis.winningChancesLossPercent()
     binnedLosses = [[] for i in range(steps)]
     binnedLossesLabels = [[] for i in range(steps)]
-    for i in range(0, 20, 1):
+    for i in range(0, steps, 1):
         l = len([a for a in losses if i == int(a)])
-        binnedLosses[min(9,i)] = int(100*l/len(losses))
-        binnedLossesLabels[min(9, i)] = i
+        binnedLosses[min(steps-1,i)] = int(100*l/len(losses))
+        binnedLossesLabels[min(steps-1, i)] = i
 
     # Binned pvs
     steps = 6
