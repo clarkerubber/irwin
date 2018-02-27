@@ -1,0 +1,32 @@
+{% import 'macros/base.html' as base %}
+{% import 'macros/nav.html' as nav %}
+<!doctype html>
+<html lang="en">
+{{ base.header('Top Mod Reports') }}
+  <body>
+    {{ nav.search() }}
+    {{ nav.sidebar('watchlist') }}
+    <main role="main" class="col-md-9 ml-sm-auto col-lg-10 pt-3 px-4">
+      <h1>Watchlist</h1>
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>Activation</th>
+              <th>Username</th>
+              <th>Last Updated</th>
+            </tr>
+          </thead>
+          {% for player, irwinReport in playersWithReports %}
+          <tr class='clickable-row' data-href='{{url_for("player", userId=player.id)}}'>
+            <td>{{irwinReport.activation}}%</td>
+            <td>{{player.id}}</td>
+            <td>{{irwinReport.date}}</td>
+          </tr>
+          {% endfor %}
+        </table>
+      </div>
+    </main>
+  {{ base.scripts() }}
+  </body>
+</html>

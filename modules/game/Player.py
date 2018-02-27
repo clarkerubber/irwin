@@ -41,6 +41,10 @@ class PlayerDB(namedtuple('PlayerDB', ['playerColl'])):
         playerBSON = self.playerColl.find_one({'_id': userId})
         return None if playerBSON is None else PlayerBSONHandler.reads(playerBSON)
 
+    def unmarkedByUserIds(self, userIds):
+        return [(None if bson is None else PlayerBSONHandler.reads(bson))
+            for bson in [self.playerColl.find_one({'_id': userId, 'engine': False}) for userId in userIds]]
+
     def balancedSample(self, size):
         pipelines = [[
                 {"$match": {"engine": True}},

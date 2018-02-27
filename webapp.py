@@ -2,6 +2,7 @@ from flask import Flask, render_template, url_for, redirect
 from WebEnv import Env
 from pprint import pprint
 import numpy as np
+from math import log10, floor
 import json
 
 app = Flask(__name__)
@@ -37,6 +38,11 @@ darkColours = [
           'rgba(231, 158, 84, 0.8)',
           'rgba(231, 118, 84, 0.8)',
           'rgba(231, 84, 84, 0.8)']
+
+def round_sig(x, sig=2):
+    if x == 0:
+        return 0
+    return round(x, sig-int(floor(log10(abs(x))))-1)
 
 @app.route('/')
 def home():
@@ -152,8 +158,8 @@ def gameReport(gameId, reportId):
     for i, stepStart in enumerate(range(minSec, maxSec, step)):
         l = len([a for a in emts if a >= stepStart and a <= stepStart+step])
         binnedSeconds[min(9,i)] = l
-        binnedSecondsLabels[min(9, i)] = str(int(stepStart/100)) +\
-            '-' + str(int((stepStart+step)/100)) + 's'
+        binnedSecondsLabels[min(9, i)] = str(round_sig(stepStart/100)) +\
+            '-' + str(round_sig((stepStart+step)/100)) + 's'
 
     # Binned losses
     losses = gameAnalysis.winningChancesLossPercent()
@@ -201,6 +207,25 @@ def recentReports():
     reportColors = [lightColours[int(playerReport.activation/10)] for playerReport in playerReports]
     reportsAndColors = list(zip(playerReports, reportColors))
     return render_template('recent-reports.html', reportsAndColors=reportsAndColors)
+
+@app.route('/watchlist')
+def watchlist():
+    playerReports = env.playerReportDB.newest(1000)
+    players = env.playerDB.unmarkedByUserIds([playerReport.userId for playerReport in playerReports]) # player = None if engine
+    playersWithReports = [(player, report) for player, report in zip(players, playerReports) if player is not None]
+
+    uniquePlayersWithReports = []
+    alreadyAdded = []
+    for player, report in playersWithReports:
+        if player.id not in alreadyAdded:
+            uniquePlayersWithReports.append((player, report))
+            alreadyAdded.append(player.id)
+
+    uniquePlayersWithReports.sort(key=lambda obj: -obj[1].activation) # sort by report activation
+    
+
+    return render_template('watchlist.html',
+        playersWithReports=uniquePlayersWithReports)
 
 @app.route('/mod-reports')
 def modReports():

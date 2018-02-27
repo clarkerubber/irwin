@@ -43,7 +43,7 @@
               <h3>#{{moveActivations[0].gameId}}</h3><br>
               <span style="color: {{moveActivations[3]}}"><h2><b>{{moveActivations[0].activation}}%</b></h2></span>
             </td>
-            <td><canvas id="gameActivation{{moveActivations[0].gameId}}" height="170em"></canvas></td>
+            <td><canvas id="gameActivation{{moveActivations[0].gameId}}" height="180em"></canvas></td>
             <td><canvas id="gameReport{{moveActivations[0].gameId}}" height="40em"></canvas></td>
           </tr>
           {% endfor %}
@@ -127,7 +127,11 @@
           yAxes: [{
             ticks: {
               min: 0,
-              max: 100
+              max: 100,
+              step: 20,
+              callback: function(value, index, values) {
+                return value + '%';
+              }
             }
           }]
         }
@@ -161,7 +165,11 @@
           yAxes: [{
             ticks: {
               min: 0,
-              max: 20
+              max: 20,
+              step: 4,
+              callback: function(value, index, values) {
+                return '-' + value + '%';
+              }
             }
           }]
         }
@@ -197,7 +205,10 @@
           yAxes: [{
             ticks: {
               min: 1,
-              max: 8
+              max: 5,
+              callback: function(value, index, values) {
+                return 'PV ' + value;
+              }
             }
           }]
         }
@@ -219,15 +230,22 @@
           pointBackgroundColor: [{% for color in moveActivations[1] %}
           '{{color}}',{% endfor%}]
         }],
-        options: {
-          legend: {
-            display: false
-          },
-          scales: {
+      },
+      options: {
+        legend: {
+          display: false
+        },
+        scales: {
+          yAxes: [{
             ticks: {
-              beginAtZero: true
+              min:0,
+              max:100,
+              step:20,
+              callback: function(value, index, values) {
+                return value + '%';
+              }
             }
-          }
+          }]
         }
       }
     });
