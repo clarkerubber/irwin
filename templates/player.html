@@ -7,7 +7,14 @@
     {{ nav.search() }}
     {{ nav.sidebar('player') }}
     <main role="main" class="col-md-9 ml-sm-auto col-lg-10 pt-3 px-4">
-      <h1>{{ playerObj.id }}</h1>
+      <div class="row">
+        <div class="col">
+          <h1><b>{{ playerObj.id }} </b><a target="_blank" href="https://lichess.org/@/{{playerObj.id}}?mod">view lichess profile</a></h1>
+        </div>
+        <div class="col" style="text-align: right;">
+          <h1><button type="submit" onclick="UserAction()" class="refresh">Refresh Player Data</button></h1>
+        </div>
+      </div>
       <div class="table-responsive">
         <table class="table">
           <thead>
@@ -50,5 +57,25 @@
       </div>
     </main>
   {{ base.scripts() }}
+  <script>
+    function UserAction() {
+      var xhttp = new XMLHttpRequest();
+      xhttp.open("POST", "{{url_for('updatePlayerData')}}", true);
+      xhttp.setRequestHeader("Content-type", "application/json");
+      xhttp.send(JSON.stringify({'userId': '{{playerObj.id}}'}));
+      $(".refresh").text("loading...");
+      xhttp.onreadystatechange = function() {
+        if (xhttp.readyState === 4 && xhttp.status === 201) {
+          var response = xhttp.responseText;
+          console.log(response);
+          $(".refresh").text('Updated!');
+        } else if (xhttp.readyState === 4 && xhttp.status === 204) {
+          var response = xhttp.responseText;
+          console.log(response);
+          $(".refresh").text('Failed!');
+        }
+      };
+    }
+  </script>
   </body>
 </html>

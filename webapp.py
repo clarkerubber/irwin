@@ -1,9 +1,11 @@
-from flask import Flask, render_template, url_for, redirect
+from flask import Flask, render_template, url_for, redirect, request, jsonify
 from WebEnv import Env
 from pprint import pprint
 import numpy as np
 from math import log10, floor
 import json
+
+from modules.game.Player import Player
 
 app = Flask(__name__)
 
@@ -217,7 +219,7 @@ def watchlist():
     uniquePlayersWithReports = []
     alreadyAdded = []
     for player, report in playersWithReports:
-        if player.id not in alreadyAdded:
+        if player.id not in alreadyAdded and report.activation > 70:
             uniquePlayersWithReports.append((player, report))
             alreadyAdded.append(player.id)
 
@@ -236,6 +238,21 @@ def modReports():
     players.sort(key=lambda obj: -obj[1].activation if obj[1] is not None else 150)
 
     return render_template('mod-reports.html', players=players)
+
+@app.route('/api/update-player-data', methods=['GET', 'POST'])
+def updatePlayerData():
+    content = request.json
+    userId = content['userId']
+    print("updating player " + userId)
+    player = Player.fromPlayerData(env.api.getPlayerData(userId))
+    if player is not None:
+        env.playerDB.write(player)
+        print("updated!")
+        return "{'updated': true}", 201
+    else:
+        print("failed!")
+        return "{'updated': false}", 204
+    
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=True)

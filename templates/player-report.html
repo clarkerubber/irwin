@@ -7,8 +7,12 @@
     {{ nav.search() }}
     {{ nav.sidebar('player') }}
     <main role="main" class="col-md-9 ml-sm-auto col-lg-10 pt-3 px-4">
+      <a href="{{url_for('player', userId=playerReport.userId)}}">
+        <span data-feather="chevron-left"></span>
+        Player Summary
+      </a>
       <h4>Player Report ID: {{ playerReport.id }}</h4>
-      <h1><b>{{ playerReport.userId }}</b></h1>
+      <h1><b>{{ playerReport.userId }}</b> <a target="_blank" href="https://lichess.org/@/{{playerReport.userId}}?mod">view lichess profile</a></h1>
       <div class="row">
         <div class="col-3">
           <h3>Activation <span style="color: {{overallActivation}}"><b>{{playerReport.activation}}%</b></span></h3>
@@ -43,8 +47,8 @@
               <h3>#{{moveActivations[0].gameId}}</h3><br>
               <span style="color: {{moveActivations[3]}}"><h2><b>{{moveActivations[0].activation}}%</b></h2></span>
             </td>
-            <td><canvas id="gameActivation{{moveActivations[0].gameId}}" height="180em"></canvas></td>
-            <td><canvas id="gameReport{{moveActivations[0].gameId}}" height="40em"></canvas></td>
+            <td><canvas id="gameActivation{{moveActivations[0].gameId}}"></canvas></td>
+            <td><canvas id="gameReport{{moveActivations[0].gameId}}"></canvas></td>
           </tr>
           {% endfor %}
         </table>  
@@ -218,7 +222,7 @@
     {% for moveActivations in gameMoveActivations %}
     // Game {{moveActivations[0].gameId}}
     var moveActivationsChart{{moveActivations[0].gameId}} = document.getElementById("gameReport{{moveActivations[0].gameId}}").getContext("2d");
-
+    moveActivationsChart{{moveActivations[0].gameId}}.canvas.height = 35;
     var moveActivations{{moveActivations[0].gameId}} = new Chart(moveActivationsChart{{moveActivations[0].gameId}}, {
       type: 'line',
       data: {
@@ -251,7 +255,7 @@
     });
 
     var gameActivationCtx{{moveActivations[0].gameId}} = document.getElementById("gameActivation{{moveActivations[0].gameId}}").getContext("2d");
-
+    gameActivationCtx{{moveActivations[0].gameId}}.canvas.height = 160;
     var data = {
       datasets : [
         {

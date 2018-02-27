@@ -2,6 +2,8 @@ import logging
 
 from pymongo import MongoClient
 
+from modules.lichess.Api import Api
+
 from modules.game.Game import GameDB
 from modules.game.GameAnalysis import GameAnalysisDB
 from modules.game.Player import PlayerDB
@@ -21,6 +23,8 @@ from modules.irwin.Irwin import Irwin
 class Env:
     def __init__(self, settings):
         self.settings = settings
+
+        self.api = Api(settings['api']['url'], settings['api']['token'])
 
         # Set up mongodb
         self.client = MongoClient(settings['db']['host'])

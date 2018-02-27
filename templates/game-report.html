@@ -7,6 +7,10 @@
     {{ nav.search() }}
     {{ nav.sidebar('player') }}
     <main role="main" class="col-md-9 ml-sm-auto col-lg-10 pt-3 px-4">
+      <a href="{{url_for('playerReport', reportId=gameReport.reportId)}}">
+        <span data-feather="chevron-left"></span>
+        Parent Report
+      </a>
       <h4>Game Report ID: {{ gameReport.id }}</h4>
       <h1><b>{{ playerReport.userId }}</b><a href="{{gameUrl}}" target="_blank"> in {{gameReport.gameId}}</a></h1>
       <div class="row">
