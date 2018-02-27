@@ -46,9 +46,9 @@ def round_sig(x, sig=2):
         return 0
     return round(x, sig-int(floor(log10(abs(x))))-1)
 
-@app.route('/')
-def home():
-    return render_template('home.html')
+#@app.route('/')
+#def home():
+#    return render_template('home.html')
 
 @app.route('/analysis-queue')
 def analysisQueue():
@@ -210,6 +210,7 @@ def recentReports():
     reportsAndColors = list(zip(playerReports, reportColors))
     return render_template('recent-reports.html', reportsAndColors=reportsAndColors)
 
+@app.route('/')
 @app.route('/watchlist')
 def watchlist():
     playerReports = env.playerReportDB.newest(1000)
