@@ -216,17 +216,16 @@ def recentReports():
 def watchlist():
     playerReports = env.playerReportDB.newest(1000)
     players = env.playerDB.unmarkedByUserIds([playerReport.userId for playerReport in playerReports]) # player = None if engine
-    playersWithReports = [(player, report) for player, report in zip(players, playerReports) if player is not None]
+    playersWithReports = [(player, report, darkColours[int(report.activation/10)]) for player, report in zip(players, playerReports) if player is not None]
 
     uniquePlayersWithReports = []
     alreadyAdded = []
-    for player, report in playersWithReports:
+    for player, report, color in playersWithReports:
         if player.id not in alreadyAdded and report.activation > 70:
-            uniquePlayersWithReports.append((player, report))
+            uniquePlayersWithReports.append((player, report, color))
             alreadyAdded.append(player.id)
 
     uniquePlayersWithReports.sort(key=lambda obj: -obj[1].activation) # sort by report activation
-    
 
     return render_template('watchlist.html',
         playersWithReports=uniquePlayersWithReports)

@@ -12,21 +12,67 @@
         <table class="table table-hover">
           <thead>
             <tr>
-              <th>Activation</th>
               <th>Username</th>
-              <th>Last Updated</th>
+              <th>Activation Gauge</th>
             </tr>
           </thead>
-          {% for player, irwinReport in playersWithReports %}
+          {% for player, irwinReport, color in playersWithReports %}
           <tr class='clickable-row' data-href='{{url_for("player", userId=player.id)}}'>
-            <td>{{irwinReport.activation}}%</td>
-            <td>{{player.id}}</td>
-            <td>{{irwinReport.date}}</td>
+            <td width="200px">
+              <canvas id="report-activation-{{player.id}}" height="170px"></canvas>
+            </td>
+            <td>
+              <h2>
+                <b>{{player.id}}</b><br>
+                <span style="color: {{color}}"><b>{{irwinReport.activation}}%</b></span><br>
+                {{irwinReport.date}}
+              </h2>
+            </td>
+            <td></td>
           </tr>
           {% endfor %}
         </table>
       </div>
     </main>
   {{ base.scripts() }}
+  <script type="text/javascript">
+    //Chart.defaults.global.legend.display = false;
+    //// Overall ===========================
+    // bar chart data
+    {% for player, irwinReport, color in playersWithReports %}
+    var barData = {
+      datasets : [
+        {
+          hoverBorderColor: 'rgba(50, 50, 50, 0.2)',
+          borderColor: 'rgba(50, 50, 50, 0.2)',
+          backgroundColor: [
+            '{{color}}',
+            'rgba(50, 50, 50, 0.2)'
+          ],
+          data : [{{irwinReport.activation}}, {{100 - irwinReport.activation}}]
+        }
+      ]
+    };
+   
+     // get bar chart canvas
+    var reportActivationCtx = document.getElementById("report-activation-{{player.id}}").getContext("2d");
+
+     // draw bar chart
+    new Chart(reportActivationCtx, {
+      type: 'doughnut',
+      data: barData,
+      options: {
+        cutoutPercentage: 60,
+        legend: {
+          display: false
+        },
+        tooltips: {
+          enabled: false
+        },
+        rotation: Math.PI
+      }
+    });
+    {% endfor %}
+  </script>
   </body>
 </html>
