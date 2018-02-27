@@ -1,7 +1,9 @@
 # irwin
 irwin is the AI that learns cheating patterns, marks cheaters, and assists moderators in assessing potential cheaters.
 
-![screenshot of Irwin report](http://i.imgur.com/UcVlDK3.png)
+![screenshot of Irwin report](https://i.imgur.com/UcVlDK3.png)
+
+![screenshot of companion WebApp](https://i.imgur.com/LQtSQAh.png)
 
 ## Dependencies
 Compatible with Python 3.x
