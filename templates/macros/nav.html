@@ -10,10 +10,10 @@
       <div class="col left">
         <a href="{{url_for('player', userId=userId)}}">
           <span data-feather="chevron-right"></span>
-          {{userId}}</a>
+          Player {{userId}}</a>
       </div>
       {% if playerReportId != None %}
-      <div class="col middle">
+      <div class="col left">
         <a href="{{url_for('playerReport', reportId=playerReportId)}}">
           <span data-feather="chevron-right"></span>
           Player Report {{playerReportId}}
@@ -21,7 +21,7 @@
       </div>
       {% endif %}
       {% if gameId != None %}
-      <div class="col middle">
+      <div class="col left">
         <a href="{{url_for('gameReport', gameId=gameId, reportId=playerReportId)}}">
           <span data-feather="chevron-right"></span>
           Game Report {{gameId}}

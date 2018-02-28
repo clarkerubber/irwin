@@ -80,11 +80,9 @@ body {
 }
 
 .left {
-  max-width: 150px;
-}
-
-.middle {
-  max-width: 300px;
+  width: 1px;
+  white-space: nowrap;
+  display: table;
 }
 
 .refresh {
