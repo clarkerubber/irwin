@@ -7,9 +7,10 @@
     {{ nav.search() }}
     {{ nav.sidebar('player') }}
     <main role="main" class="col-md-9 ml-sm-auto col-lg-10 pt-3 px-4">
+      {{ nav.directory(playerObj.id, lichessLink="https://lichess.org/@/" + playerObj.id + "?mod")}}
       <div class="row">
         <div class="col">
-          <h1><b>{{ playerObj.id }} </b><a target="_blank" href="https://lichess.org/@/{{playerObj.id}}?mod">view lichess profile</a></h1>
+          <h1><b>{{ playerObj.id }} </b></h1>
         </div>
         <div class="col" style="text-align: right;">
           <h1><button type="submit" onclick="UserAction()" class="refresh">Refresh Player Data</button></h1>

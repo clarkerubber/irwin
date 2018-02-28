@@ -73,6 +73,14 @@ body {
   border-radius: 0;
 }
 
+.left {
+  max-width: 150px;
+}
+
+.middle {
+  max-width: 300px;
+}
+
 .form-control-dark {
   color: #fff;
   background-color: rgba(255, 255, 255, .1);
@@ -90,3 +98,7 @@ body {
 
 .border-top { border-top: 1px solid #e5e5e5; }
 .border-bottom { border-bottom: 1px solid #e5e5e5; }
+
+.directory {
+  margin-bottom: 20px;
+}
