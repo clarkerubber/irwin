@@ -40,8 +40,8 @@ class GameAnalysis(namedtuple('GameAnalysis', ['id', 'userId', 'gameId', 'moveAn
     def winningChancesPercent(self):
         return [100*m.advantage() for m in self.moveAnalyses]
 
-    def winningChancesLossPercent(self):
-        return [100*m.winningChancesLoss() for m in self.moveAnalyses]
+    def winningChancesLossPercent(self, usePV=True):
+        return [100*m.winningChancesLoss(usePV=usePV) for m in self.moveAnalyses]
 
     def winningChancesLossByPV(self):
         """ for generating graphs """
