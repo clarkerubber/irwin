@@ -8,6 +8,12 @@ body {
   vertical-align: text-bottom;
 }
 
+.refresh .feather {
+  width: 32px;
+  height: 32px;
+  vertical-align: text-bottom;
+}
+
 /*
  * Sidebar
  */
@@ -79,6 +85,10 @@ body {
 
 .middle {
   max-width: 300px;
+}
+
+.refresh {
+  max-width: 100px;
 }
 
 .form-control-dark {
