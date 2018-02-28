@@ -12,8 +12,8 @@
         <table class="table table-hover">
           <thead>
             <tr>
-              <th>Username</th>
-              <th>Activation Gauge</th>
+              <th>Activation</th>
+              <th>Details</th>
             </tr>
           </thead>
           {% for player, irwinReport, color in playersWithReports %}
@@ -23,10 +23,13 @@
             </td>
             <td>
               <h2>
+                <span style="color: {{color}}"><b>{{irwinReport.activation}}%
+                </b></span> - 
                 <b>{{player.id}}</b><br>
-                <span style="color: {{color}}"><b>{{irwinReport.activation}}%</b></span><br>
-                {{irwinReport.date}}
               </h2>
+              <h4>
+                Last updated {{"{:%d %b %Y}".format(irwinReport.date)}}
+              </h4>
             </td>
             <td></td>
           </tr>

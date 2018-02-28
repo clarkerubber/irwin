@@ -58,11 +58,13 @@ def analysisQueue():
 @app.route('/player/<userId>')
 def player(userId):
     playerObj = env.playerDB.byId(userId)
-    playerReports = env.playerReportDB.byUserId(userId)
     if playerObj is None:
         return ('Player not found', 404)
 
-    return render_template('player.html', playerObj=playerObj, playerReports=playerReports)
+    playerReports = env.playerReportDB.byUserId(userId)
+    colors = [darkColours[int(report.activation/10)] for report in playerReports]
+    reportsWithColors = list(zip(playerReports, colors))
+    return render_template('player.html', playerObj=playerObj, reportsWithColors=reportsWithColors)
 
 @app.route('/player-report/<reportId>')
 def playerReport(reportId):
@@ -221,7 +223,7 @@ def watchlist():
     uniquePlayersWithReports = []
     alreadyAdded = []
     for player, report, color in playersWithReports:
-        if player.id not in alreadyAdded and report.activation > 70:
+        if player.id not in alreadyAdded and report.activation > 30:
             uniquePlayersWithReports.append((player, report, color))
             alreadyAdded.append(player.id)
 

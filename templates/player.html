@@ -17,19 +17,17 @@
       </div>
       <div class="table-responsive">
         <table class="table">
-          <thead>
-            <tr>
-              <th>Titled</th>
-              <th>Engine</th>
-              <th>Games Played</th>
-              <th># Closed Reports</th>
-            </tr>
-          </thead>
           <tr>
-            <td>{{playerObj.titled}}</td>
-            <td>{{playerObj.engine}}</td>
-            <td>{{playerObj.gamesPlayed}}</td>
-            <td>{{playerObj.closedReports}}</td>
+            <td width="150px" style="text-align: right; font-weight: bold;">Titled</td><td>{{playerObj.titled}}</td>
+          </tr>
+          <tr>
+            <td width="150px" style="text-align: right; font-weight: bold;">Engine</td><td>{{playerObj.engine}}</td>
+          </tr>
+          <tr>
+            <td width="150px" style="text-align: right; font-weight: bold;">Games Played</td><td>{{playerObj.gamesPlayed}}</td>
+          </tr>
+          <tr>
+            <td width="150px" style="text-align: right; font-weight: bold;"># Closed Reports</td><td>{{playerObj.closedReports}}</td>
           </tr>
         </table>
       </div>
@@ -39,18 +37,19 @@
         <table class="table table-hover">
           <thead>
             <tr>
-              <th>Report ID</th>
               <th>Activation</th>
-              <th>Owner</th>
-              <th>Created</th>
+              <th>Details</th>
             </tr>
           </thead>
-          {% for report in playerReports %}
+          {% for report, color in reportsWithColors %}
           <tr class='clickable-row' data-href='{{url_for("playerReport", reportId=report.id)}}'>
-            <td>#{{report.id}}</td>
-            <td>{{report.activation}}%</td>
-            <td>{{report.owner}}</td>
-            <td>{{report.date}}</td>
+            <td width="100px"><canvas id="gauge-{{report.id}}" height="200em"></canvas></td>
+            <td>
+              <h4>#{{report.id}}</h4><br>
+              <h2 style="color: {{color}}"><b>{{report.activation}}%</b></h2><br>
+              created by {{report.owner}}<br>
+              Last updated {{"{:%d %b %Y}".format(report.date)}}<br>
+            </td>
           </tr>
           {% endfor %}
         </table>  
@@ -69,6 +68,7 @@
           var response = xhttp.responseText;
           console.log(response);
           $(".refresh").text('Updated!');
+          window.location.reload(false);
         } else if (xhttp.readyState === 4 && xhttp.status === 204) {
           var response = xhttp.responseText;
           console.log(response);
@@ -76,6 +76,41 @@
         }
       };
     }
+
+    {% for irwinReport, color in reportsWithColors %}
+    var barData = {
+      datasets : [
+        {
+          hoverBorderColor: 'rgba(50, 50, 50, 0.2)',
+          borderColor: 'rgba(50, 50, 50, 0.2)',
+          backgroundColor: [
+            '{{color}}',
+            'rgba(50, 50, 50, 0.2)'
+          ],
+          data : [{{irwinReport.activation}}, {{100 - irwinReport.activation}}]
+        }
+      ]
+    };
+   
+     // get bar chart canvas
+    var reportActivationCtx = document.getElementById("gauge-{{irwinReport.id}}").getContext("2d");
+
+     // draw bar chart
+    new Chart(reportActivationCtx, {
+      type: 'doughnut',
+      data: barData,
+      options: {
+        cutoutPercentage: 60,
+        legend: {
+          display: false
+        },
+        tooltips: {
+          enabled: false
+        },
+        rotation: Math.PI
+      }
+    });
+    {% endfor %}
   </script>
   </body>
 </html>
