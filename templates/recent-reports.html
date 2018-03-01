@@ -24,10 +24,11 @@
             <td>
               <h2>
                 <b>{{irwinReport.userId}}<b><br>
-                <span style="color: {{color}};"><b>{{irwinReport.activation}}%</b></span><br>
+                <span style="color: {{color}};"><b>{{irwinReport.activation}}%</b></span>
               </h2>
-              by {{irwinReport.owner}}<br>
-              Created {{"{:%d %b %Y}".format(irwinReport.date)}}<br>
+              <h5>
+                Created by {{irwinReport.owner}}, {{"{:%d %b %Y at %H:%M}".format(irwinReport.date)}}
+              </h5>
             </td>
           </tr>
           {% endfor %}

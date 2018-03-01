@@ -41,12 +41,13 @@
           </thead>
           {% for report, color in reportsWithColors %}
           <tr class='clickable-row' data-href='{{url_for("playerReport", reportId=report.id)}}'>
-            <td width="100px"><canvas id="gauge-{{report.id}}" height="200em"></canvas></td>
+            <td width="100px"><canvas id="gauge-{{report.id}}" height="140px"></canvas></td>
             <td>
-              <h4>#{{report.id}}</h4><br>
-              <h2 style="color: {{color}}"><b>{{report.activation}}%</b></h2><br>
-              by {{report.owner}}<br>
-              Created {{"{:%d %b %Y}".format(report.date)}}<br>
+              <h2>
+                <b>#{{report.id}}</b><br>
+                <span style="color: {{color}}"><b>{{report.activation}}%</b></span>
+              </h2>
+              Created by {{report.owner}}, {{"{:%d %b %Y at %H:%M}".format(report.date)}}<br>
             </td>
           </tr>
           {% endfor %}

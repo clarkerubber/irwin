@@ -23,13 +23,13 @@
             </td>
             <td>
               <h2>
-                <span style="color: {{color}}"><b>{{irwinReport.activation}}%
-                </b></span> - 
                 <b>{{player.id}}</b><br>
+                <span style="color: {{color}}"><b>{{irwinReport.activation}}%
+                </b></span>
               </h2>
-              <h4>
-                Last updated {{"{:%d %b %Y}".format(irwinReport.date)}}
-              </h4>
+              <h5>
+                Last updated by {{irwinReport.owner}}, {{"{:%d %b %Y at %H:%M}".format(irwinReport.date)}}
+              </h5>
             </td>
             <td></td>
           </tr>
