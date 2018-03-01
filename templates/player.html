@@ -45,8 +45,8 @@
             <td>
               <h4>#{{report.id}}</h4><br>
               <h2 style="color: {{color}}"><b>{{report.activation}}%</b></h2><br>
-              created by {{report.owner}}<br>
-              Last updated {{"{:%d %b %Y}".format(report.date)}}<br>
+              by {{report.owner}}<br>
+              Created {{"{:%d %b %Y}".format(report.date)}}<br>
             </td>
           </tr>
           {% endfor %}

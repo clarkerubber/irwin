@@ -20,11 +20,11 @@
                 </tr>
               </thead>
               {% for queue in top %}
-              <tr>
+              <tr class="clickable-row" data-href="{{url_for('player', userId=queue.id)}}">
                 <td>{{queue.precedence}}</td>
                 <td>{{queue.id}}</td>
                 <td>{{queue.origin}}</td>
-                <td>{{queue.date}}</td>
+                <td>{{"{:%d %b %Y}".format(queue.date)}}</td>
                 {% if queue.owner is not none %}
                 <td>{{queue.owner}}</td>
                 {% else %}
