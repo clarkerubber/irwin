@@ -47,7 +47,9 @@
                 <b>#{{report.id}}</b><br>
                 <span style="color: {{color}}"><b>{{report.activation}}%</b></span>
               </h2>
-              Created by {{report.owner}}, {{"{:%d %b %Y at %H:%M}".format(report.date)}}<br>
+              <h5>
+                Created by {{report.owner}}, {{"{:%d %b %Y at %H:%M}".format(report.date)}}<br>
+              </h5>
             </td>
           </tr>
           {% endfor %}
