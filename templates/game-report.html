@@ -467,17 +467,10 @@
       },
       options: {
         scales: {
-          xAxes: [{
-            ticks: {
-              callback: function(value, index, values) {
-                return '-' + value + '%';
-              }
-            }
-          }],
           yAxes: [{
             ticks: {
               callback: function(value, index, values) {
-                return '∑ ' + value + '%';
+                return '∑ ' + value;
               }
             }
           }]

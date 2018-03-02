@@ -144,19 +144,19 @@ def gameReport(gameId, reportId):
     binnedSecondsLabels = [[] for i in range(steps)]
     for i, stepStart in enumerate(range(minSec, maxSec, step)):
         l = len([a for a in emts if a >= stepStart and a <= stepStart+step])
-        binnedSeconds[min(9,i)] = l
-        binnedSecondsLabels[min(9, i)] = str(round_sig(stepStart/100)) +\
+        binnedSeconds[min(steps-1,i)] = l
+        binnedSecondsLabels[min(steps-1, i)] = str(round_sig(stepStart/100)) +\
             '-' + str(round_sig((stepStart+step)/100)) + 's'
 
     # Binned losses
-    steps = 11
+    steps = 10
     losses = gameAnalysis.winningChancesLossPercent()
-    binnedLosses = [[] for i in range(steps)]
-    binnedLossesLabels = [[] for i in range(steps)]
-    for i in range(0, steps, 1):
-        l = len([a for a in losses if i == int(a)])
-        binnedLosses[min(steps-1,i)] = int(100*l/len(losses))
-        binnedLossesLabels[min(steps-1, i)] = i
+    binnedLosses = [[] for i in range(steps+1)]
+    for i in range(0, step, 1):
+        binnedLosses[min(steps-1,i)] = len([a for a in losses if i == int(a)])
+    binnedLosses[steps] = sum([int(a >= 10) for a in losses])
+    binnedLossesLabels = [('-' + str(a) + '%') for a in range(steps)]
+    binnedLossesLabels.append('Other')
 
     # Binned pvs
     steps = 6
