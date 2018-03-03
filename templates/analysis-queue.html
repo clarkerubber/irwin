@@ -17,10 +17,11 @@
                   <th>Origin</th>
                   <th>Created</th>
                   <th>Owner</th>
+                  <th>Links</th>
                 </tr>
               </thead>
               {% for queue in top %}
-              <tr class="clickable-row" data-href="{{url_for('player', userId=queue.id)}}">
+              <tr>
                 <td>{{queue.precedence}}</td>
                 <td>{{queue.id}}</td>
                 <td>{{queue.origin}}</td>
@@ -30,6 +31,16 @@
                 {% else %}
                 <td></td>
                 {% endif %}
+                <td>
+                  <a href="{{url_for('player', userId=queue.id)}}">
+                    <span data-feather="user"></span>
+                     Irwin Profile
+                  </a><br><br>
+                  <a href="https://lichess.org/@/{{queue.id}}?mod">
+                    <span data-feather="arrow-up-right"></span>
+                     Lichess Profile
+                  </a>
+                </td>
               {% endfor %}
             </table>
           </div>

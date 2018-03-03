@@ -35,13 +35,14 @@
         <table class="table table-hover">
           <thead>
             <tr>
-              <th>Activation</th>
-              <th>Details</th>
+              <th width="100px">Activation</th>
+              <th width="400px">Details</th>
+              <th>Links</th>
             </tr>
           </thead>
           {% for report, color in reportsWithColors %}
-          <tr class='clickable-row' data-href='{{url_for("playerReport", reportId=report.id)}}'>
-            <td width="100px"><canvas id="gauge-{{report.id}}" height="140px"></canvas></td>
+          <tr>
+            <td><canvas id="gauge-{{report.id}}" height="140px"></canvas></td>
             <td>
               <h2>
                 <b>#{{report.id}}</b><br>
@@ -50,6 +51,12 @@
               <h5>
                 Created by {{report.owner}}, {{"{:%d %b %Y at %H:%M}".format(report.date)}}<br>
               </h5>
+            </td>
+            <td>
+              <a href='{{url_for("playerReport", reportId=report.id)}}'>
+                <span data-feather="clipboard"></span>
+                 View Report
+              </a>
             </td>
           </tr>
           {% endfor %}

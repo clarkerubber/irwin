@@ -12,13 +12,14 @@
         <table class="table table-hover">
           <thead>
             <tr>
-              <th>Activation</th>
-              <th>Details</th>
+              <th width="200px">Activation</th>
+              <th width="400px">Details</th>
+              <th>Links</th>
             </tr>
           </thead>
           {% for irwinReport, color in reportsAndColors %}
-          <tr class='clickable-row' data-href='{{url_for("playerReport", reportId=irwinReport.id)}}'>
-            <td width="200px">
+          <tr>
+            <td>
               <canvas id="report-activation-{{irwinReport.id}}" height="140px"></canvas>
             </td>
             <td>
@@ -29,6 +30,14 @@
               <h5>
                 Created by {{irwinReport.owner}}, {{"{:%d %b %Y at %H:%M}".format(irwinReport.date)}}
               </h5>
+            </td>
+            <td>
+              <a href='{{url_for("playerReport", reportId=irwinReport.id)}}'>
+                <span data-feather="clipboard"></span> View Report
+              </a><br><br>
+              <a href='https://lichess.org/@/{{irwinReport.userId}}'>
+                <span data-feather="arrow-up-right"></span> Lichess Profile
+              </a>
             </td>
           </tr>
           {% endfor %}

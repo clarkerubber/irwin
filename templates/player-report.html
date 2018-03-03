@@ -38,10 +38,23 @@
             </tr>
           </thead>
           {% for moveActivations in gameMoveActivations %}
-          <tr class='clickable-row' data-href='{{url_for("gameReport", gameId=moveActivations[0].gameId, reportId=moveActivations[0].reportId)}}'>
+          <tr>
             <td style="text-align: right">
-              <h3>#{{moveActivations[0].gameId}}</h3><br>
-              <span style="color: {{moveActivations[2]}}"><h2><b>{{moveActivations[0].activation}}%</b></h2></span>
+              <h3>#{{moveActivations[0].gameId}}</h3>
+              <span style="color: {{moveActivations[2]}}">
+                <h2>
+                  <b>{{moveActivations[0].activation}}%</b>
+                </h2>
+              </span>
+              <br>
+              <a href='{{url_for("gameReport", gameId=moveActivations[0].gameId, reportId=moveActivations[0].reportId)}}'>
+                <span data-feather="clipboard"></span>
+                 View Report
+              </a><br>
+              <a href='https://lichess.org/{{moveActivations[0].gameId}}'>
+                <span data-feather="arrow-up-right"></span>
+                 View Game
+              </a>
             </td>
             <td><canvas id="gameActivation{{moveActivations[0].gameId}}" height="40em"></canvas></td>
             <td><canvas id="gameReport{{moveActivations[0].gameId}}" height="40em"></canvas></td>
