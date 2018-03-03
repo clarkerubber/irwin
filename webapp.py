@@ -99,7 +99,7 @@ def playerReport(reportId):
         darkColours[int(gameReport.activation/10)],
         [('null' if move.rank is None else move.rank) for move in gameReport.moves]) for gameReport in gameReports]
 
-    combinedLabels = list(range(1, max([len(gameReport.moves) for gameReport in gameReports])+1))
+    combinedLabels = list(range(1, longest+1))
 
     return render_template('player-report.html',
         playerReport=playerReport,
