@@ -9,7 +9,7 @@ import json
 import argparse
 import logging
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 from time import sleep
 
 from modules.queue.BasicPlayerQueue import BasicPlayerQueue
@@ -73,7 +73,7 @@ def handleLine(lineDict):
 
         if timeSinceUpdated is not None:
             # automatically analysing a player more than once a week is too soon
-            if timeSinceUpdated < datetime.timedelta(weeks=1):
+            if timeSinceUpdated < timedelta(weeks=1):
                 logging.info("Too Soon " + str(timeSinceUpdated))
                 tooSoon = True
 
