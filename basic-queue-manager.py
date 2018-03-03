@@ -9,6 +9,8 @@ from modules.queue.DeepPlayerQueue import DeepPlayerQueue
 
 from modules.game.GameAnalysisStore import GameAnalysisStore
 
+from modules.irwin.GameBasicActivation import GameBasicActivation
+
 from Env import Env
 
 parser = argparse.ArgumentParser(description=__doc__)
@@ -32,6 +34,8 @@ if config == {}:
 env = Env(config, engine=False)
 
 while True:
+    # main program. do forever
+    # get next player to analyse for deep queue
     basicPlayerQueue = env.basicPlayerQueueDB.nextUnprocessed()
     if basicPlayerQueue is not None:
         logging.info("Basic Queue: " + str(basicPlayerQueue))
@@ -42,14 +46,22 @@ while True:
         sleep(10)
         continue
 
+    # if there is already a deep queue item open
+    # don't update. This will push the request
+    # down the queue
     if env.deepPlayerQueueDB.exists(userId):
         continue
     
+    # get analysed (by fishnet/lichess) games from the db
     gameAnalysisStore = GameAnalysisStore.new()
     gameAnalysisStore.addGames(env.gameDB.byUserIdAnalysed(userId))
     gameTensors = gameAnalysisStore.gameTensors(userId)
+
     if len(gameTensors) > 0:
         gamePredictions = env.irwin.predictBasicGames(gameTensors)
+        gameActivations = [GameBasicActivation.fromPrediction(gameId, userId, prediction, False)
+            for gameId, prediction in gamePredictions]
+        env.gameBasicActivationDB.lazyWriteMany(gameActivations)
         deepPlayerQueue = DeepPlayerQueue.new(
             userId=userId,
             origin=origin,

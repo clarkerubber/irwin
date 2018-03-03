@@ -67,33 +67,37 @@ def handleLine(lineDict):
         env.playerDB.write(player) # this will cover updating the player status
         env.gameDB.lazyWriteGames(Game.fromPlayerData(playerData)) # get games because data is king
 
+        # check if this player has been analysed recently
+        tooSoon = False # assume its not to start with
         timeSinceUpdated = env.playerReportDB.timeSinceUpdated(userId)
-        tooSoon = False
-        if timeSinceUpdated is not None:
-            if ((messageType == 'request' and lineDict['origin'] == 'moderator')
-                or timeSinceUpdated > datetime.timedelta(weeks=1)):
-                    logging.info("Too Soon " + str(timeSinceUpdated))
-                    tooSoon = True
 
+        if timeSinceUpdated is not None:
+            # automatically analysing a player more than once a week is too soon
+            if timeSinceUpdated < datetime.timedelta(weeks=1):
+                logging.info("Too Soon " + str(timeSinceUpdated))
+                tooSoon = True
+
+        # check if there is already a request open for this player
+        inQueue = env.deepPlayerQueueDB.exists(userId)
+
+        # mod requests skip all queues
         if messageType == 'request':
-            if lineDict['origin'] == 'moderator': # moderator request, skip the queue
+            if lineDict['origin'] == 'moderator':
                 env.deepPlayerQueueDB.write(
                     DeepPlayerQueue(id=userId, origin='moderator', owner=None, precedence=100000))
-            elif not env.deepPlayerQueueDB.exists(userId):
-                # any other type of request that doesn't have an open queue item
-                if not tooSoon:
-                    env.basicPlayerQueueDB.write(
-                        BasicPlayerQueue(id=userId, origin=lineDict['origin']))
-                else:
-                    logging.info("Too Soon " + str(timeSinceUpdated))
+        
+        # all other types of request
+        if not tooSoon and not inQueue:
+            if messageType == 'request':
+                env.basicPlayerQueueDB.write(BasicPlayerQueue(id=userId, origin=lineDict['origin']))
 
-        if messageType == 'reportCreated':
-            if not env.modReportDB.isOpen(userId) and not tooSoon: # don't update these if a report is still open
+            elif messageType == 'reportCreated' and not env.modReportDB.isOpen(userId):
+                # don't update these if a report is still open
+                # these will get re-queued by scan-update.py
                 env.basicPlayerQueueDB.write(BasicPlayerQueue(id=userId, origin='report'))
                 env.modReportDB.write(ModReport.new(userId))
-            else:
-                logging.info("report already open or too soon")
 
+        # closures and marks
         if messageType == 'reportProcessed' or messageType == 'mark':
             logging.info("removing all queue items")
             env.basicPlayerQueueDB.removeUserId(userId)
