@@ -48,7 +48,15 @@ def player(userId):
     playerReports = env.playerReportDB.byUserId(userId)
     colors = [darkColours[int(report.activation/10)] for report in playerReports]
     reportsWithColors = list(zip(playerReports, colors))
-    return render_template('player.html', playerObj=playerObj, reportsWithColors=reportsWithColors)
+
+    availableGames = env.gameBasicActivationDB.byUserId(userId)
+    availableGames.sort(key=lambda obj: -obj.prediction)
+
+    return render_template(
+        'player.html',
+        playerObj=playerObj,
+        reportsWithColors=reportsWithColors,
+        availableGames=availableGames)
 
 @app.route('/player-report/<reportId>')
 def playerReport(reportId):
@@ -218,16 +226,6 @@ def watchlist():
 
     return render_template('watchlist.html',
         playersWithReports=uniquePlayersWithReports)
-
-@app.route('/mod-reports')
-def modReports():
-    modReports = env.modReportDB.allOpen(300)
-    playerReports = env.playerReportDB.byUserIds([r.id for r in modReports])
-
-    players = list(zip(modReports, playerReports))
-    players.sort(key=lambda obj: -obj[1].activation if obj[1] is not None else 150)
-
-    return render_template('mod-reports.html', players=players)
 
 @app.route('/api/update-player-data', methods=['GET', 'POST'])
 def updatePlayerData():
