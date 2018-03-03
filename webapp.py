@@ -7,6 +7,10 @@ import json
 
 from modules.game.Player import Player
 
+from modules.game.GameAnalysisStore import GameAnalysisStore
+
+from modules.irwin.GameBasicActivation import GameBasicActivation
+
 app = Flask(__name__)
 
 config = {}
@@ -235,11 +239,22 @@ def updatePlayerData():
     player = Player.fromPlayerData(env.api.getPlayerData(userId))
     if player is not None:
         env.playerDB.write(player)
-        print("updated!")
-        return "{'updated': true}", 201
+        print("updated player!")
     else:
         print("failed!")
         return "{'updated': false}", 204
+
+    gameAnalysisStore = GameAnalysisStore.new()
+    gameAnalysisStore.addGames(env.gameDB.byUserIdAnalysed(userId))
+    gameTensors = gameAnalysisStore.gameTensors(userId)
+
+    if len(gameTensors) > 0:
+        gamePredictions = env.irwin.predictBasicGames(gameTensors)
+        gameActivations = [GameBasicActivation.fromPrediction(gameId, userId, prediction, False)
+            for gameId, prediction in gamePredictions]
+        env.gameBasicActivationDB.lazyWriteMany(gameActivations)
+    print("updated games!")
+    return "{'updated': true}", 201
     
 
 if __name__ == '__main__':
