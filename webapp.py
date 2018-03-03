@@ -210,7 +210,7 @@ def watchlist():
     uniquePlayersWithReports = []
     alreadyAdded = []
     for player, report, color in playersWithReports:
-        if player.id not in alreadyAdded and report.activation > 30:
+        if player.id not in alreadyAdded and report.activation > 70:
             uniquePlayersWithReports.append((player, report, color))
             alreadyAdded.append(player.id)
 
