@@ -65,8 +65,13 @@ def playerReport(reportId):
 
     overallActivation = darkColours[int(playerReport.activation/10)]
 
+    gameLengths = [len(game.moves) for game in gameReports]
+    if len(gameLengths) == 0:
+        longest = 0
+    else:
+        longest = max(gameLengths)
+
     lossByMove = [gameReport.losses() for gameReport in gameReports]
-    longest = max([len(game) for game in lossByMove])
     lossesByMove = [[] for i in range(longest)]
     for i in range(longest):
         for game in lossByMove:
@@ -78,7 +83,6 @@ def playerReport(reportId):
     averageLossByMove = [np.average(move) for move in lossesByMove]
 
     rankByMove = [[(10 if move.rank is None else move.rank) for move in gameReport.moves] for gameReport in gameReports]
-    longest = max([len(game) for game in rankByMove])
     ranksByMove = [[] for i in range(longest)]
     for i in range(longest):
         for game in rankByMove:
