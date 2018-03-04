@@ -13,7 +13,10 @@
           <h1><b>{{ playerObj.id }} </b></h1>
         </div>
         <div class="col refresh">
-          <h3><a onclick="UserAction()" class="refresh"><span data-feather="refresh-cw"></span></a></h3>
+          <h3><a onclick="queueForAnalysis()" class="analyse">Analyse Now <span data-feather="cpu"></span></a></h3>
+        </div>
+        <div class="col refresh">
+          <h3><a onclick="updatePlayerData()" class="refresh">Refresh Player <span data-feather="refresh-cw"></span></a></h3>
         </div>
       </div>
       <div class="table-responsive">
@@ -76,6 +79,14 @@
             <td style="color: {{game.color()}}"><h2><b>{{game.prediction}}%</b></h2></td>
             <td><h2>{{game.gameId}}</h2></td>
             <td>
+              <a onclick="markForAnalysis('{{game.gameId}}')" style="cursor: pointer;">
+                <span data-feather="check-circle"></span>
+                {% if game.gameId in playerObj.mustAnalyse %}
+                 Marked for Analysis
+                {% else %}
+                 Mark for Analysis
+                {% endif %}
+              </a><br><br>
               <a href="https://lichess.org/{{game.gameId}}">
                 <span data-feather="arrow-up-right"></span>
                  View in Lichess
@@ -88,7 +99,7 @@
     </main>
   {{ base.scripts() }}
   <script>
-    function UserAction() {
+    function updatePlayerData() {
       var xhttp = new XMLHttpRequest();
       xhttp.open("POST", "{{url_for('updatePlayerData')}}", true);
       xhttp.setRequestHeader("Content-type", "application/json");
@@ -104,6 +115,46 @@
           var response = xhttp.responseText;
           console.log(response);
           $(".refresh").text('Failed!');
+        }
+      };
+    }
+
+    function markForAnalysis(gameId) {
+      var xhttp = new XMLHttpRequest();
+      xhttp.open("POST", "{{url_for('markGameForAnalysis')}}", true);
+      xhttp.setRequestHeader("Content-type", "application/json");
+      xhttp.send(JSON.stringify({'userId': '{{playerObj.id}}', 'gameId': gameId}));
+      $(".refresh").text("loading...");
+      xhttp.onreadystatechange = function() {
+        if (xhttp.readyState === 4 && xhttp.status === 201) {
+          var response = xhttp.responseText;
+          console.log(response);
+          $(".refresh").text('Queued!');
+          window.location.reload(false);
+        } else if (xhttp.readyState === 4 && xhttp.status === 204) {
+          var response = xhttp.responseText;
+          console.log(response);
+          $(".refresh").text('Failed!');
+        }
+      };
+    }
+
+    function queueForAnalysis() {
+      var xhttp = new XMLHttpRequest();
+      xhttp.open("POST", "{{url_for('analysePlayer')}}", true);
+      xhttp.setRequestHeader("Content-type", "application/json");
+      xhttp.send(JSON.stringify({'userId': '{{playerObj.id}}'}));
+      $(".analyse").text("loading...");
+      xhttp.onreadystatechange = function() {
+        if (xhttp.readyState === 4 && xhttp.status === 201) {
+          var response = xhttp.responseText;
+          console.log(response);
+          $(".analyse").text('Queued!');
+          window.location.reload(false);
+        } else if (xhttp.readyState === 4 && xhttp.status === 204) {
+          var response = xhttp.responseText;
+          console.log(response);
+          $(".analyse").text('Failed!');
         }
       };
     }

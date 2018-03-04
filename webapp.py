@@ -11,6 +11,8 @@ from modules.game.GameAnalysisStore import GameAnalysisStore
 
 from modules.irwin.GameBasicActivation import GameBasicActivation
 
+from modules.queue.DeepPlayerQueue import DeepPlayerQueue
+
 app = Flask(__name__)
 
 config = {}
@@ -256,6 +258,36 @@ def updatePlayerData():
     print("updated games!")
     return "{'updated': true}", 201
     
+@app.route('/api/mark-game', methods=['GET', 'POST'])
+def markGameForAnalysis():
+    content = request.json
+    userId = content['userId']
+    gameId = content['gameId']
+    print("marking for analysis " + gameId + '/' + userId)
+    player = env.playerDB.byId(userId)
 
+    if player is not None:
+        player.mustAnalyse.append(gameId)
+        env.playerDB.write(player)
+        return "{'updated': true}", 201
+    else:
+        return "{'updated': false}", 204
+
+@app.route('/api/analyse-player', methods=['GET', 'POST'])
+def analysePlayer():
+    content = request.json
+    userId = content['userId']
+    print("queing player for analysis " + userId)
+    player = env.playerDB.byId(userId)
+
+    if player is not None:
+        env.deepPlayerQueueDB.write(DeepPlayerQueue.new(
+            userId=userId,
+            origin='moderator',
+            gamePredictions=[]))
+        return "{'queued': true}", 201
+    else:
+        return "{'queued': false}", 204
+    
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=True)

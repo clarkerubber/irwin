@@ -86,7 +86,8 @@ body {
 }
 
 .refresh {
-  max-width: 100px;
+  max-width: 300px;
+  cursor: pointer;
 }
 
 .form-control-dark {

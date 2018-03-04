@@ -53,7 +53,9 @@ while True:
         env.deepPlayerQueueDB.complete(deepPlayerQueue)
         continue
 
-    env.playerDB.write(Player.fromPlayerData(playerData))
+    # get player data, this is really only
+    # useful for knowing which games must be analysed
+    player = env.playerDB.byId(userId)
 
     # pull what we already have on the player
     gameAnalysisStore = GameAnalysisStore.new()
@@ -85,6 +87,11 @@ while True:
     else:
         gamesToAnalyse = gameAnalysisStore.randomGamesWithoutAnalysis()
 
+    if len(player.mustAnalyse) > 0:
+        games = [gameAnalysisStore.gameById(gid) for gid in player.mustAnalyse]
+        mustAnalyseGames = [game for game in games if game is not None]
+        gamesToAnalyse = gamesToAnalyse + mustAnalyseGames
+
     # analyse games with SF
     gameAnalysisStore.addGameAnalyses([
         GameAnalysis.fromGame(
@@ -103,4 +110,9 @@ while True:
         gameAnalysisStore=gameAnalysisStore,
         owner=str(settings.name)))
     env.deepPlayerQueueDB.complete(deepPlayerQueue)
+
+    # do this last. Reset games that must be analysed
+    env.playerDB.write(Player.fromPlayerData(playerData))
+
+    # engine likes to die abruptly after a while. Kill it before it gets the chance
     env.restartEngine()

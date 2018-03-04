@@ -70,3 +70,9 @@ while True:
         env.deepPlayerQueueDB.write(deepPlayerQueue)
     else:
         logging.info("No gameTensors")
+        deepPlayerQueue = DeepPlayerQueue.new(
+            userId=userId,
+            origin=origin,
+            gamePredictions=[])
+        logging.info("Writing DeepPlayerQueue: " + str(deepPlayerQueue))
+        env.deepPlayerQueueDB.write(deepPlayerQueue)

@@ -8,8 +8,11 @@ import numpy as np
 class DeepPlayerQueue(namedtuple('DeepPlayerQueue', ['id', 'origin', 'precedence', 'owner', 'date'])):
     @staticmethod
     def new(userId, origin, gamePredictions):
-        activations = sorted([(a[1]*a[1]) for a in gamePredictions], reverse=True)
-        top30avg = ceil(np.average(activations[:ceil(0.3*len(activations))]))
+        if len(gamePredictions) > 0:
+            activations = sorted([(a[1]*a[1]) for a in gamePredictions], reverse=True)
+            top30avg = ceil(np.average(activations[:ceil(0.3*len(activations))]))
+        else:
+            top30avg = 0
         originPrecedence = 0
         if origin == 'report':
             originPrecedence = 5000

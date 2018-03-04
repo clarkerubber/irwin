@@ -2,7 +2,7 @@ from collections import namedtuple
 from datetime import datetime
 import pymongo
 
-class Player(namedtuple('Player', ['id', 'titled', 'engine', 'gamesPlayed', 'closedReports'])):
+class Player(namedtuple('Player', ['id', 'titled', 'engine', 'gamesPlayed', 'closedReports', 'mustAnalyse'])):
     @staticmethod
     def fromPlayerData(data):
         user = data.get('user')
@@ -12,7 +12,8 @@ class Player(namedtuple('Player', ['id', 'titled', 'engine', 'gamesPlayed', 'clo
                 titled=user.get('title') is not None,
                 engine=user.get('engine', False),
                 gamesPlayed=data.get('assessment', {}).get('user', {}).get('games', 0),
-                closedReports=len(data.get('assessment', {}).get('relatedCheaters', [])))
+                closedReports=len(data.get('assessment', {}).get('relatedCheaters', [])),
+                mustAnalyse=[])
         return None
 
 class PlayerBSONHandler:
@@ -23,7 +24,8 @@ class PlayerBSONHandler:
                 titled = bson.get('titled', False),
                 engine = bson['engine'],
                 gamesPlayed = bson['gamesPlayed'],
-                closedReports = bson['closedReports']
+                closedReports = bson['closedReports'],
+                mustAnalyse = bson.get('mustAnalyse', [])
             )
 
     def writes(player):
@@ -33,6 +35,7 @@ class PlayerBSONHandler:
             'engine': player.engine,
             'gamesPlayed': player.gamesPlayed,
             'closedReports': player.closedReports,
+            'mustAnalyse': player.mustAnalyse,
             'date': datetime.now()
         }
 
@@ -40,6 +43,9 @@ class PlayerDB(namedtuple('PlayerDB', ['playerColl'])):
     def byId(self, userId):
         playerBSON = self.playerColl.find_one({'_id': userId})
         return None if playerBSON is None else PlayerBSONHandler.reads(playerBSON)
+
+    def byUserId(self, userId):
+        return self.byId(userId)
 
     def unmarkedByUserIds(self, userIds):
         return [(None if bson is None else PlayerBSONHandler.reads(bson))
