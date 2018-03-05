@@ -43,10 +43,10 @@ class ModReportDB(namedtuple('ModReportDB', ['modReportColl'])):
 
     def isOpen(self, userId):
         modReportBSON = self.modReportColl.find_one({'_id': userId})
-        processed = False
+        processed = True
         if modReportBSON is not None:
             processed = modReportBSON['processed']
-        return processed
+        return not processed
 
     def allOpen(self, limit=None):
         return [ModReportBSONHandler.reads(bson) for bson in self.modReportColl.find({'processed': False}, batch_size=limit)]
