@@ -58,11 +58,17 @@ def player(userId):
     availableGames = env.gameBasicActivationDB.byUserId(userId)
     availableGames.sort(key=lambda obj: -obj.prediction)
 
+    deepPlayerQueue = env.deepPlayerQueueDB.byId(userId)
+
+    reportOpen = env.modReportDB.isOpen(userId)
+
     return render_template(
         'player.html',
         playerObj=playerObj,
         reportsWithColors=reportsWithColors,
-        availableGames=availableGames)
+        availableGames=availableGames,
+        deepPlayerQueue=deepPlayerQueue,
+        reportOpen=reportOpen)
 
 @app.route('/player-report/<reportId>')
 def playerReport(reportId):
@@ -288,6 +294,14 @@ def analysePlayer():
         return "{'queued': true}", 201
     else:
         return "{'queued': false}", 204
+
+@app.route('/api/close-mod-report', methods=['GET', 'POST'])
+def closeModReport():
+    content = request.json
+    userId = content['userId']
+    print("closing reports for " + userId)
+    env.modReportDB.close(userId)
+    return "{'queued': true}", 201
     
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=True)

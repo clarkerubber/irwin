@@ -51,6 +51,10 @@ class DeepPlayerQueueDB(namedtuple('DeepPlayerQueueDB', ['deepPlayerQueueColl'])
             {'_id': deepPlayerQueue.id},
             {'$set': DeepPlayerQueueBSONHandler.writes(deepPlayerQueue)}, upsert=True)
 
+    def byId(self, _id):
+        bson = self.deepPlayerQueueColl.find_one({'_id': _id})
+        return None if bson is None else DeepPlayerQueueBSONHandler.reads(bson)
+
     def complete(self, deepPlayerQueue):
         """remove a complete job from the queue"""
         self.removeUserId(deepPlayerQueue.id)

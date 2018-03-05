@@ -22,13 +22,46 @@
       <div class="table-responsive">
         <table class="table">
           <tr>
-            <td width="150px" style="text-align: right; font-weight: bold;">Titled</td><td>{{playerObj.titled}}</td>
+            <td width="150px" style="text-align: right; font-weight: bold;">
+              Titled
+            </td>
+            <td width="150px">
+              {{playerObj.titled}}
+            </td>
+            <td></td>
           </tr>
           <tr>
-            <td width="150px" style="text-align: right; font-weight: bold;">Engine</td><td>{{playerObj.engine}}</td>
+            <td width="150px" style="text-align: right; font-weight: bold;">
+              Engine
+            </td>
+            <td>
+              {{playerObj.engine}}
+            </td>
+            <td></td>
           </tr>
           <tr>
-            <td width="150px" style="text-align: right; font-weight: bold;">Games Played</td><td>{{playerObj.gamesPlayed}}</td>
+            <td width="150px" style="text-align: right; font-weight: bold;">
+              Games Played
+            </td>
+            <td>
+              {{playerObj.gamesPlayed}}
+            </td>
+            <td></td>
+          </tr>
+          <tr>
+            <td width="150px" style="text-align: right; font-weight: bold;">
+              Has Open Report
+            </td>
+            <td>
+              {{reportOpen}}
+            </td>
+            {% if reportOpen %}
+            <td>
+              <a onclick="closeReport()" class="close-report"><span data-feather="x-circle"></span> Close Report</a>
+            </td>
+            {% else %}
+            <td></td>
+            {% endif %}
           </tr>
         </table>
       </div>
@@ -66,6 +99,28 @@
         </table>  
       </div>
 
+      {% if deepPlayerQueue != None %}
+      <h2>Queued Requests</h2>
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th width="80px">Precedence</th>
+              <th width="100px">Origin</th>
+              <th width="200px">Created</th>
+              <th>Owner</th>
+            </tr>
+          </thead>
+          <tr>
+            <td>{{deepPlayerQueue.precedence}}</td>
+            <td>{{deepPlayerQueue.origin}}</td>
+            <td>{{"{:%d %b %Y at %H:%M}".format(deepPlayerQueue.date)}}</td>
+            <td>{{deepPlayerQueue.owner}}</td>
+          </tr>
+        </table>
+      </div>
+      {% endif %}
+
       <h2>Available Games</h2>
       <div class="table-responsive">
         <table class="table table-hover">
@@ -79,7 +134,7 @@
             <td style="color: {{game.color()}}"><h2><b>{{game.prediction}}%</b></h2></td>
             <td><h2>{{game.gameId}}</h2></td>
             <td>
-              <a onclick="markForAnalysis('{{game.gameId}}')" style="cursor: pointer;">
+              <a onclick="markForAnalysis('{{game.gameId}}')" style="cursor: pointer;" class="mark-{{game.gameId}}">
                 <span data-feather="check-circle"></span>
                 {% if game.gameId in playerObj.mustAnalyse %}
                  Marked for Analysis
@@ -124,17 +179,35 @@
       xhttp.open("POST", "{{url_for('markGameForAnalysis')}}", true);
       xhttp.setRequestHeader("Content-type", "application/json");
       xhttp.send(JSON.stringify({'userId': '{{playerObj.id}}', 'gameId': gameId}));
-      $(".refresh").text("loading...");
+      $(".mark-" + gameId).text("loading...");
       xhttp.onreadystatechange = function() {
         if (xhttp.readyState === 4 && xhttp.status === 201) {
           var response = xhttp.responseText;
           console.log(response);
-          $(".refresh").text('Queued!');
-          window.location.reload(false);
+          $(".mark-" + gameId).text('Marked for Analysis!');
         } else if (xhttp.readyState === 4 && xhttp.status === 204) {
           var response = xhttp.responseText;
           console.log(response);
-          $(".refresh").text('Failed!');
+          $(".mark-" + gameId).text('Failed!');
+        }
+      };
+    }
+
+    function closeReport() {
+      var xhttp = new XMLHttpRequest();
+      xhttp.open("POST", "{{url_for('closeModReport')}}", true);
+      xhttp.setRequestHeader("Content-type", "application/json");
+      xhttp.send(JSON.stringify({'userId': '{{playerObj.id}}'}));
+      $(".close-report").text("setting...");
+      xhttp.onreadystatechange = function() {
+        if (xhttp.readyState === 4 && xhttp.status === 201) {
+          var response = xhttp.responseText;
+          console.log(response);
+          $(".close-report").text('removed!');
+        } else if (xhttp.readyState === 4) {
+          var response = xhttp.responseText;
+          console.log(response);
+          $(".close-report").text('failed!');
         }
       };
     }
