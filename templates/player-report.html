@@ -180,15 +180,15 @@
             borderColor: 'rgba(0, 0, 180, 0.3)',
             fill: false,
             lineWidth: 1,
-            pointRadius: 0
+            pointRadius: 0.5
           },
           {
             label: '- std',
             data: stdBracketLossByMoveData['bottom'],
             borderColor: 'rgba(0, 0, 180, 0.3)',
-            fille: false,
+            fill: false,
             lineWidth: 1,
-            pointRadius: 0
+            pointRadius: 0.5
           },
         {% for gameReport in gameReports %}
           {
@@ -196,7 +196,8 @@
             data: {{gameReport.losses()}},
             borderColor: 'rgba(20,20,20,0.3)',
             fill: false,
-            showLine: false
+            showLine: false,
+            pointRadius: 5
           },{% endfor %}]
       },
       options: {
@@ -237,7 +238,7 @@
             borderColor: 'rgba(0, 0, 180, 0.3)',
             fill: false,
             lineWidth: 1,
-            pointRadius: 0
+            pointRadius: 0.5
           },
           {
             label: '- std',
@@ -245,7 +246,7 @@
             borderColor: 'rgba(0, 0, 180, 0.3)',
             fill: false,
             lineWidth: 1,
-            pointRadius: 0
+            pointRadius: 0.5
           },
         {% for gameReport in gameReports %}
           {
@@ -253,7 +254,8 @@
             data: {{gameReport.ranksJSON()|safe}},
             borderColor: 'rgba(20,20,20,0.3)',
             fill: false,
-            showLine: false
+            showLine: false,
+            pointRadius: 5
           },{% endfor %}]
       },
       options: {
