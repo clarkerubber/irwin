@@ -1,7 +1,10 @@
 from collections import namedtuple
 from datetime import datetime
+from functools import lru_cache
+import numpy as np
 import random
 import pymongo
+import json
 
 class PlayerReport(namedtuple('PlayerReport', ['id', 'userId', 'owner', 'activation', 'date'])):
     @staticmethod
@@ -22,6 +25,74 @@ class PlayerReport(namedtuple('PlayerReport', ['id', 'userId', 'owner', 'activat
             'games': [gameReport.reportDict() for gameReport in gameReports]
         }
 
+class GameReportStore(namedtuple('GameReportStore', ['gameReports'])):
+    #@lru_cache(maxsize=1)
+    def longestGame(self):
+        if len(self.gameReports) == 0:
+            return 0
+        return max([len(gameReport.moves) for gameReport in self.gameReports])
+
+    @staticmethod
+    def zipAvgLOL(lol):
+        # List of Lists (can be different length)
+        # assumes the input isn't : []
+        longest = max([len(l) for l in lol])
+        bins = [[] for i in range(longest)]
+        for l in lol:
+            try:
+                [bins[i].append(l[i]) for i in range(longest) if l[i] is not None]
+            except IndexError:
+                continue
+        return [np.average(b) for b in bins]
+
+    @staticmethod
+    def zipStdLOL(lol):
+        # List of Lists (can be different length)
+        # assumts the input isn't : []
+        longest = max([len(l) for l in lol])
+        bins = [[] for i in range(longest)]
+        for l in lol:
+            try:
+                [bins[i].append(l[i]) for i in range(longest) if l[i] is not None]
+            except IndexError:
+                continue
+        return [np.std(b) for b in bins]
+
+    def averageLossByMove(self):
+        """ Calculate the average loss by move. Used for graphing"""
+        if self.longestGame() == 0:
+            return [] # zero case
+        return json.dumps(GameReportStore.zipAvgLOL([gameReport.losses() for gameReport in self.gameReports]))
+
+    def averageRankByMove(self):
+        """ Calculate the the average rank by move. Used for graphing """
+        if self.longestGame() == 0:
+            return [] # zero case
+        return json.dumps(GameReportStore.zipAvgLOL([gameReport.ranks() for gameReport in self.gameReports]))
+
+    def stdBracketLossByMove(self):
+        if self.longestGame() == 0:
+            return [] # zero case
+        stds = GameReportStore.zipStdLOL([gameReport.losses() for gameReport in self.gameReports])
+        avgs = GameReportStore.zipAvgLOL([gameReport.losses() for gameReport in self.gameReports])
+        return json.dumps({
+            'top': [avg + stds[i] for i, avg in enumerate(avgs)],
+            'bottom': [max(avg - stds[i], 0) for i, avg in enumerate(avgs)]
+        })
+
+    def stdBracketRankByMove(self):
+        if self.longestGame() == 0:
+            return [] # zero case
+        stds = GameReportStore.zipStdLOL([gameReport.ranks() for gameReport in self.gameReports])
+        avgs = GameReportStore.zipAvgLOL([gameReport.ranks() for gameReport in self.gameReports])
+        return json.dumps({
+            'top': [avg + stds[i] for i, avg in enumerate(avgs)],
+            'bottom': [max(avg - stds[i], 1) for i, avg in enumerate(avgs)]
+        })
+
+    def binnedActivations(self):
+        return json.dumps([sum([int(gameReport.activation in range(i,i+10)) for gameReport in self.gameReports]) for i in range(0, 100, 10)][::-1])
+
 class GameReport(namedtuple('GameReport', ['id', 'reportId', 'gameId', 'activation', 'moves'])):
     @staticmethod
     def new(gameAnalysis, gameActivation, gamePredictions, reportId, userId):
@@ -40,11 +111,17 @@ class GameReport(namedtuple('GameReport', ['id', 'reportId', 'gameId', 'activati
             'moves': [move.reportDict() for move in self.moves]
         }
 
+    def colorIndex(self):
+        return int(self.activation/10)
+
     def activations(self):
         return [move.activation for move in self.moves]
 
     def ranks(self):
         return [move.rank for move in self.moves]
+
+    def ranksJSON(self):
+        return json.dumps(self.ranks())
 
     def losses(self):
         return [move.loss for move in self.moves]

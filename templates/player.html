@@ -232,40 +232,46 @@
       };
     }
 
-    {% for irwinReport, color in reportsWithColors %}
-    var barData = {
-      datasets : [
-        {
-          hoverBorderColor: 'rgba(50, 50, 50, 0.2)',
-          borderColor: 'rgba(50, 50, 50, 0.2)',
-          backgroundColor: [
-            '{{color}}',
-            'rgba(50, 50, 50, 0.2)'
-          ],
-          data : [{{irwinReport.activation}}, {{100 - irwinReport.activation}}]
-        }
-      ]
-    };
-   
-     // get bar chart canvas
-    var reportActivationCtx = document.getElementById("gauge-{{irwinReport.id}}").getContext("2d");
+    var reports = [{% for irwinReport, color in reportsWithColors %}{{('{"id": "' + irwinReport.id + '", "activation":' + irwinReport.activation.__str__() + ', "color": "' + color +'"},')|safe}}{% endfor %}];
 
-     // draw bar chart
-    new Chart(reportActivationCtx, {
-      type: 'doughnut',
-      data: barData,
-      options: {
-        cutoutPercentage: 60,
-        legend: {
-          display: false
-        },
-        tooltips: {
-          enabled: false
-        },
-        rotation: Math.PI
-      }
-    });
-    {% endfor %}
+    var reportsLength = reports.length;
+
+    for (var i = 0; i < reportsLength; i++) {
+      var report = reports[i];
+
+      var barData = {
+        datasets : [
+          {
+            hoverBorderColor: 'rgba(50, 50, 50, 0.2)',
+            borderColor: 'rgba(50, 50, 50, 0.2)',
+            backgroundColor: [
+              report['color'],
+              'rgba(50, 50, 50, 0.2)'
+            ],
+            data : [report['activation'], 100 - report['activation']]
+          }
+        ]
+      };
+
+       // get bar chart canvas
+      var reportActivationCtx = document.getElementById("gauge-" + report['id']).getContext("2d");
+
+       // draw bar chart
+      new Chart(reportActivationCtx, {
+        type: 'doughnut',
+        data: barData,
+        options: {
+          cutoutPercentage: 60,
+          legend: {
+            display: false
+          },
+          tooltips: {
+            enabled: false
+          },
+          rotation: Math.PI
+        }
+      });
+    }
   </script>
   </body>
 </html>

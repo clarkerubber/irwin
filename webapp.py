@@ -9,6 +9,8 @@ from modules.game.Player import Player
 
 from modules.game.GameAnalysisStore import GameAnalysisStore
 
+from modules.irwin.AnalysisReport import GameReportStore
+
 from modules.irwin.GameBasicActivation import GameBasicActivation
 
 from modules.queue.DeepPlayerQueue import DeepPlayerQueue
@@ -23,7 +25,7 @@ if config == {}:
 
 env = Env(config)
 
-darkColours = [
+darkColors = [
           'rgba(84, 231, 96, 0.8)',
           'rgba(109, 231, 84, 0.8)',
           'rgba(131, 231, 84, 0.8)',
@@ -52,7 +54,7 @@ def player(userId):
         return ('Player not found', 404)
 
     playerReports = env.playerReportDB.byUserId(userId)
-    colors = [darkColours[int(report.activation/10)] for report in playerReports]
+    colors = [darkColors[int(report.activation/10)] for report in playerReports]
     reportsWithColors = list(zip(playerReports, colors))
 
     availableGames = env.gameBasicActivationDB.byUserId(userId)
@@ -75,62 +77,22 @@ def playerReport(reportId):
     playerReport = env.playerReportDB.byId(reportId)
     gameReports = env.gameReportDB.byReportId(reportId)
     gameReports.sort(key=lambda obj: -obj.activation)
+    gameReportStore = GameReportStore(gameReports)
 
     if playerReport is None:
         return ('Report not found', 404)
 
-    breakdownData = [sum([int(gameReport.activation in range(i,i+10)) for gameReport in gameReports]) for i in range(0, 100, 10)][::-1]
-
-    graphColour = darkColours[int(playerReport.activation/10)]
-
-    overallActivation = darkColours[int(playerReport.activation/10)]
-
-    gameLengths = [len(game.moves) for game in gameReports]
-    if len(gameLengths) == 0:
-        longest = 0
-    else:
-        longest = max(gameLengths)
-
-    lossByMove = [gameReport.losses() for gameReport in gameReports]
-    lossesByMove = [[] for i in range(longest)]
-    for i in range(longest):
-        for game in lossByMove:
-            try:
-                lossesByMove[i].append(game[i])
-            except IndexError:
-                continue
-
-    averageLossByMove = [np.average(move) for move in lossesByMove]
-
-    rankByMove = [[(10 if move.rank is None else move.rank) for move in gameReport.moves] for gameReport in gameReports]
-    ranksByMove = [[] for i in range(longest)]
-    for i in range(longest):
-        for game in rankByMove:
-            try:
-                ranksByMove[i].append(game[i])
-            except IndexError:
-                continue
-
-    averageRankByMove = [np.average(move) for move in ranksByMove]
+    overallActivationColor = darkColors[int(playerReport.activation/10)]
             
-    gameMoveActivations = [(
-        gameReport,
-        [darkColours[int(move.activation/10)] for move in gameReport.moves],
-        darkColours[int(gameReport.activation/10)],
-        [('null' if move.rank is None else move.rank) for move in gameReport.moves]) for gameReport in gameReports]
-
-    combinedLabels = list(range(1, longest+1))
+    combinedLabels = list(range(1, gameReportStore.longestGame()+1))
 
     return render_template('player-report.html',
         playerReport=playerReport,
         gameReports=gameReports,
-        breakdownData=breakdownData,
-        graphColour=graphColour,
-        overallActivation=overallActivation,
-        gameMoveActivations=gameMoveActivations,
+        overallActivationColor=overallActivationColor,
         combinedLabels=combinedLabels,
-        averageLossByMove=averageLossByMove,
-        averageRankByMove=averageRankByMove)
+        gameReportStore=gameReportStore,
+        darkColors=darkColors)
 
 @app.route('/game-report/<reportId>/<gameId>')
 def gameReport(gameId, reportId):
@@ -147,49 +109,8 @@ def gameReport(gameId, reportId):
     if game is None or gameAnalysis is None:
         return ('Game or GameAnalysis not found', 404)
 
-    graphColor = darkColours[int(gameReport.activation/10)]
-    overallActivationColor = darkColours[int(gameReport.activation/10)]
-    pointColors = [darkColours[int(activation/10)] for activation in gameReport.activations()]
-
-    seconds = gameAnalysis.emtSeconds()
-
-    lossesByTimes = list(zip(gameAnalysis.winningChancesLossPercent(), seconds, pointColors))
-    ranksByTimes = list(zip(gameAnalysis.ranks(), seconds, pointColors))
-    lossesByRanks = list(zip(gameAnalysis.ranks(), gameAnalysis.winningChancesLossPercent(), pointColors))
-    blursToShapes = [('rect' if blur else 'circle') for blur in gameAnalysis.blurs()]
-
-    # Binned seconds
-    emts = gameAnalysis.emts()
-    steps = 10
-    minSec = min(emts)
-    maxSec = max(emts)
-    step = int((maxSec-minSec)/steps)
-    binnedSeconds = [[] for i in range(steps)]
-    binnedSecondsLabels = [[] for i in range(steps)]
-    for i, stepStart in enumerate(range(minSec, maxSec, step)):
-        l = len([a for a in emts if a >= stepStart and a <= stepStart+step])
-        binnedSeconds[min(steps-1,i)] = l
-        binnedSecondsLabels[min(steps-1, i)] = str(round_sig(stepStart/100)) +\
-            '-' + str(round_sig((stepStart+step)/100)) + 's'
-
-    # Binned losses
-    steps = 10
-    losses = gameAnalysis.winningChancesLossPercent()
-    binnedLosses = [[] for i in range(steps+1)]
-    for i in range(0, step, 1):
-        binnedLosses[min(steps-1,i)] = len([a for a in losses if i == int(a)])
-    binnedLosses[steps] = sum([int(a >= 10) for a in losses])
-    binnedLossesLabels = [('-' + str(a) + '%') for a in range(steps)]
-    binnedLossesLabels.append('Other')
-
-    # Binned pvs
-    steps = 6
-    pvs = gameAnalysis.ranks()
-    binnedPVs = [[] for i in range(steps)]
-    binnedPVsLabels = [[] for i in range(steps)]
-    for i, p in enumerate([1, 2, 3, 4, 5, 'null']):
-        binnedPVs[i] = len([1 for pv in pvs if pv == p])
-    binnedPVsLabels = ['PV 1', 'PV 2', 'PV 3', 'PV 4', 'PV 5', 'Other']
+    graphColor = darkColors[int(gameReport.activation/10)]
+    pointColors = [darkColors[int(activation/10)] for activation in gameReport.activations()]
 
     gameUrl = 'https://lichess.org/' + gameReport.gameId
 
@@ -198,25 +119,14 @@ def gameReport(gameId, reportId):
         game=game,
         gameAnalysis=gameAnalysis,
         playerReport=playerReport,
-        overallActivationColor=overallActivationColor,
         graphColor=graphColor,
         pointColors=pointColors,
-        lossesByTimes=lossesByTimes,
-        ranksByTimes=ranksByTimes,
-        lossesByRanks=lossesByRanks,
-        gameUrl=gameUrl,
-        blursToShapes=blursToShapes,
-        binnedSeconds=binnedSeconds,
-        binnedSecondsLabels=binnedSecondsLabels,
-        binnedLosses=binnedLosses,
-        binnedLossesLabels=binnedLossesLabels,
-        binnedPVs=binnedPVs,
-        binnedPVsLabels=binnedPVsLabels)
+        gameUrl=gameUrl)
 
 @app.route('/recent-reports')
 def recentReports():
     playerReports = env.playerReportDB.newest()
-    reportColors = [darkColours[int(playerReport.activation/10)] for playerReport in playerReports]
+    reportColors = [darkColors[int(playerReport.activation/10)] for playerReport in playerReports]
     reportsAndColors = list(zip(playerReports, reportColors))
     return render_template('recent-reports.html', reportsAndColors=reportsAndColors)
 
@@ -225,7 +135,7 @@ def recentReports():
 def watchlist():
     playerReports = env.playerReportDB.newest(1000)
     players = env.playerDB.unmarkedByUserIds([playerReport.userId for playerReport in playerReports]) # player = None if engine
-    playersWithReports = [(player, report, darkColours[int(report.activation/10)]) for player, report in zip(players, playerReports) if player is not None]
+    playersWithReports = [(player, report, darkColors[int(report.activation/10)]) for player, report in zip(players, playerReports) if player is not None]
 
     uniquePlayersWithReports = []
     alreadyAdded = []

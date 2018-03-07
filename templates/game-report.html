@@ -11,7 +11,7 @@
       <h1><b>{{ playerReport.userId }}</b></h1>
       <div class="row">
         <div class="col-3">
-          <h3>Activation <span style="color: {{overallActivationColor}}"><b>{{gameReport.activation}}%</b></span></h3>
+          <h3>Activation <span style="color: {{graphColor}}"><b>{{gameReport.activation}}%</b></span></h3>
           <canvas id="overall" height="200em"></canvas>
         </div>
         <div class="col-9">
@@ -123,11 +123,9 @@
           {
             label: 'Activation',
             data: {{gameReport.activations()}},
-            borderColor: '{{overallActivationColor}}',
+            borderColor: '{{graphColor}}',
             backgroundColor: '{{graphColor}}',
-            pointBackgroundColor: [{% for color in pointColors %}
-            '{{color}}',{% endfor %}
-            ],
+            pointBackgroundColor: {{pointColors|safe}},
             pointRadius: 5
           }]
       },
@@ -162,8 +160,7 @@
           },{% for pvLosses in gameAnalysis.winningChancesLossByPV() %}
           {
             label: '{{pvLosses[0]}}',
-            data: [{% for pv in pvLosses[2] %}
-            {{pv}},{% endfor %}],
+            data: {{pvLosses[2]|safe}},
             borderColor: '{{pvLosses[1]}}',
             fill: false
           },
@@ -189,20 +186,18 @@
     var moveRankChart = new Chart(moveRankCtx, {
       type: 'line',
       data: {
-        labels: {{gameReport.moveNumbers()}},
+        labels: {{gameReport.moveNumbers()|safe}},
         datasets:[
           {
             label: 'Played Move Rank',
-            data: [{% for rank in gameAnalysis.ranks() %}
-            {{rank}},{% endfor %}
-            ],
+            data: {{gameAnalysis.ranksJSON()|safe}},
             borderColor: 'rgba(240, 0, 0, 0.8)',
             fill: false,
             lineWidth: 2
           },
           {
             label: 'Good Moves',
-            data: {{gameAnalysis.ambiguities()}},
+            data: {{gameAnalysis.ambiguities()|safe}},
             borderColor: 'rgba(20,20,20,0.3)',
             fill: false
           }]
@@ -227,24 +222,22 @@
     var moveTimesChart = new Chart(moveTimesCtx, {
       type: 'line',
       data: {
-        labels: {{gameReport.moveNumbers()}},
+        labels: {{gameReport.moveNumbers()|safe}},
         datasets:[
           {
             label: 'Winning Chances',
-            data: {{gameAnalysis.winningChancesPercent()}},
+            data: {{gameAnalysis.winningChancesPercent()|safe}},
             borderColor: 'rgba(240, 0, 0, 0.8)',
             fill: false,
             yAxisID: 'winning-chances'
           },
           {
             label: 'Elapsed Move Time',
-            data: {{gameAnalysis.emtSeconds()}},
+            data: {{gameAnalysis.emtSeconds()|safe}},
             borderColor: 'rgba(88, 186, 232, 0.8)',
             fill: false,
             lineWidth: 2,
-            yAxisID: 'move-time',
-            pointStyle: [{% for shape in blursToShapes %}
-            '{{ shape }}',{% endfor %}]
+            yAxisID: 'move-time'
           }
         ]
       },
@@ -286,16 +279,11 @@
     var lossByMovetimeChart = new Chart(lossByMovetimeCtx, {
       type: 'scatter',
       data: {
-        labels: {{gameReport.moveNumbers()}},
+        labels: {{gameReport.moveNumbers()|safe}},
         datasets:[
           {
-            data: [{% for lossByTime in lossesByTimes %}
-              {
-                x: {{lossByTime[1]}},
-                y: {{lossByTime[0]}}
-              },{% endfor %}],
-            pointBackgroundColor: [{% for lossByTime in lossesByTimes %}
-              '{{lossByTime[2]}}',{% endfor %}],
+            data: {{gameAnalysis.lossByTime()|safe}},
+            pointBackgroundColor: {{pointColors|safe}},
             pointRadius: 10,
             pointHoverRadius: 12,
             fill: false,
@@ -330,17 +318,11 @@
     var rankByMovetimeChart = new Chart(rankByMovetimeCtx, {
       type: 'scatter',
       data: {
-        labels: {{gameReport.moveNumbers()}},
+        labels: {{gameReport.moveNumbers()|safe}},
         datasets:[
           {
-            data: [{% for rankByTime in ranksByTimes %}
-              {% if rankByTime[0] != 'null' %}
-              {
-                x: {{rankByTime[1]}},
-                y: {{rankByTime[0]}}
-              },{% endif %}{% endfor %}],
-            pointBackgroundColor: [{% for rankByTime in ranksByTimes %}{% if rankByTime[0] != 'null' %}
-              '{{rankByTime[2]}}', {% endif %}{% endfor %}],
+            data: {{gameAnalysis.moveRankByTime()|safe}},
+            pointBackgroundColor: {{pointColors|safe}},
             pointRadius: 10,
             pointHoverRadius: 12,
             fill: false,
@@ -371,22 +353,16 @@
       }
     });
     //// Loss By Move Times ==========================
-    var rankByMovetimeCtx = document.getElementById("loss-by-rank-time").getContext("2d");
+    var lossByRankCtx = document.getElementById("loss-by-rank-time").getContext("2d");
 
-    var rankByMovetimeChart = new Chart(rankByMovetimeCtx, {
+    var lossByRankChart = new Chart(lossByRankCtx, {
       type: 'scatter',
       data: {
-        labels: {{gameReport.moveNumbers()}},
+        labels: {{gameReport.moveNumbers()|safe}},
         datasets:[
           {
-            data: [{% for lossByRank in lossesByRanks %}
-              {% if lossByRank[0] != 'null' %}
-              {
-                x: {{lossByRank[0]}},
-                y: {{lossByRank[1]}}
-              },{% endif %}{% endfor %}],
-            pointBackgroundColor: [{% for lossByRank in lossesByRanks %}{% if lossByRank[0] != 'null' %}
-              '{{lossByRank[2]}}', {% endif %}{% endfor %}],
+            data: {{gameAnalysis.lossByRank()|safe}},
+            pointBackgroundColor: {{pointColors|safe}},
             pointRadius: 10,
             pointHoverRadius: 12,
             fill: false,
@@ -425,11 +401,10 @@
     var moveTimeDistChart = new Chart(moveTimeDistCtx, {
       type: 'bar',
       data: {
-        labels: [{% for binnedLabel in binnedSecondsLabels %}
-        '{{binnedLabel}}',{% endfor %}],
+        labels: {{gameAnalysis.binnedSeconds()['labels']|safe}},
         datasets:[
           {
-            data: {{ binnedSeconds }},
+            data: {{gameAnalysis.binnedSeconds()['data']|safe}},
             backgroundColor: 'rgba(126, 116, 214, 0.5)',
             borderColor: 'rgba(126, 116, 214, 0.8)',
             borderWidth: 2
@@ -454,11 +429,10 @@
     var lossDistChart = new Chart(lossDistCtx, {
       type: 'bar',
       data: {
-        labels: [{% for binnedLabel in binnedLossesLabels %}
-        '{{binnedLabel}}',{% endfor %}],
+        labels: {{gameAnalysis.binnedLosses()['labels']|safe}},
         datasets:[
           {
-            data: {{ binnedLosses }},
+            data: {{gameAnalysis.binnedLosses()['data']|safe}},
             backgroundColor: 'rgba(116, 198, 214, 0.5)',
             borderColor: 'rgba(116, 198, 214, 0.8)',
             borderWidth: 2
@@ -483,11 +457,10 @@
     var pvDistChart = new Chart(pvDistCtx, {
       type: 'bar',
       data: {
-        labels: [{% for binnedLabel in binnedPVsLabels %}
-        '{{binnedLabel}}',{% endfor %}],
+        labels: {{gameAnalysis.binnedPVs()['labels']|safe}},
         datasets:[
           {
-            data: {{ binnedPVs }},
+            data: {{gameAnalysis.binnedPVs()['data']|safe}},
             backgroundColor: 'rgba(165, 214, 116, 0.5)',
             borderColor: 'rgba(165, 214, 116, 0.8)',
             borderWidth: 2

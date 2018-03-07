@@ -1,11 +1,18 @@
 from chess.pgn import read_game
+from math import log10, floor
 import logging
 import numpy as np
+import json
 
 from modules.game.MoveAnalysis import MoveAnalysis, MoveAnalysisBSONHandler, Score, Analysis
 from modules.game.PositionAnalysis import PositionAnalysis
 
 from collections import namedtuple
+
+def round_sig(x, sig=2):
+    if x == 0:
+        return 0
+    return round(x, sig-int(floor(log10(abs(x))))-1)
 
 class GameAnalysis(namedtuple('GameAnalysis', ['id', 'userId', 'gameId', 'moveAnalyses'])):
     def moveAnalysisTensors(self, length=60):
@@ -60,7 +67,7 @@ class GameAnalysis(namedtuple('GameAnalysis', ['id', 'userId', 'gameId', 'moveAn
 
     def ranks(self):
         """ for generating graphs """
-        return [('null' if move.trueRank() is None else move.trueRank()) for move in self.moveAnalyses]
+        return [move.trueRank() for move in self.moveAnalyses]
 
     def ambiguities(self):
         """ for generating graphs """
@@ -68,6 +75,54 @@ class GameAnalysis(namedtuple('GameAnalysis', ['id', 'userId', 'gameId', 'moveAn
 
     def length(self):
         return len(self.moveAnalyses)
+
+    def ranksJSON(self):
+        return json.dumps(self.ranks())
+
+    def binnedSeconds(self, bins=10):
+        # JSON format for graphing
+        emts = self.emts()
+        minSec = min(emts)
+        maxSec = max(emts)
+        step = int((maxSec-minSec)/bins)
+        data = [[] for i in range(bins)]
+        labels = [[] for i in range(bins)]
+        for i, stepStart in enumerate(range(minSec, maxSec, step)):
+            data[min(bins-1, i)] = len([a for a in emts if a >= stepStart and a <= stepStart+step])
+            labels[min(bins-1, i)] = str(round_sig(stepStart/100)) + '-' + str(round_sig((stepStart+step)/100)) + 's'
+        return {'data': json.dumps(data), 'labels': json.dumps(labels)}
+
+    def binnedLosses(self, bins=10):
+        # JSON format for graphing
+        losses = self.winningChancesLossPercent()
+        data = [[] for i in range(bins+1)]
+        for i in range(0, bins, 1):
+            data[min(bins-1,i)] = len([a for a in losses if i == int(a)])
+        data[bins] = sum([int(a >= 10) for a in losses])
+        labels = [('-' + str(a) + '%') for a in range(bins)]
+        labels.append('Other')
+        return {'data': json.dumps(data), 'labels': json.dumps(labels)}
+
+    def binnedPVs(self, bins=6):
+        # JSON format for graphing
+        pvs = self.ranks()
+        data = [[] for i in range(bins)]
+        for i, p in enumerate([1, 2, 3, 4, 5, None]):
+            data[i] = len([1 for pv in pvs if pv == p])
+        labels = ['PV 1', 'PV 2', 'PV 3', 'PV 4', 'PV 5', 'Other']
+        return {'data': json.dumps(data), 'labels': json.dumps(labels)}
+
+    def moveRankByTime(self):
+        # json format for graphing
+        return json.dumps([{'x': time, 'y': rank} for rank, time in zip(self.ranks(), self.emtSeconds())])
+
+    def lossByTime(self):
+        # json format for graphing
+        return json.dumps([{'x': time, 'y': loss} for loss, time in zip(self.winningChancesLossPercent(), self.emtSeconds())])
+
+    def lossByRank(self):
+        # json format for graphing
+        return json.dumps([{'x': rank, 'y': loss} for loss, rank in zip(self.winningChancesLossPercent(), self.ranks())])
 
     @staticmethod
     def gameAnalysisId(gameId, white):
