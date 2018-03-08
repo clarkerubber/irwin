@@ -1,6 +1,7 @@
 from collections import namedtuple
 from datetime import datetime
-from functools import lru_cache
+from functools import reduce
+import operator
 import numpy as np
 import random
 import pymongo
@@ -26,7 +27,6 @@ class PlayerReport(namedtuple('PlayerReport', ['id', 'userId', 'owner', 'activat
         }
 
 class GameReportStore(namedtuple('GameReportStore', ['gameReports'])):
-    #@lru_cache(maxsize=1)
     def longestGame(self):
         if len(self.gameReports) == 0:
             return 0
@@ -63,8 +63,12 @@ class GameReportStore(namedtuple('GameReportStore', ['gameReports'])):
     def binnedActivations(self):
         return json.dumps([sum([int(gameReport.activation in range(i,i+10)) for gameReport in self.gameReports]) for i in range(0, 100, 10)][::-1])
 
+    def binnedMoveActivations(self):
+        moveActivations = reduce(operator.concat, [gameReport.activations() for gameReport in self.gameReports])
+        return json.dumps([sum([int(moveActivation in range(i,i+10)) for moveActivation in moveActivations]) for i in range(0, 100, 10)][::-1])
+
     @staticmethod
-    def zipAvgLOL(lol):
+    def zipLOL(lol):
         # List of Lists (can be different length)
         # assumes the input isn't : []
         longest = max([len(l) for l in lol])
@@ -74,20 +78,19 @@ class GameReportStore(namedtuple('GameReportStore', ['gameReports'])):
                 [bins[i].append(l[i]) for i in range(longest) if l[i] is not None]
             except IndexError:
                 continue
-        return [np.average(b) for b in bins]
+        return bins
+
+    @staticmethod
+    def zipAvgLOL(lol):
+        # List of Lists (can be different length)
+        # assumes the input isn't : []
+        return [np.average(b) for b in GameReportStore.zipLOL(lol)]
 
     @staticmethod
     def zipStdLOL(lol):
         # List of Lists (can be different length)
         # assumts the input isn't : []
-        longest = max([len(l) for l in lol])
-        bins = [[] for i in range(longest)]
-        for l in lol:
-            try:
-                [bins[i].append(l[i]) for i in range(longest) if l[i] is not None]
-            except IndexError:
-                continue
-        return [np.std(b) for b in bins]
+        return [np.std(b) for b in GameReportStore.zipLOL(lol)]
 
     @staticmethod
     def stdBracket(lol, lowerLimit=0):

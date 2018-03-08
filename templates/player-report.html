@@ -16,7 +16,7 @@
         </div>
         <div class="col-9">
           <div class="row">
-            <h3>Combined Move Activation</h3>
+            <h3>Combined Move Activations</h3>
             <canvas id="combined-activation" height="70em"></canvas>
           </div>
           <div class="row">
@@ -28,40 +28,33 @@
         </div>
       </div>
       <h2>Game Reports</h2>
-      <div class="table-responsive">
-        <table class="table table-hover">
-          <thead>
-            <tr>
-              <th>Game ID</th>
-              <th width="3em">Activation</th>
-              <th>Evolution</th>
-            </tr>
-          </thead>
-          {% for gameReport in gameReports %}
-          <tr>
-            <td style="text-align: right">
-              <h3>#{{gameReport.gameId}}</h3>
-              <span style="color: {{darkColors[gameReport.colorIndex()]}}">
-                <h2>
-                  <b>{{gameReport.activation}}%</b>
-                </h2>
-              </span>
-              <br>
-              <a href='{{url_for("gameReport", gameId=gameReport.gameId, reportId=gameReport.reportId)}}'>
-                <span data-feather="clipboard"></span>
-                 View Report
-              </a><br><br>
-              <a href='https://lichess.org/{{gameReport.gameId}}'>
-                <span data-feather="arrow-up-right"></span>
-                 View Game
-              </a>
-            </td>
-            <td><canvas id="gameActivation{{gameReport.gameId}}" height="40em"></canvas></td>
-            <td><canvas id="gameReport{{gameReport.gameId}}" height="40em"></canvas></td>
-          </tr>
-          {% endfor %}
-        </table>  
+      {% for gameReport in gameReports %}
+      <div class="row" style="height: 200px; width: 100%;">
+        <div class="col-2" style="text-align: right;">
+          <h3>#{{gameReport.gameId}}</h3>
+          <span style="color: {{darkColors[gameReport.colorIndex()]}}">
+            <h2>
+              <b>{{gameReport.activation}}%</b>
+            </h2>
+          </span>
+          <br>
+          <a href='{{url_for("gameReport", gameId=gameReport.gameId, reportId=gameReport.reportId)}}'>
+            <span data-feather="clipboard"></span>
+             View Report
+          </a><br><br>
+          <a href='https://lichess.org/{{gameReport.gameId}}'>
+            <span data-feather="arrow-up-right"></span>
+             View Game
+          </a>
+        </div>
+        <div class="col" style="min-width: 200px; max-width: 200px;">
+          <canvas id="gameActivation{{gameReport.gameId}}" style="height: 90%; width: 200px;"></canvas>
+        </div>
+        <div class="col-8" style="height: 200px;">
+          <canvas id="gameReport{{gameReport.gameId}}" bottom=0 top=0 left=0 right=0 style="height: 100%; width: 900px"></canvas>
+        </div>
       </div>
+      {% endfor %}
     </main>
   {{ base.scripts() }}
   <script>
@@ -101,6 +94,7 @@
       data: {
         datasets : [
           {
+            label: 'Player Activation',
             hoverBorderColor: 'rgba(50, 50, 50, 0.2)',
             borderColor: 'rgba(50, 50, 50, 0.2)',
             backgroundColor: [
@@ -110,18 +104,30 @@
             data : [{{playerReport.activation}}, {{100 - playerReport.activation}}]
           },
           {
+            label: 'Games Breakdown',
             hoverBorderColor: 'rgba(50, 50, 50, 0.2)',
             borderColor: 'rgba(50, 50, 50, 0.2)',
             backgroundColor: activationColorsRev,
             data : {{gameReportStore.binnedActivations()}}
+          },
+          {
+            label: 'Moves Breakdown',
+            hoverBorderColor: 'rgba(50, 50, 50, 0.2)',
+            borderColor: 'rgba(50, 50, 50, 0.2)',
+            backgroundColor: activationColorsRev,
+            data : {{gameReportStore.binnedMoveActivations()}}
           }
         ]
       },
       options: {
-        cutoutPercentage: 60,
+        cutoutPercentage: 40,
         legend: false,
         tooltips: {
-          enabled: false
+          callbacks: {
+            label: function(tooltipItem, data) {
+              return data.datasets[tooltipItem.datasetIndex].label || ' ';
+            }
+          }
         },
         rotation: Math.PI
       }
@@ -296,6 +302,7 @@
           }],
         },
         options: {
+          responsive: false,
           legend: {
             display: false
           },
@@ -328,6 +335,9 @@
             backgroundColor: activationColorsRev,
             data: gameData['binnedActivations']
           }]
+        },
+        options: {
+          responsive: false
         }
       });
     }
