@@ -21,6 +21,10 @@ class Api(namedtuple('Api', ['url', 'token'])):
                         return
                     logging.debug('Trying again in 60 sec')
                     time.sleep(60)
+            except requests.exceptions.ChunkedEncodingError:
+                logging.warning("ChunkedEncodingError: Failed to post report.")
+                logging.debug("Not attempting to post again")
+                return
             except requests.ConnectionError:
                 logging.warning("CONNECTION ERROR: Failed to post report.")
                 logging.debug("Trying again in 30 sec")
