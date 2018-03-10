@@ -31,7 +31,9 @@ class GameReportStore(namedtuple('GameReportStore', ['gameReports'])):
     def topGames(self, p=0.15):
         """ Get the top p games from all gameReports """
         self.gameReports.sort(key=lambda obj: -obj.activation)
-        return self.gameReports[:ceil(0.15*len(self.gameReports))]
+        return [gameReport 
+            for i, gameReport in enumerate(self.gameReports)
+            if (i <= p*len(self.gameReports) or gameReport.activation >= 90)]
 
     def longestGame(self):
         if len(self.gameReports) == 0:
