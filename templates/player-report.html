@@ -15,18 +15,13 @@
             <h3>Activation <span style="color: {{overallActivationColor}}"><b>{{playerReport.activation}}%</b></span></h3>
             <canvas id="overall" height="200em"></canvas>
           </div>
-          <div class="row filter">
-            <span data-feather="sliders"></span>
-            <div class="col">
-              <a onclick="filterGames('all')">
-                <h3>All</h3>
-              </a>
-            </div>
-            <div class="col">
-              <a onclick="filterGames('top')">
-                <h3>Top</h3>
-              </a>
-            </div>
+          <div class="btn-group filter">
+            <button type="button" class="btn btn-default active" id="filter-all" onclick="filterGames('all')">
+              <h3>All</h3>
+            </button>
+            <button type="button" class="btn btn-default" id="filter-top" onclick="filterGames('top')">
+              <h3>Top</h3>
+            </button>
           </div>
         </div>
         <div class="col-9">
@@ -43,7 +38,7 @@
         </div>
       </div>
       <h2>Game Reports</h2>
-      {% for gameReport in gameReports %}
+      {% for gameReport in gameReportStore.gameReports %}
       <div class="row" style="height: 200px; width: 100%;">
         <div class="col-2" style="text-align: right;">
           <h3>#{{gameReport.gameId}}</h3>
@@ -430,13 +425,22 @@
       combinedActivationChart.update();
       combinedLossChart.update();
       combinedRankChart.update();
+
+      if (opt === 'all') {
+        $('#filter-all').addClass('active');
+        $('#filter-top').removeClass('active');
+      }
+      if (opt === 'top') {
+        $('#filter-top').addClass('active');
+        $('#filter-all').removeClass('active');
+      }
     }
 
     document.onload = addGameCharts();
     //// Games =============================
     function addGameCharts() {
       gamesData = {
-        {% for gameReport in gameReports %}
+        {% for gameReport in gameReportStore.gameReports %}
         '{{gameReport.gameId}}': {
           'activation': {{gameReport.activation}},
           'activations': {{gameReport.activations()|safe}},

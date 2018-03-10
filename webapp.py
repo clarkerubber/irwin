@@ -88,7 +88,6 @@ def playerReport(reportId):
 
     return render_template('player-report.html',
         playerReport=playerReport,
-        gameReports=gameReports,
         overallActivationColor=overallActivationColor,
         combinedLabels=combinedLabels,
         gameReportStore=gameReportStore,
