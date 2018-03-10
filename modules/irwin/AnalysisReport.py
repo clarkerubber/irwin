@@ -1,6 +1,7 @@
 from collections import namedtuple
 from datetime import datetime
 from functools import reduce
+from math import ceil
 import operator
 import numpy as np
 import random
@@ -27,44 +28,53 @@ class PlayerReport(namedtuple('PlayerReport', ['id', 'userId', 'owner', 'activat
         }
 
 class GameReportStore(namedtuple('GameReportStore', ['gameReports'])):
+    def topGames(self, p=0.15):
+        """ Get the top p games from all gameReports """
+        self.gameReports.sort(key=lambda obj: -obj.activation)
+        return self.gameReports[:ceil(0.15*len(self.gameReports))]
+
     def longestGame(self):
         if len(self.gameReports) == 0:
             return 0
         return max([len(gameReport.moves) for gameReport in self.gameReports])
 
-    def losses(self):
-        return [gameReport.losses() for gameReport in self.gameReports]
+    def losses(self, top=False):
+        gameReports = self.topGames() if top else self.gameReports
+        return [gameReport.losses() for gameReport in gameReports]
 
-    def ranks(self, subNone=None):
-        return [gameReport.ranks(subNone=subNone) for gameReport in self.gameReports]
+    def ranks(self, subNone=None, top=False):
+        gameReports = self.topGames() if top else self.gameReports
+        return [gameReport.ranks(subNone=subNone) for gameReport in gameReports]
 
-    def averageLossByMove(self):
+    def averageLossByMove(self, top=False):
         """ Calculate the average loss by move. Used for graphing"""
         if self.longestGame() == 0:
             return [] # zero case
-        return json.dumps(GameReportStore.zipAvgLOL(self.losses()))
+        return json.dumps(GameReportStore.zipAvgLOL(self.losses(top=top)))
 
-    def averageRankByMove(self):
+    def averageRankByMove(self, top=False):
         """ Calculate the the average rank by move. Used for graphing """
         if self.longestGame() == 0:
             return [] # zero case
-        return json.dumps(GameReportStore.zipAvgLOL(self.ranks(subNone=6)))
+        return json.dumps(GameReportStore.zipAvgLOL(self.ranks(subNone=6, top=top)))
 
-    def stdBracketLossByMove(self):
+    def stdBracketLossByMove(self, top=False):
         if self.longestGame() == 0:
             return [] # zero case
-        return json.dumps(GameReportStore.stdBracket(self.losses()))
+        return json.dumps(GameReportStore.stdBracket(self.losses(top=top)))
 
-    def stdBracketRankByMove(self):
+    def stdBracketRankByMove(self, top=False):
         if self.longestGame() == 0:
             return [] # zero case
-        return json.dumps(GameReportStore.stdBracket(self.ranks(subNone=6), lowerLimit=1))
+        return json.dumps(GameReportStore.stdBracket(self.ranks(subNone=6, top=top), lowerLimit=1))
 
-    def binnedActivations(self):
-        return json.dumps([sum([int(gameReport.activation in range(i,i+10)) for gameReport in self.gameReports]) for i in range(0, 100, 10)][::-1])
+    def binnedActivations(self, top=False):
+        gameReports = self.topGames() if top else self.gameReports
+        return json.dumps([sum([int(gameReport.activation in range(i,i+10)) for gameReport in gameReports]) for i in range(0, 100, 10)][::-1])
 
-    def binnedMoveActivations(self):
-        moveActivations = reduce(operator.concat, [gameReport.activations() for gameReport in self.gameReports])
+    def binnedMoveActivations(self, top=False):
+        gameReports = self.topGames() if top else self.gameReports
+        moveActivations = reduce(operator.concat, [gameReport.activations() for gameReport in gameReports])
         return json.dumps([sum([int(moveActivation in range(i,i+10)) for moveActivation in moveActivations]) for i in range(0, 100, 10)][::-1])
 
     @staticmethod

@@ -14,6 +14,19 @@ body {
   vertical-align: text-bottom;
 }
 
+.filter .feather {
+  width: 32px;
+  height: 32px;
+  vertical-align: text-bottom;
+}
+
+.filter {
+  margin-left: 4em;
+  margin-right: 4em;
+  margin-top: 4em;
+  text-align: center;
+}
+
 /*
  * Sidebar
  */
@@ -91,6 +104,10 @@ body {
 }
 
 .close-report {
+  cursor: pointer;
+}
+
+.filter {
   cursor: pointer;
 }
 

@@ -11,8 +11,23 @@
       <h1><b>{{ playerReport.userId }}</b></h1>
       <div class="row">
         <div class="col-3">
-          <h3>Activation <span style="color: {{overallActivationColor}}"><b>{{playerReport.activation}}%</b></span></h3>
-          <canvas id="overall" height="200em"></canvas>
+          <div class="row">
+            <h3>Activation <span style="color: {{overallActivationColor}}"><b>{{playerReport.activation}}%</b></span></h3>
+            <canvas id="overall" height="200em"></canvas>
+          </div>
+          <div class="row filter">
+            <span data-feather="sliders"></span>
+            <div class="col">
+              <a onclick="filterGames('all')">
+                <h3>All</h3>
+              </a>
+            </div>
+            <div class="col">
+              <a onclick="filterGames('top')">
+                <h3>Top</h3>
+              </a>
+            </div>
+          </div>
         </div>
         <div class="col-9">
           <div class="row">
@@ -51,7 +66,7 @@
           <canvas id="gameActivation{{gameReport.gameId}}" style="height: 90%; width: 200px;"></canvas>
         </div>
         <div class="col-8" style="height: 200px;">
-          <canvas id="gameReport{{gameReport.gameId}}" bottom=0 top=0 left=0 right=0 style="height: 100%; width: 900px"></canvas>
+          <canvas id="gameReport{{gameReport.gameId}}"></canvas>
         </div>
       </div>
       {% endfor %}
@@ -85,39 +100,68 @@
     Chart.defaults.global.legend.display = false;
     //// Overall ===========================
    
-     // get bar chart canvas
+    // get bar chart canvas
     var overallChart = document.getElementById("overall").getContext("2d");
 
-     // draw bar chart
+    // draw bar chart
+    var activationGaugeDatasets = {
+      'all': [
+        {
+          label: 'Player Activation',
+          hoverBorderColor: 'rgba(50, 50, 50, 0.2)',
+          borderColor: 'rgba(50, 50, 50, 0.2)',
+          backgroundColor: [
+            '{{overallActivationColor}}',
+            'rgba(50, 50, 50, 0.2)'
+          ],
+          data : [{{playerReport.activation}}, {{100 - playerReport.activation}}]
+        },
+        {
+          label: 'Games Breakdown',
+          hoverBorderColor: 'rgba(50, 50, 50, 0.2)',
+          borderColor: 'rgba(50, 50, 50, 0.2)',
+          backgroundColor: activationColorsRev,
+          data : {{gameReportStore.binnedActivations()}}
+        },
+        {
+          label: 'Moves Breakdown',
+          hoverBorderColor: 'rgba(50, 50, 50, 0.2)',
+          borderColor: 'rgba(50, 50, 50, 0.2)',
+          backgroundColor: activationColorsRev,
+          data : {{gameReportStore.binnedMoveActivations()}}
+        }
+      ],
+      'top': [
+        {
+          label: 'Player Activation',
+          hoverBorderColor: 'rgba(50, 50, 50, 0.2)',
+          borderColor: 'rgba(50, 50, 50, 0.2)',
+          backgroundColor: [
+            '{{overallActivationColor}}',
+            'rgba(50, 50, 50, 0.2)'
+          ],
+          data : [{{playerReport.activation}}, {{100 - playerReport.activation}}]
+        },
+        {
+          label: 'Games Breakdown',
+          hoverBorderColor: 'rgba(50, 50, 50, 0.2)',
+          borderColor: 'rgba(50, 50, 50, 0.2)',
+          backgroundColor: activationColorsRev,
+          data : {{gameReportStore.binnedActivations(top=True)}}
+        },
+        {
+          label: 'Moves Breakdown',
+          hoverBorderColor: 'rgba(50, 50, 50, 0.2)',
+          borderColor: 'rgba(50, 50, 50, 0.2)',
+          backgroundColor: activationColorsRev,
+          data : {{gameReportStore.binnedMoveActivations(top=True)}}
+        }
+      ]
+    };
     var activationGauge = new Chart(overallChart, {
       type: 'doughnut',
       data: {
-        datasets : [
-          {
-            label: 'Player Activation',
-            hoverBorderColor: 'rgba(50, 50, 50, 0.2)',
-            borderColor: 'rgba(50, 50, 50, 0.2)',
-            backgroundColor: [
-              '{{overallActivationColor}}',
-              'rgba(50, 50, 50, 0.2)'
-            ],
-            data : [{{playerReport.activation}}, {{100 - playerReport.activation}}]
-          },
-          {
-            label: 'Games Breakdown',
-            hoverBorderColor: 'rgba(50, 50, 50, 0.2)',
-            borderColor: 'rgba(50, 50, 50, 0.2)',
-            backgroundColor: activationColorsRev,
-            data : {{gameReportStore.binnedActivations()}}
-          },
-          {
-            label: 'Moves Breakdown',
-            hoverBorderColor: 'rgba(50, 50, 50, 0.2)',
-            borderColor: 'rgba(50, 50, 50, 0.2)',
-            backgroundColor: activationColorsRev,
-            data : {{gameReportStore.binnedMoveActivations()}}
-          }
-        ]
+        datasets : activationGaugeDatasets['all']
       },
       options: {
         cutoutPercentage: 40,
@@ -136,17 +180,28 @@
     //// Combined Activation ==========================
     var combinedActivationCtx = document.getElementById("combined-activation").getContext("2d");
 
+    var combinedActivationDatasets = {
+      'all': [{% for gameReport in gameReportStore.gameReports %}
+        {
+          label: '{{gameReport.gameId}}',
+          data: {{gameReport.activations()}},
+          borderColor: activationColors[Math.floor({{gameReport.activation}}/10)],
+          fill: false
+        },{% endfor %}],
+      'top': [{% for gameReport in gameReportStore.topGames() %}
+        {
+          label: '{{gameReport.gameId}}',
+          data: {{gameReport.activations()}},
+          borderColor: activationColors[Math.floor({{gameReport.activation}}/10)],
+          fill: false
+        },{% endfor %}]
+    };
+
     var combinedActivationChart = new Chart(combinedActivationCtx, {
       type: 'line',
       data: {
         labels: {{combinedLabels}},
-        datasets:[{% for gameReport in gameReports %}
-          {
-            label: '{{gameReport.gameId}}',
-            data: {{gameReport.activations()}},
-            borderColor: activationColors[Math.floor({{gameReport.activation}}/10)],
-            fill: false
-          },{% endfor %}]
+        datasets: combinedActivationDatasets['all']
       },
       options: {
         scales: {
@@ -166,45 +221,87 @@
     //// Combined Loss ==========================
     var combinedLossCtx = document.getElementById("combined-loss").getContext("2d");
 
-    var stdBracketLossByMoveData = {{gameReportStore.stdBracketLossByMove()|safe}}
+    var stdBracketLossByMoveData = {
+      'all': {{gameReportStore.stdBracketLossByMove()|safe}},
+      'top': {{gameReportStore.stdBracketLossByMove(top=True)|safe}}
+    };
+
+    var combinedLossDatasets = {
+      'all': [
+        {
+          label: 'Average',
+          data: {{gameReportStore.averageLossByMove()|safe}},
+          borderColor: 'rgba(240, 0, 0, 0.8)',
+          fill: false,
+          lineWidth: 3
+        },
+        {
+          label: '+ std',
+          data: stdBracketLossByMoveData['all']['top'],
+          borderColor: 'rgba(0, 0, 180, 0.3)',
+          fill: false,
+          lineWidth: 1,
+          pointRadius: 0.5
+        },
+        {
+          label: '- std',
+          data: stdBracketLossByMoveData['all']['bottom'],
+          borderColor: 'rgba(0, 0, 180, 0.3)',
+          fill: false,
+          lineWidth: 1,
+          pointRadius: 0.5
+        },
+      {% for gameReport in gameReportStore.gameReports %}
+        {
+          label: '{{gameReport.gameId}}',
+          data: {{gameReport.losses()}},
+          borderColor: 'rgba(20,20,20,0.3)',
+          fill: false,
+          showLine: false,
+          pointRadius: 5
+        },{% endfor %}
+      ],
+      'top': [
+        {
+          label: 'Average',
+          data: {{gameReportStore.averageLossByMove(top=True)|safe}},
+          borderColor: 'rgba(240, 0, 0, 0.8)',
+          fill: false,
+          lineWidth: 3
+        },
+        {
+          label: '+ std',
+          data: stdBracketLossByMoveData['top']['top'],
+          borderColor: 'rgba(0, 0, 180, 0.3)',
+          fill: false,
+          lineWidth: 1,
+          pointRadius: 0.5
+        },
+        {
+          label: '- std',
+          data: stdBracketLossByMoveData['top']['bottom'],
+          borderColor: 'rgba(0, 0, 180, 0.3)',
+          fill: false,
+          lineWidth: 1,
+          pointRadius: 0.5
+        },
+      {% for gameReport in gameReportStore.topGames() %}
+        {
+          label: '{{gameReport.gameId}}',
+          data: {{gameReport.losses()}},
+          borderColor: 'rgba(20,20,20,0.3)',
+          fill: false,
+          showLine: false,
+          pointRadius: 5
+        },{% endfor %}
+      ]
+    }
 
     var combinedLossChart = new Chart(combinedLossCtx, {
       type: 'line',
       data: {
         labels: {{combinedLabels}},
-        datasets:[
-          {
-            label: 'Average',
-            data: {{gameReportStore.averageLossByMove()|safe}},
-            borderColor: 'rgba(240, 0, 0, 0.8)',
-            fill: false,
-            lineWidth: 3
-          },
-          {
-            label: '+ std',
-            data: stdBracketLossByMoveData['top'],
-            borderColor: 'rgba(0, 0, 180, 0.3)',
-            fill: false,
-            lineWidth: 1,
-            pointRadius: 0.5
-          },
-          {
-            label: '- std',
-            data: stdBracketLossByMoveData['bottom'],
-            borderColor: 'rgba(0, 0, 180, 0.3)',
-            fill: false,
-            lineWidth: 1,
-            pointRadius: 0.5
-          },
-        {% for gameReport in gameReports %}
-          {
-            label: '{{gameReport.gameId}}',
-            data: {{gameReport.losses()}},
-            borderColor: 'rgba(20,20,20,0.3)',
-            fill: false,
-            showLine: false,
-            pointRadius: 5
-          },{% endfor %}]
+        datasets: combinedLossDatasets['all']
       },
       options: {
         scales: {
@@ -224,45 +321,87 @@
     //// Combined Rank ==========================
     var combinedRankCtx = document.getElementById("combined-rank").getContext("2d");
 
-    var stdBracketRankByMoveData = {{gameReportStore.stdBracketRankByMove()|safe}}
+    var stdBracketRankByMoveData = {
+      'all': {{gameReportStore.stdBracketRankByMove()|safe}},
+      'top': {{gameReportStore.stdBracketRankByMove(top=True)|safe}}
+    };
+    
+    var combinedRankDatasets = {
+      'all': [
+        {
+          label: 'Average',
+          data: {{gameReportStore.averageRankByMove()|safe}},
+          borderColor: 'rgba(240, 0, 0, 0.8)',
+          fill: false,
+          lineWidth: 2
+        },
+        {
+          label: '+ std',
+          data: stdBracketRankByMoveData['all']['top'],
+          borderColor: 'rgba(0, 0, 180, 0.3)',
+          fill: false,
+          lineWidth: 1,
+          pointRadius: 0.5
+        },
+        {
+          label: '- std',
+          data: stdBracketRankByMoveData['all']['bottom'],
+          borderColor: 'rgba(0, 0, 180, 0.3)',
+          fill: false,
+          lineWidth: 1,
+          pointRadius: 0.5
+        },
+      {% for gameReport in gameReportStore.gameReports %}
+        {
+          label: '{{gameReport.gameId}}',
+          data: {{gameReport.ranksJSON()|safe}},
+          borderColor: 'rgba(20,20,20,0.3)',
+          fill: false,
+          showLine: false,
+          pointRadius: 5
+        },{% endfor %}
+      ],
+      'top': [
+        {
+          label: 'Average',
+          data: {{gameReportStore.averageRankByMove(top=True)|safe}},
+          borderColor: 'rgba(240, 0, 0, 0.8)',
+          fill: false,
+          lineWidth: 2
+        },
+        {
+          label: '+ std',
+          data: stdBracketRankByMoveData['top']['top'],
+          borderColor: 'rgba(0, 0, 180, 0.3)',
+          fill: false,
+          lineWidth: 1,
+          pointRadius: 0.5
+        },
+        {
+          label: '- std',
+          data: stdBracketRankByMoveData['top']['bottom'],
+          borderColor: 'rgba(0, 0, 180, 0.3)',
+          fill: false,
+          lineWidth: 1,
+          pointRadius: 0.5
+        },
+      {% for gameReport in gameReportStore.topGames() %}
+        {
+          label: '{{gameReport.gameId}}',
+          data: {{gameReport.ranksJSON()|safe}},
+          borderColor: 'rgba(20,20,20,0.3)',
+          fill: false,
+          showLine: false,
+          pointRadius: 5
+        },{% endfor %}
+      ]
+    };
 
     var combinedRankChart = new Chart(combinedRankCtx, {
       type: 'line',
       data: {
         labels: {{combinedLabels}},
-        datasets:[
-          {
-            label: 'Average',
-            data: {{gameReportStore.averageRankByMove()|safe}},
-            borderColor: 'rgba(240, 0, 0, 0.8)',
-            fill: false,
-            lineWidth: 2
-          },
-          {
-            label: '+ std',
-            data: stdBracketRankByMoveData['top'],
-            borderColor: 'rgba(0, 0, 180, 0.3)',
-            fill: false,
-            lineWidth: 1,
-            pointRadius: 0.5
-          },
-          {
-            label: '- std',
-            data: stdBracketRankByMoveData['bottom'],
-            borderColor: 'rgba(0, 0, 180, 0.3)',
-            fill: false,
-            lineWidth: 1,
-            pointRadius: 0.5
-          },
-        {% for gameReport in gameReports %}
-          {
-            label: '{{gameReport.gameId}}',
-            data: {{gameReport.ranksJSON()|safe}},
-            borderColor: 'rgba(20,20,20,0.3)',
-            fill: false,
-            showLine: false,
-            pointRadius: 5
-          },{% endfor %}]
+        datasets: combinedRankDatasets['all']
       },
       options: {
         scales: {
@@ -278,68 +417,88 @@
         }
       }
     });
-    gamesData = {
-      {% for gameReport in gameReports %}
-      '{{gameReport.gameId}}': {
-        'activation': {{gameReport.activation}},
-        'activations': {{gameReport.activations()|safe}},
-        'binnedActivations': {{gameReport.binnedActivations()|safe}},
-        'moveLabels': {{gameReport.moveNumbers()|safe}}
-      },
-      {% endfor %}
-    };
-    //// Games =============================
-    for (var gameId in gamesData) {
-      var gameData = gamesData[gameId];
-      new Chart(document.getElementById("gameReport"+gameId).getContext('2d'), {
-        type: 'line',
-        data: {
-          labels: gameData['moveLabels'],
-          datasets: [{
-            data: gameData['activations'],
-            backgroundColor: activationColors[Math.floor(gameData['activation']/10)],
-            pointRadius: 5
-          }],
-        },
-        options: {
-          responsive: false,
-          legend: {
-            display: false
-          },
-          scales: {
-            yAxes: [{
-              ticks: {
-                min: 0,
-                max: 100,
-                step: 20
-              }
-            }]
-          }
-        }
-      });
 
-      new Chart(document.getElementById("gameActivation"+gameId).getContext("2d"), {
-        type: 'doughnut',
-        data: {
-          datasets: [{
-            hoverBorderColor: 'rgba(50, 50, 50, 0.2)',
-            borderColor: 'rgba(50, 50, 50, 0.2)',
-            backgroundColor: [
-              activationColors[Math.floor(gameData['activation']/10)],
-              'rgba(50, 50, 50, 0.2)'
-            ],
-            data: [gameData['activation'], 100-gameData['activation']]
-          },{
-            hoverBorderColor: 'rgba(50, 50, 50, 0.2)',
-            borderColor: 'rgba(50, 50, 50, 0.2)',
-            backgroundColor: activationColorsRev,
-            data: gameData['binnedActivations']
-          }]
+    function filterGames(opt) {
+      // opt == 'top' or 'all'
+      // set the dataset values
+      activationGauge.data.datasets = activationGaugeDatasets[opt];
+      combinedActivationChart.data.datasets = combinedActivationDatasets[opt];
+      combinedLossChart.data.datasets = combinedLossDatasets[opt];
+      combinedRankChart.data.datasets = combinedRankDatasets[opt];
+      // update the charts
+      activationGauge.update();
+      combinedActivationChart.update();
+      combinedLossChart.update();
+      combinedRankChart.update();
+    }
+
+    document.onload = addGameCharts();
+    //// Games =============================
+    function addGameCharts() {
+      gamesData = {
+        {% for gameReport in gameReports %}
+        '{{gameReport.gameId}}': {
+          'activation': {{gameReport.activation}},
+          'activations': {{gameReport.activations()|safe}},
+          'binnedActivations': {{gameReport.binnedActivations()|safe}},
+          'moveLabels': {{gameReport.moveNumbers()|safe}}
         },
-        options: {
-          responsive: false
-        }
-      });
+        {% endfor %}
+      };
+      for (var gameId in gamesData) {
+        var gameData = gamesData[gameId];
+        new Chart(document.getElementById("gameReport"+gameId).getContext('2d'), {
+          type: 'line',
+          data: {
+            labels: gameData['moveLabels'],
+            datasets: [{
+              data: gameData['activations'],
+              backgroundColor: activationColors[Math.floor(gameData['activation']/10)],
+              pointRadius: 5
+            }],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            legend: {
+              display: false
+            },
+            scales: {
+              yAxes: [{
+                ticks: {
+                  min: 0,
+                  max: 100,
+                  step: 20
+                }
+              }]
+            }
+          }
+        });
+
+        new Chart(document.getElementById("gameActivation"+gameId).getContext("2d"), {
+          type: 'doughnut',
+          data: {
+            datasets: [{
+              hoverBorderColor: 'rgba(50, 50, 50, 0.2)',
+              borderColor: 'rgba(50, 50, 50, 0.2)',
+              backgroundColor: [
+                activationColors[Math.floor(gameData['activation']/10)],
+                'rgba(50, 50, 50, 0.2)'
+              ],
+              data: [gameData['activation'], 100-gameData['activation']]
+            },{
+              hoverBorderColor: 'rgba(50, 50, 50, 0.2)',
+              borderColor: 'rgba(50, 50, 50, 0.2)',
+              backgroundColor: activationColorsRev,
+              data: gameData['binnedActivations']
+            }]
+          },
+          options: {
+            responsive: false,
+            rotation: Math.PI
+          }
+        });
+      }
     }
     //// End
   </script>
