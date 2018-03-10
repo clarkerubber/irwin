@@ -146,7 +146,7 @@ class GameReport(namedtuple('GameReport', ['id', 'reportId', 'gameId', 'activati
     def losses(self):
         losses = [move.loss for move in self.moves]
         if losses[-1] > 50:
-            return losses[:-1]
+            losses[-1] = 0
         return losses
 
     def moveNumbers(self):
