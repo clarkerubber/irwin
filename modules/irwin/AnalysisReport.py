@@ -144,7 +144,7 @@ class GameReport(namedtuple('GameReport', ['id', 'reportId', 'gameId', 'activati
         return json.dumps(self.ranks())
 
     def losses(self):
-        return [move.loss for move in self.moves]
+        return [move.loss for move in self.moves[:-1]]
 
     def moveNumbers(self):
         return [i+1 for i in range(len(self.moves))]
