@@ -10,6 +10,8 @@ from modules.game.Game import Game
 from modules.game.GameAnalysis import GameAnalysis
 from modules.game.GameAnalysisStore import GameAnalysisStore
 
+from modules.queue.ModReport import ModReport
+
 from Env import Env
 
 parser = argparse.ArgumentParser(description=__doc__)
@@ -113,6 +115,11 @@ while True:
 
     # do this last. Reset games that must be analysed
     env.playerDB.write(Player.fromPlayerData(playerData))
+
+    if player.reportScore is None:
+        env.modReportDB.close(player.id)
+    else:
+        env.modReportDB.write(ModReport.new(player.id))
 
     # engine likes to die abruptly after a while. Kill it before it gets the chance
     env.restartEngine()

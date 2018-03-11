@@ -5,7 +5,7 @@ import pymongo
 
 class ModReport(namedtuple('ModReport', ['id', 'processed', 'created'])):
     @staticmethod
-    def new(userId):
+    def new(userId, score):
         return ModReport(
             id=userId,
             processed=False,

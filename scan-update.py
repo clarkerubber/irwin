@@ -86,6 +86,9 @@ def updateOldestPlayerQueue():
                 origin=deepPlayerQueue.origin,
                 gamePredictions=predictions)
 
+            if player.reportScore is None:
+                env.modReportDB.close(player.id)
+
             if (deepPlayerQueue.precedence > 4000
                 and deepPlayerQueue.origin in ['report', 'moderator']):
                 env.deepPlayerQueueDB.write(deepPlayerQueue)
@@ -122,6 +125,7 @@ def spotCheck():
 
         if deepPlayerQueue.precedence < 6000:
             logging.info("Precedence < 6000. No point checking.")
+            return
 
         env.deepPlayerQueueDB.write(deepPlayerQueue)
 
@@ -153,12 +157,16 @@ def updateOldestReport():
             logging.info("No predictions to process")
             return
 
-        deepPlayerQueue = DeepPlayerQueue.new(
-            userId=userId,
-            origin='reportupdate',
-            gamePredictions=predictions)
+        if player.reportScore is None:
+            env.modReportDB.close(player.id)
+            env.deepPlayerQueueDB.removeUserId(player.id)
+        else:
+            deepPlayerQueue = DeepPlayerQueue.new(
+                userId=userId,
+                origin='reportupdate',
+                gamePredictions=predictions)
 
-        env.deepPlayerQueueDB.write(deepPlayerQueue)
+            env.deepPlayerQueueDB.write(deepPlayerQueue)
 
 while True:
     updateOldestPlayerQueue()
