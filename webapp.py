@@ -14,6 +14,7 @@ from modules.irwin.AnalysisReport import GameReportStore
 from modules.irwin.GameBasicActivation import GameBasicActivation
 
 from modules.queue.DeepPlayerQueue import DeepPlayerQueue
+from modules.queue.ModReport import ModReport
 
 app = Flask(__name__)
 
@@ -156,6 +157,10 @@ def updatePlayerData():
     player = Player.fromPlayerData(env.api.getPlayerData(userId))
     if player is not None:
         env.playerDB.write(player)
+        if player.reportScore is None:
+            env.modReportDB.close(player.id)
+        else:
+            env.modReportDB.create(ModReport.new(player.id))
         print("updated player!")
     else:
         print("failed!")
