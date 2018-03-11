@@ -69,7 +69,7 @@ class PlayerDB(namedtuple('PlayerDB', ['playerColl'])):
 
     def oldestNonEngine(self):
         playerBSON = self.playerColl.find_one_and_update(
-            filter={'$or': [{'engine': False}, {'engine': None}], 'date': {'$lt': datetime.now() - timedelta(months=1)}},
+            filter={'$or': [{'engine': False}, {'engine': None}], 'date': {'$lt': datetime.now() - timedelta(days=30)}},
             update={'$set': {'date': datetime.now()}},
             sort=[('date', pymongo.ASCENDING)])
         return None if playerBSON is None else PlayerBSONHandler.reads(playerBSON)
