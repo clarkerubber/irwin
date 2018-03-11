@@ -4,7 +4,6 @@ db.playerAnalysis.find({}).forEach(function(o) {
     titled: o.titled,
     engine: o.engine,
     gamesPlayed: o.gamesPlayed,
-    closedReports: o.closedReports,
     date: o.date
   });
 });

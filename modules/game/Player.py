@@ -2,7 +2,7 @@ from collections import namedtuple
 from datetime import datetime
 import pymongo
 
-class Player(namedtuple('Player', ['id', 'titled', 'engine', 'gamesPlayed', 'closedReports', 'mustAnalyse'])):
+class Player(namedtuple('Player', ['id', 'titled', 'engine', 'gamesPlayed', 'relatedCheaters', 'openReports', 'mustAnalyse'])):
     @staticmethod
     def fromPlayerData(data):
         user = data.get('user')
@@ -12,7 +12,7 @@ class Player(namedtuple('Player', ['id', 'titled', 'engine', 'gamesPlayed', 'clo
                 titled=user.get('title') is not None,
                 engine=user.get('engine', False),
                 gamesPlayed=data.get('assessment', {}).get('user', {}).get('games', 0),
-                closedReports=len(data.get('assessment', {}).get('relatedCheaters', [])),
+                relatedCheaters=data.get('assessment', {}).get('relatedCheaters', []),
                 mustAnalyse=[])
         return None
 
@@ -24,7 +24,7 @@ class PlayerBSONHandler:
                 titled = bson.get('titled', False),
                 engine = bson['engine'],
                 gamesPlayed = bson['gamesPlayed'],
-                closedReports = bson['closedReports'],
+                relatedCheaters = bson.get('relatedCheaters', []),
                 mustAnalyse = bson.get('mustAnalyse', [])
             )
 
@@ -34,7 +34,7 @@ class PlayerBSONHandler:
             'titled': player.titled,
             'engine': player.engine,
             'gamesPlayed': player.gamesPlayed,
-            'closedReports': player.closedReports,
+            'relatedCheaters': player.relatedCheaters,
             'mustAnalyse': player.mustAnalyse,
             'date': datetime.now()
         }

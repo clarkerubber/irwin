@@ -50,6 +50,8 @@ class Api(namedtuple('Api', ['url', 'token'])):
                     output = response.json()
                 except json.decoder.JSONDecodeError:
                     logging.warning('Error: JSONDecodeError in getPlayerData for user: ' + str(userId))
+                    logging.warning('Status Code ' + response.status_code)
+                    logging.warning('Text: ' + response.text[:200])
                     return None
                 success = True
             except requests.ConnectionError:
