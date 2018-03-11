@@ -78,7 +78,8 @@ def updateOldestPlayerQueue():
 
             predictions = predictPlayer(userId)
             if predictions is None:
-                logging.info("No predictions to process")
+                logging.info("No predictions to process. Removing Queue Item")
+                env.deepPlayerQueueDB.removeUserId(player.id)
                 return
 
             deepPlayerQueue = DeepPlayerQueue.new(
