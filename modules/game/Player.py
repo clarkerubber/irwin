@@ -2,7 +2,7 @@ from collections import namedtuple
 from datetime import datetime
 import pymongo
 
-class Player(namedtuple('Player', ['id', 'titled', 'engine', 'gamesPlayed', 'relatedCheaters', 'openReports', 'mustAnalyse'])):
+class Player(namedtuple('Player', ['id', 'titled', 'engine', 'gamesPlayed', 'relatedCheaters', 'mustAnalyse'])):
     @staticmethod
     def fromPlayerData(data):
         user = data.get('user')
