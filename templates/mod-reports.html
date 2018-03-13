@@ -29,7 +29,7 @@
                 </b></span>
               </h2>
               <h5>
-                Last updated by {{irwinReport.owner}}, {{"{:%d %b %Y at %H:%M}".format(irwinReport.date)}}
+                Last updated by {{irwinReport.owner}}, {{"{:%d %b %Y}".format(irwinReport.date)}}
               </h5>
             </td>
             <td>
@@ -41,9 +41,13 @@
                 <span data-feather="user"></span>
                  Irwin Profile
               </a><br><br>
-              <a href='https://lichess.org/@/{{irwinReport.userId}}?mod'>
+              <a href='https://lichess.org/@/{{irwinReport.userId}}?mod' target="_blank">
                 <span data-feather="arrow-up-right"></span>
                  Lichess Profile
+              </a><br><br>
+              <a href='https://lichess.org/@/{{irwinReport.userId}}/inquiry' target="_blank">
+                <span data-feather="arrow-up-right"></span>
+                 Open Inquiry
               </a>
             </td>
           </tr>
