@@ -94,8 +94,7 @@ def modReports(page):
         reportsWithAnalysis.sort(key=lambda obj: multiplier * obj[1].activation)
 
     return render_template('mod-reports.html',
-        reportsWithAnalysis=reportsWithAnalysis,
-        darkColors=darkColors,
+        reportsWithAnalysis=reportsWithAnalysis[:100],
         title=page)
 
 @app.route('/player/<userId>')
