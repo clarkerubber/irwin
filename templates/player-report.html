@@ -483,6 +483,7 @@
           type: 'doughnut',
           data: {
             datasets: [{
+              label: 'Overall Activation',
               hoverBorderColor: 'rgba(50, 50, 50, 0.2)',
               borderColor: 'rgba(50, 50, 50, 0.2)',
               backgroundColor: [
@@ -491,6 +492,7 @@
               ],
               data: [gameData['activation'], 100-gameData['activation']]
             },{
+              label: 'Moves Breakdown'
               hoverBorderColor: 'rgba(50, 50, 50, 0.2)',
               borderColor: 'rgba(50, 50, 50, 0.2)',
               backgroundColor: activationColorsRev,
@@ -499,6 +501,13 @@
           },
           options: {
             responsive: false,
+            tooltips: {
+              callbacks: {
+                label: function(tooltipItem, data) {
+                  return data.datasets[tooltipItem.datasetIndex].label || ' ';
+                }
+              }
+            },
             rotation: Math.PI
           }
         });
