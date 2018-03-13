@@ -52,6 +52,36 @@
         <nav class="col-md-2 d-none d-md-block bg-light sidebar">
           <div class="sidebar-sticky">
             <ul class="nav flex-column">
+              <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
+                <span>Moderator Reports</span><span data-feather="alert-triangle"></span>
+              </h6>
+              <li class="nav-item">
+                <a class="nav-link" href="{{url_for('modReports', page='top')}}">
+                  <span data-feather="chevron-up"></span>
+                  Top
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="{{url_for('modReports', page='bottom')}}">
+                  <span data-feather="chevron-down"></span>
+                  Bottom
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="{{url_for('modReports', page='newest')}}">
+                  <span data-feather="chevron-up"></span>
+                  Newest
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="{{url_for('modReports', page='oldest')}}">
+                  <span data-feather="chevron-down"></span>
+                  Oldest
+                </a>
+              </li>
+              <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
+                <span>Queues and Results</span><span data-feather="align-center"></span>
+              </h6>
               <li class="nav-item">
                 <a class="nav-link" href="{{url_for('watchlist')}}">
                   <span data-feather="crosshair"></span>
@@ -68,12 +98,6 @@
                 <a class="nav-link" href="{{url_for('analysisQueue')}}">
                   <span data-feather="shopping-cart"></span>
                   Analysis Queue
-                </a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="{{url_for('modReports', page='top')}}">
-                  <span data-feather="alert-triangle"></span>
-                  Moderator Reports
                 </a>
               </li>
             </ul>
