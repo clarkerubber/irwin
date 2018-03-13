@@ -43,10 +43,60 @@ def round_sig(x, sig=2):
         return 0
     return round(x, sig-int(floor(log10(abs(x))))-1)
 
+@app.route('/')
+@app.route('/watchlist')
+def watchlist():
+    playerReports = env.playerReportDB.newest(1000)
+    players = env.playerDB.unmarkedByUserIds([playerReport.userId for playerReport in playerReports]) # player = None if engine
+    playersWithReports = [(player, report, darkColors[int(report.activation/10)]) for player, report in zip(players, playerReports) if player is not None]
+
+    uniquePlayersWithReports = []
+    alreadyAdded = []
+    for player, report, color in playersWithReports:
+        if player.id not in alreadyAdded and report.activation > 70:
+            uniquePlayersWithReports.append((player, report, color))
+            alreadyAdded.append(player.id)
+
+    uniquePlayersWithReports.sort(key=lambda obj: -obj[1].activation) # sort by report activation
+
+    return render_template('watchlist.html',
+        playersWithReports=uniquePlayersWithReports)
+
+@app.route('/recent-reports')
+def recentReports():
+    playerReports = env.playerReportDB.newest()
+    reportColors = [darkColors[int(playerReport.activation/10)] for playerReport in playerReports]
+    reportsAndColors = list(zip(playerReports, reportColors))
+    return render_template('recent-reports.html', reportsAndColors=reportsAndColors)
+
 @app.route('/analysis-queue')
 def analysisQueue():
     top = env.deepPlayerQueueDB.top(100)
     return render_template('analysis-queue.html', top=top)
+
+@app.route('/mod-reports/<page>')
+def modReports(page):
+    if page not in ['top', 'bottom', 'newest', 'oldest']:
+        return ('Page not found', 404)
+
+    if page in ['top', 'bottom']:
+        reports = env.modReportDB.allOpen(500)
+    if page == 'newest':
+        reports = env.modReportDB.allNewest(200)
+    if page == 'oldest':
+        reports = env.modReportDB.allOldest(200)
+
+    reportsWithAnalysis = [(report, env.playerReportDB.newestByUserId(report.id)) for report in reports]
+    reportsWithAnalysis = [(modReport, irwinReport, darkColors[int(irwinReport.activation/10)]) for modReport, irwinReport in reportsWithAnalysis]
+
+    if page in ['top', 'bottom']:
+        multiplier = -1 if page == 'top' else 1
+        reportsWithAnalysis.sort(key=lambda obj: multiplier * obj[1].activation)
+
+    return render_template('mod-reports.html',
+        reportsWithAnalysis=reportsWithAnalysis,
+        darkColors=darkColors,
+        title=page)
 
 @app.route('/player/<userId>')
 def player(userId):
@@ -122,32 +172,6 @@ def gameReport(gameId, reportId):
         graphColor=graphColor,
         pointColors=pointColors,
         gameUrl=gameUrl)
-
-@app.route('/recent-reports')
-def recentReports():
-    playerReports = env.playerReportDB.newest()
-    reportColors = [darkColors[int(playerReport.activation/10)] for playerReport in playerReports]
-    reportsAndColors = list(zip(playerReports, reportColors))
-    return render_template('recent-reports.html', reportsAndColors=reportsAndColors)
-
-@app.route('/')
-@app.route('/watchlist')
-def watchlist():
-    playerReports = env.playerReportDB.newest(1000)
-    players = env.playerDB.unmarkedByUserIds([playerReport.userId for playerReport in playerReports]) # player = None if engine
-    playersWithReports = [(player, report, darkColors[int(report.activation/10)]) for player, report in zip(players, playerReports) if player is not None]
-
-    uniquePlayersWithReports = []
-    alreadyAdded = []
-    for player, report, color in playersWithReports:
-        if player.id not in alreadyAdded and report.activation > 70:
-            uniquePlayersWithReports.append((player, report, color))
-            alreadyAdded.append(player.id)
-
-    uniquePlayersWithReports.sort(key=lambda obj: -obj[1].activation) # sort by report activation
-
-    return render_template('watchlist.html',
-        playersWithReports=uniquePlayersWithReports)
 
 @app.route('/api/update-player-data', methods=['GET', 'POST'])
 def updatePlayerData():

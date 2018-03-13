@@ -29,6 +29,10 @@ class ModReportBSONHandler:
         }
 
 class ModReportDB(namedtuple('ModReportDB', ['modReportColl'])):
+    @staticmethod
+    def reader(bsons):
+        return [ModReportBSONHandler.reads(b) for b in bsons]
+
     def write(self, modReport):
         self.modReportColl.update_one(
             {'_id': modReport.id}, 
@@ -42,6 +46,7 @@ class ModReportDB(namedtuple('ModReportDB', ['modReportColl'])):
             upsert=False)
 
     def isOpen(self, userId):
+        """ is there an open report against this player? """
         modReportBSON = self.modReportColl.find_one({'_id': userId})
         processed = True
         if modReportBSON is not None:
@@ -49,7 +54,20 @@ class ModReportDB(namedtuple('ModReportDB', ['modReportColl'])):
         return not processed
 
     def allOpen(self, limit=None):
-        return [ModReportBSONHandler.reads(bson) for bson in self.modReportColl.find({'processed': False}, batch_size=limit)]
+        """ all open, sorted by newest incase limit is set """
+        return ModReportDB.reader(self.modReportColl.find(
+                filter={'processed': False},
+                sort=[('created', pymongo.DESCENDING)],
+                batch_size=limit))
+
+    def allNewest(self, limit=None):
+        return self.allOpen(limit)
+
+    def allOldest(self, limit=None):
+        return ModReportDB.reader(self.modReportColl.find(
+                filter={'processed': False},
+                sort=[('created', pymongo.ASCENDING)],
+                batch_size=limit))
 
     def oldestUnprocessed(self):
         modReportBSON = self.modReportColl.find_one_and_update(

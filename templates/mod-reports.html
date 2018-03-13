@@ -2,12 +2,12 @@
 {% import 'macros/nav.html' as nav %}
 <!doctype html>
 <html lang="en">
-{{ base.header('Watchlist') }}
+{{ base.header('Top Mod Reports') }}
   <body>
     {{ nav.search() }}
-    {{ nav.sidebar('watchlist') }}
+    {{ nav.sidebar('mod') }}
     <main role="main" class="col-md-9 ml-sm-auto col-lg-10 pt-3 px-4">
-      <h1>Watchlist</h1>
+      <h1>Moderator Reports - {{title}}</h1>
       <div class="table-responsive">
         <table class="table table-hover">
           <thead>
@@ -17,19 +17,20 @@
               <th>Links</th>
             </tr>
           </thead>
-          {% for player, irwinReport, color in playersWithReports %}
+          {% for modReport, irwinReport, color in reportsWithAnalysis %}
           <tr>
             <td width="200px">
-              <canvas id="report-activation-{{player.id}}" height="140px"></canvas>
+              <canvas id="report-activation-{{modReport.id}}" height="140px"></canvas>
             </td>
             <td>
               <h2>
-                <b>{{player.id}}</b><br>
+                <b>{{modReport.id}}</b><br>
                 <span style="color: {{color}}"><b>{{irwinReport.activation}}%
                 </b></span>
               </h2>
               <h5>
-                Last updated by {{irwinReport.owner}}, {{"{:%d %b %Y at %H:%M}".format(irwinReport.date)}}
+                Last updated by {{irwinReport.owner}}, {{"{:%d %b %Y at %H:%M}".format(irwinReport.date)}}<br>
+                Report Created {{"{:%d %b %Y at %H:%M}".format(modReport.created)}}
               </h5>
             </td>
             <td>
@@ -41,7 +42,7 @@
                 <span data-feather="user"></span>
                  Irwin Profile
               </a><br><br>
-              <a href='https://lichess.org/@/{{irwinReport.userId}}'>
+              <a href='https://lichess.org/@/{{irwinReport.userId}}?mod'>
                 <span data-feather="arrow-up-right"></span>
                  Lichess Profile
               </a>
@@ -56,7 +57,7 @@
     //Chart.defaults.global.legend.display = false;
     //// Overall ===========================
     // bar chart data
-    {% for player, irwinReport, color in playersWithReports %}
+    {% for modReport, irwinReport, color in reportsWithAnalysis %}
     var barData = {
       datasets : [
         {
@@ -72,7 +73,7 @@
     };
    
      // get bar chart canvas
-    var reportActivationCtx = document.getElementById("report-activation-{{player.id}}").getContext("2d");
+    var reportActivationCtx = document.getElementById("report-activation-{{modReport.id}}").getContext("2d");
 
      // draw bar chart
     new Chart(reportActivationCtx, {
