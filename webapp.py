@@ -87,7 +87,7 @@ def modReports(page):
         reports = env.modReportDB.allOldest(200)
 
     reportsWithAnalysis = [(report, env.playerReportDB.newestByUserId(report.id)) for report in reports]
-    reportsWithAnalysis = [(modReport, irwinReport, darkColors[int(irwinReport.activation/10)]) for modReport, irwinReport in reportsWithAnalysis]
+    reportsWithAnalysis = [(modReport, irwinReport, darkColors[int(irwinReport.activation/10)]) for modReport, irwinReport in reportsWithAnalysis if irwinReport is not None]
 
     if page in ['top', 'bottom']:
         multiplier = -1 if page == 'top' else 1
