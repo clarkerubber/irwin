@@ -76,22 +76,16 @@ def analysisQueue():
 
 @app.route('/mod-reports/<page>')
 def modReports(page):
-    if page not in ['top', 'bottom', 'newest', 'oldest']:
+    if page not in ['top', 'bottom']:
         return ('Page not found', 404)
 
-    if page in ['top', 'bottom']:
-        reports = env.modReportDB.allOpen(500)
-    if page == 'newest':
-        reports = env.modReportDB.allNewest(200)
-    if page == 'oldest':
-        reports = env.modReportDB.allOldest(200)
+    reports = env.modReportDB.allOpen(500)
 
     reportsWithAnalysis = [(report, env.playerReportDB.newestByUserId(report.id)) for report in reports]
     reportsWithAnalysis = [(modReport, irwinReport, darkColors[int(irwinReport.activation/10)]) for modReport, irwinReport in reportsWithAnalysis if irwinReport is not None]
 
-    if page in ['top', 'bottom']:
-        multiplier = -1 if page == 'top' else 1
-        reportsWithAnalysis.sort(key=lambda obj: multiplier * obj[1].activation)
+    multiplier = -1 if page == 'top' else 1
+    reportsWithAnalysis.sort(key=lambda obj: multiplier * obj[1].activation)
 
     return render_template('mod-reports.html',
         reportsWithAnalysis=reportsWithAnalysis[:100],
