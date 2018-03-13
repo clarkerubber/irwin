@@ -120,14 +120,34 @@ def player(userId):
 def playerReport(reportId):
     playerReport = env.playerReportDB.byId(reportId)
     gameReports = env.gameReportDB.byReportId(reportId)
-    gameReports.sort(key=lambda obj: -obj.activation)
-    gameReportStore = GameReportStore(gameReports)
+    gameReportStore = GameReportStore.new(gameReports)
 
     if playerReport is None:
         return ('Report not found', 404)
 
     overallActivationColor = darkColors[int(playerReport.activation/10)]
             
+    combinedLabels = list(range(1, gameReportStore.longestGame()+1))
+
+    return render_template('player-report.html',
+        playerReport=playerReport,
+        overallActivationColor=overallActivationColor,
+        combinedLabels=combinedLabels,
+        gameReportStore=gameReportStore,
+        darkColors=darkColors)
+
+@app.route('/player-report/latest/<userId>')
+def latestPlayerReport(userId):
+    playerReport = env.playerReportDB.newestByUserId(userId)
+
+    if playerReport is None:
+        return ('Report not found', 404)
+
+    gameReports = env.gameReportDB.byReportId(playerReport.id)
+    gameReportStore = GameReportStore.new(gameReports)
+
+    overallActivationColor = darkColors[int(playerReport.activation/10)]
+
     combinedLabels = list(range(1, gameReportStore.longestGame()+1))
 
     return render_template('player-report.html',

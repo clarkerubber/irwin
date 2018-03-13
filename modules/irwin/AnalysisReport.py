@@ -28,6 +28,11 @@ class PlayerReport(namedtuple('PlayerReport', ['id', 'userId', 'owner', 'activat
         }
 
 class GameReportStore(namedtuple('GameReportStore', ['gameReports'])):
+    @staticmethod
+    def new(gameReports):
+        gameReports.sort(key=lambda obj: -obj.activation)
+        return GameReportStore(gameReports)
+    
     def topGames(self, p=0.15):
         """ Get the top p games from all gameReports """
         self.gameReports.sort(key=lambda obj: -obj.activation)
