@@ -56,40 +56,42 @@
     //Chart.defaults.global.legend.display = false;
     //// Overall ===========================
     // bar chart data
-    {% for modReport, irwinReport, color in reportsWithAnalysis %}
-    var barData = {
-      datasets : [
-        {
-          hoverBorderColor: 'rgba(50, 50, 50, 0.2)',
-          borderColor: 'rgba(50, 50, 50, 0.2)',
-          backgroundColor: [
-            '{{color}}',
-            'rgba(50, 50, 50, 0.2)'
-          ],
-          data : [{{irwinReport.activation}}, {{100 - irwinReport.activation}}]
-        }
-      ]
+    var playerDatasets = {
+      {% for modReport, irwinReport, color in reportsWithAnalysis %}
+      '{{modReport.id}}': {
+        datasets: [
+          {
+            hoverBorderColor: 'rgba(50, 50, 50, 0.2',
+            borderColor: 'rgba(50, 50, 50, 0.2)',
+            backgroundColor: [
+              '{{color}}',
+              'rgba(50, 50, 50, 0.2)'
+            ],
+            data: [
+              {{irwinReport.activation}}, {{100 - irwinReport.activation}}
+            ]
+          }
+        ]
+      },{% endfor %}
     };
-   
-     // get bar chart canvas
-    var reportActivationCtx = document.getElementById("report-activation-{{modReport.id}}").getContext("2d");
+    for (var reportId in playerDatasets) {
+      var playerData = playerDatasets[reportId];
 
-     // draw bar chart
-    new Chart(reportActivationCtx, {
-      type: 'doughnut',
-      data: barData,
-      options: {
-        cutoutPercentage: 60,
-        legend: {
-          display: false
-        },
-        tooltips: {
-          enabled: false
-        },
-        rotation: Math.PI
-      }
-    });
-    {% endfor %}
+      new Chart(document.getElementById("report-activation-"+reportId).getContext('2d'), {
+        type: 'doughnut',
+        data: barData,
+        options: {
+          cutoutPercentage: 60,
+          legend: {
+            display: false
+          },
+          tooltips: {
+            enabled: false
+          },
+          rotation: Math.PI
+        }
+      });
+    }
   </script>
   </body>
 </html>
