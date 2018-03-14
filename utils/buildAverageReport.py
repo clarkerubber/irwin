@@ -25,6 +25,10 @@ def buildAverageReport(env):
     titledReportStore = gameReportStoreByPlayers(env, titledPlayers)
     engineReportStore = gameReportStoreByPlayers(env, env.playerDB.byEngine(True))
 
-    pprint(getAverages(legitReportStore))
-    pprint(getAverages(titledReportStore))
-    pprint(getAverages(engineReportStore))
+    averages = {
+        'legit': getAverages(legitReportStore),
+        'titled': getAverages(titledReportStore),
+        'engine': getAverages(engineReportStore)
+    }
+
+    pprint(averages)
