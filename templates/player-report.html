@@ -2,7 +2,7 @@
 {% import 'macros/nav.html' as nav %}
 <!doctype html>
 <html lang="en">
-{{ base.header('Player Report - ' + playerReport.id) }}
+{{ base.header(playerReport.id + ' - Player Report') }}
   <body>
     {{ nav.search() }}
     {{ nav.sidebar('player') }}

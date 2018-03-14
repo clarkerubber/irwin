@@ -9,6 +9,7 @@ from modules.game.GameAnalysisStore import GameAnalysisStore
 
 from utils.updatePlayerDatabase import updatePlayerDatabase
 from utils.buildPositionAnalysisTable import buildPositionAnalysisTable
+from utils.buildAverageReport import buildAverageReport
 
 from Env import Env
 
@@ -42,6 +43,9 @@ parser.add_argument("--buildpositiontable", dest="buildpositiontable", nargs="?"
 parser.add_argument("--updatedatabase", dest="updatedatabase", nargs="?",
                     default=False, const=True,
                     help="collect game analyses for players. Build database collection")
+parser.add_argument("--buildaveragereport", dest="buildaveragereport", nargs="?",
+                    default=False, const=True,
+                    help="build an average report for all players in the database")
 
 ## Evaluation and testing
 parser.add_argument("--eval", dest="eval", nargs="?",
@@ -104,3 +108,6 @@ if settings.eval:
 
 if settings.discover:
     env.irwin.discover()
+
+if settings.buildaveragereport:
+    buildAverageReport(env)

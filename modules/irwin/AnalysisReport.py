@@ -32,7 +32,7 @@ class GameReportStore(namedtuple('GameReportStore', ['gameReports'])):
     def new(gameReports):
         gameReports.sort(key=lambda obj: -obj.activation)
         return GameReportStore(gameReports)
-    
+
     def topGames(self, p=0.15):
         """ Get the top p games from all gameReports """
         self.gameReports.sort(key=lambda obj: -obj.activation)
@@ -293,10 +293,8 @@ class GameReportDB(namedtuple('GameReportDB', ['gameReportColl'])):
         return None if bson is None else GameReportBSONHandler.reads(bson)
 
     def byReportId(self, reportId):
+        print(reportId)
         return [GameReportBSONHandler.reads(bson) for bson in self.gameReportColl.find({'reportId': reportId})]
-
-    def byUserId(self, userId):
-        return [GameReportBSONHandler.reads(bson) for bson in self.gameReportColl.find({'userId': userId})]
 
     def byGameId(self, gameId):
         return [GameReportBSONHandler.reads(bson) for bson in self.gameReportColl.find({'gameId': gameId})]
