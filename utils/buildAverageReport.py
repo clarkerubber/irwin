@@ -18,17 +18,31 @@ def getAverages(gameReportStore):
 
 
 def buildAverageReport(env):
+    print('getting legit players')
     legitPlayers = env.playerDB.byEngine(False)
     titledPlayers = [player for player in legitPlayers if player.titled]
 
+    print('calculating legit averages')
     legitReportStore = gameReportStoreByPlayers(env, legitPlayers)
+    legitAvgs = getAverages(legitReportStore)
+    del legitReportStore
+    del legitPlayers
+
+    print('calculating titled averages')
     titledReportStore = gameReportStoreByPlayers(env, titledPlayers)
+    titledAvgs = getAverages(titledReportStore)
+    del titledReportStore
+    del titledPlayers
+
+    print('calculating engine averages')
     engineReportStore = gameReportStoreByPlayers(env, env.playerDB.byEngine(True))
+    engineAvgs = getAverages(engineReportStore)
+    del engineReportStore
 
     averages = {
-        'legit': getAverages(legitReportStore),
-        'titled': getAverages(titledReportStore),
-        'engine': getAverages(engineReportStore)
+        'legit': legitAvgs,
+        'titled': titledAvgs,
+        'engine': engineAvgs
     }
 
     pprint(averages)

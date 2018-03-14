@@ -293,7 +293,6 @@ class GameReportDB(namedtuple('GameReportDB', ['gameReportColl'])):
         return None if bson is None else GameReportBSONHandler.reads(bson)
 
     def byReportId(self, reportId):
-        print(reportId)
         return [GameReportBSONHandler.reads(bson) for bson in self.gameReportColl.find({'reportId': reportId})]
 
     def byGameId(self, gameId):
