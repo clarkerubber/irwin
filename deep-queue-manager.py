@@ -95,14 +95,19 @@ while True:
         gamesToAnalyse = gamesToAnalyse + mustAnalyseGames
 
     # analyse games with SF
-    gameAnalysisStore.addGameAnalyses([
-        GameAnalysis.fromGame(
-            game=game,
-            engine=env.engine,
-            infoHandler=env.infoHandler,
-            white=game.white == userId,
-            nodes=env.settings['stockfish']['nodes'],
-            positionAnalysisDB=env.positionAnalysisDB) for game in gamesToAnalyse])
+    sumGamestoAnalyse = len(gamesToAnalyse)
+    for i, game in enumerate(gamesToAnalyse):
+        gameAnalysisStore.addGameAnalysis(
+            GameAnalysis.fromGame(
+                game=game,
+                engine=env.engine,
+                infoHandler=env.infoHandler,
+                white=game.white == userId,
+                nodes=env.settings['stockfish']['nodes'],
+                positionAnalysisDB=env.positionAnalysisDB
+            ))
+        # update progress for logging
+        env.deepPlayerQueueDB.updateProgress(deepPlayerQueue, int(100*i/sumGamestoAnalyse))
 
     env.gameAnalysisDB.lazyWriteGameAnalyses(gameAnalysisStore.gameAnalyses)
 

@@ -5,7 +5,7 @@ from math import ceil
 import pymongo
 import numpy as np
 
-class DeepPlayerQueue(namedtuple('DeepPlayerQueue', ['id', 'origin', 'precedence', 'owner', 'date'])):
+class DeepPlayerQueue(namedtuple('DeepPlayerQueue', ['id', 'origin', 'precedence', 'progress', 'owner', 'date'])):
     @staticmethod
     def new(userId, origin, gamePredictions):
         if len(gamePredictions) > 0:
@@ -23,6 +23,7 @@ class DeepPlayerQueue(namedtuple('DeepPlayerQueue', ['id', 'origin', 'precedence
             origin = origin,
             precedence = top30avg+originPrecedence,
             owner = None,
+            progress=0,
             date = datetime.now())
 
 class DeepPlayerQueueBSONHandler:
@@ -32,6 +33,7 @@ class DeepPlayerQueueBSONHandler:
             id=bson['_id'],
             origin=bson['origin'],
             precedence=bson['precedence'],
+            progress=bson.get('progress', 0),
             owner=bson.get('owner'),
             date=bson.get('date'))
 
@@ -41,6 +43,7 @@ class DeepPlayerQueueBSONHandler:
             '_id': deepPlayerQueue.id,
             'origin': deepPlayerQueue.origin,
             'precedence': deepPlayerQueue.precedence,
+            'progress': deepPlayerQueue.progress,
             'owner': deepPlayerQueue.owner,
             'date': datetime.now()
         }
@@ -50,6 +53,11 @@ class DeepPlayerQueueDB(namedtuple('DeepPlayerQueueDB', ['deepPlayerQueueColl'])
         self.deepPlayerQueueColl.update_one(
             {'_id': deepPlayerQueue.id},
             {'$set': DeepPlayerQueueBSONHandler.writes(deepPlayerQueue)}, upsert=True)
+
+    def updateProgress(self, _id, progress):
+        self.deepPlayerQueueColl.update_one(
+            {'_id': _id},
+            {'$set': {'progress': progress}})
 
     def byId(self, _id):
         bson = self.deepPlayerQueueColl.find_one({'_id': _id})

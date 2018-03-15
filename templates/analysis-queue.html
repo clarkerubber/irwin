@@ -17,6 +17,7 @@
                   <th>Origin</th>
                   <th>Created</th>
                   <th>Owner</th>
+                  <th>Progress</th>
                   <th>Links</th>
                 </tr>
               </thead>
@@ -31,6 +32,7 @@
                 {% else %}
                 <td></td>
                 {% endif %}
+                <td>{{queue.progress}}</td>
                 <td>
                   <a href="{{url_for('player', userId=queue.id)}}">
                     <span data-feather="user"></span>
