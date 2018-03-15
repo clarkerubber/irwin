@@ -8,10 +8,14 @@
     {{ nav.sidebar('player') }}
     <main role="main" class="col-md-9 ml-sm-auto col-lg-10 pt-3 px-4">
       {{ nav.directory(playerReport.userId, playerReport.id, gameReport.gameId, lichessLink=gameUrl)}}
-      <h1><b>{{ playerReport.userId }}</b></h1>
+      <h1>
+        <b>
+          <span style="color: {{graphColor}}">{{gameReport.activation}}%</span>
+           {{ playerReport.userId }}
+        </b>
+      </h1>
       <div class="row">
         <div class="col-3">
-          <h3>Activation <span style="color: {{graphColor}}"><b>{{gameReport.activation}}%</b></span></h3>
           <canvas id="overall" height="200em"></canvas>
         </div>
         <div class="col-9">
