@@ -22,10 +22,10 @@ class GameAnalysisStore(namedtuple('GameAnalysisStore', ['games', 'gameAnalyses'
     def addGames(self, games):
         [self.games.append(g) for g in games if (not self.hasGameId(g.id) and g.emts is not None and len(g.pgn) < 120 and len(g.pgn) > 40)]
 
-    def addGameAnalysis(self, gameAnalysis):
+    def addGameAnalysis(self, ga):
         if not self.gameIdHasAnalysis(ga.gameId) and ga is not None and len(ga.moveAnalyses) < 60 and len(ga.moveAnalyses) > 20:
             self.gameAnalyses.append(gameAnalysis)
-            
+
     def addGameAnalyses(self, gameAnalyses):
         [self.addGameAnalysis(ga) for ga in gameAnalyses]
 
