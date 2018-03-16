@@ -13,9 +13,6 @@
         <div style="width: {{request.progress}}%; height: 10px; left: 0; background-color: red;">
         <div class="row">
           <h2><b>{{request.id}}<b></h2>
-          owner: {{request.owner}}
-          origin: {{request.origin}}
-          created: {{"{:%d %b %Y}".format(request.date)}}
         </div>
       </div>
       {% endfor %}
