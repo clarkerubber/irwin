@@ -10,7 +10,9 @@
       <h1>In Progress</h1>
       {% for analysisRequest in inProgress %}
       <div class="row">
-        <div style="width: {{analysisRequest.progress}}%; height: 10px; left: 0; background-color: red;"></div>
+        <div class="row">
+          <div style="width: {{analysisRequest.progress}}%; height: 10px; left: 0; background-color: red;"></div>
+        </div>
         <div class="row">
           <h2><b>{{analysisRequest.id}}<b></h2>
         </div>
