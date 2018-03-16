@@ -107,7 +107,7 @@ while True:
                 positionAnalysisDB=env.positionAnalysisDB
             ))
         # update progress for logging
-        env.deepPlayerQueueDB.updateProgress(deepPlayerQueue, int(100*i/sumGamestoAnalyse))
+        env.deepPlayerQueueDB.updateProgress(deepPlayerQueue.id, int(100*i/sumGamestoAnalyse))
 
     env.gameAnalysisDB.lazyWriteGameAnalyses(gameAnalysisStore.gameAnalyses)
 
