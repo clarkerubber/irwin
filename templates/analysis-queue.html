@@ -8,11 +8,11 @@
     {{ nav.sidebar('analysis-queue') }}
     <main role="main" class="col-md-9 ml-sm-auto col-lg-10 pt-3 px-4">
       <h1>In Progress</h1>
-      {% for request in inProgress %}
+      {% for analysisRequest in inProgress %}
       <div class="row">
-        <div style="width: {{request.progress}}%; height: 10px; left: 0; background-color: red;">
+        <div style="width: {{analysisRequest.progress}}%; height: 10px; left: 0; background-color: red;">
         <div class="row">
-          <h2><b>{{request.id}}<b></h2>
+          <h2><b>{{analysisRequest.id}}<b></h2>
         </div>
       </div>
       {% endfor %}
@@ -28,18 +28,18 @@
                   <th>Links</th>
                 </tr>
               </thead>
-              {% for request in queuedAnalyses %}
+              {% for analysisRequest in queuedAnalyses %}
               <tr>
-                <td>{{request.precedence}}</td>
-                <td>{{request.id}}</td>
-                <td>{{request.origin}}</td>
-                <td>{{"{:%d %b %Y}".format(request.date)}}</td>
+                <td>{{analysisRequest.precedence}}</td>
+                <td>{{analysisRequest.id}}</td>
+                <td>{{analysisRequest.origin}}</td>
+                <td>{{"{:%d %b %Y}".format(analysisRequest.date)}}</td>
                 <td>
-                  <a href="{{url_for('player', userId=request.id)}}">
+                  <a href="{{url_for('player', userId=analysisRequest.id)}}">
                     <span data-feather="user"></span>
                      Irwin Profile
                   </a><br><br>
-                  <a href="https://lichess.org/@/{{request.id}}?mod">
+                  <a href="https://lichess.org/@/{{analysisRequest.id}}?mod">
                     <span data-feather="arrow-up-right"></span>
                      Lichess Profile
                   </a>
