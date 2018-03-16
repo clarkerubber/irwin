@@ -7,6 +7,18 @@
     {{ nav.search() }}
     {{ nav.sidebar('analysis-queue') }}
     <main role="main" class="col-md-9 ml-sm-auto col-lg-10 pt-3 px-4">
+      <h1>In Progress</h1>
+      {% for request in inProgress %}
+      <div class="row">
+        <div style="width: {{request.progress}}%; height: 10px; left: 0; background-color: red;">
+        <div class="row">
+          <h2><b>{{request.id}}<b></h2>
+          owner: {{request.owner}}
+          origin: {{request.origin}}
+          created: {{"{:%d %b %Y}".format(request.date)}}
+        </div>
+      </div>
+      {% endfor %}
       <h1>Player Analysis Queue</h1>
           <div class="table-responsive">
             <table class="table table-hover">
@@ -16,29 +28,21 @@
                   <th>Username</th>
                   <th>Origin</th>
                   <th>Created</th>
-                  <th>Owner</th>
-                  <th>Progress</th>
                   <th>Links</th>
                 </tr>
               </thead>
-              {% for queue in top %}
+              {% for request in queuedAnalyses %}
               <tr>
-                <td>{{queue.precedence}}</td>
-                <td>{{queue.id}}</td>
-                <td>{{queue.origin}}</td>
-                <td>{{"{:%d %b %Y}".format(queue.date)}}</td>
-                {% if queue.owner is not none %}
-                <td>{{queue.owner}}</td>
-                {% else %}
-                <td></td>
-                {% endif %}
-                <td>{{queue.progress}}</td>
+                <td>{{request.precedence}}</td>
+                <td>{{request.id}}</td>
+                <td>{{request.origin}}</td>
+                <td>{{"{:%d %b %Y}".format(request.date)}}</td>
                 <td>
-                  <a href="{{url_for('player', userId=queue.id)}}">
+                  <a href="{{url_for('player', userId=request.id)}}">
                     <span data-feather="user"></span>
                      Irwin Profile
                   </a><br><br>
-                  <a href="https://lichess.org/@/{{queue.id}}?mod">
+                  <a href="https://lichess.org/@/{{request.id}}?mod">
                     <span data-feather="arrow-up-right"></span>
                      Lichess Profile
                   </a>
