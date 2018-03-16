@@ -19,12 +19,12 @@ class DeepPlayerQueue(namedtuple('DeepPlayerQueue', ['id', 'origin', 'precedence
         elif origin == 'moderator':
             originPrecedence = 100000
         return DeepPlayerQueue(
-            id = userId,
-            origin = origin,
-            precedence = top30avg+originPrecedence,
-            owner = None,
+            id=userId,
+            origin=origin,
+            precedence=top30avg+originPrecedence,
+            owner=None,
             progress=0,
-            date = datetime.now())
+            date=datetime.now())
 
 class DeepPlayerQueueBSONHandler:
     @staticmethod
