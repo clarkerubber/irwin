@@ -73,7 +73,7 @@ def recentReports():
 def analysisQueue():
     queuedAnalyses = env.deepPlayerQueueDB.top(100)
     inProgress = [queuedAnalysis for queuedAnalysis in queuedAnalyses if queuedAnalysis.owner is not None]
-    queuedAnalyses = [queuedAnalyses for queuedAnalysis in queuedAnalyses if queuedAnalysis.owner is None]
+    queuedAnalyses = [queuedAnalysis for queuedAnalysis in queuedAnalyses if queuedAnalysis.owner is None]
     return render_template('analysis-queue.html', queuedAnalyses=queuedAnalyses, inProgress=inProgress)
 
 @app.route('/mod-reports/<page>')
