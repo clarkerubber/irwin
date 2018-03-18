@@ -9,18 +9,20 @@
     <main role="main" class="col-md-9 ml-sm-auto col-lg-10 pt-3 px-4">
       <h1>Player Analysis Queue</h1>
       <h2>In Progress</h2>
-      {% for analysisRequest in inProgress %}
-      <div id="{{analysisRequest.id}}" class="col">
-        <div class="row" style="margin-top: 10px;">
-          <div class="col-2"><h4><b>{{analysisRequest.id}}</b></h4></div>
-          <div id="{{analysisRequest.id}}-progress-text" class="col-2"><h4>{{analysisRequest.progress}}% complete</h4></div>
-          <div class="col"><h4>processed by {{analysisRequest.owner}}</h4></div>
+      <div id="in-progress" class="col">
+        {% for analysisRequest in inProgress %}
+        <div id="{{analysisRequest.id}}" class="col">
+          <div class="row" style="margin-top: 10px;">
+            <div class="col-2"><h4><b>{{analysisRequest.id}}</b></h4></div>
+            <div id="{{analysisRequest.id}}-progress-text" class="col-2"><h4>{{analysisRequest.progress}}% complete</h4></div>
+            <div class="col"><h4>processed by {{analysisRequest.owner}}</h4></div>
+          </div>
+          <div class="row" style="width:100%; background-color: rgba(20, 20, 20, 0.2); border-radius: 2px;">
+            <div id="{{analysisRequest.id}}-progress" style="width: {{analysisRequest.progress}}%; height: 5px; left: 0; background-color: rgba(0, 230, 20, 0.8); border-radius: 2px;"></div>
+          </div>
         </div>
-        <div class="row" style="width:100%; background-color: rgba(20, 20, 20, 0.2); border-radius: 2px;">
-          <div id="{{analysisRequest.id}}-progress" style="width: {{analysisRequest.progress}}%; height: 5px; left: 0; background-color: rgba(0, 230, 20, 0.8); border-radius: 2px;"></div>
-        </div>
+        {% endfor %}
       </div>
-      {% endfor %}
       <br>
       <h2>Queued</h2>
           <div class="table-responsive">
@@ -62,9 +64,23 @@
       socket.on('progress-update', function(data) {
         console.log(data);
         data['requests'].forEach(function(req) {
-          $('#'+req['id']+'-progress').css('width', req['progress']+'%');
-          $('#'+req['id']+'-progress-text').html('<h4>'+req['progress']+'% complete</h4>');
-          console.log('updated ' + req['id']);
+          if ($('#'+req['id']).length) {
+            $('#'+req['id']+'-progress').css('width', req['progress']+'%');
+            $('#'+req['id']+'-progress-text').html('<h4>'+req['progress']+'% complete</h4>');
+            console.log('updated ' + req['id']);
+          } else {
+            $('#in-progress').prepend(
+              "<div id='" + req['id'] + "' class='col'>" +
+              "<div class='row' style='margin-top: 10px;'>" +
+                "<div class='col-2'><h4><b>" + req['id'] + "</b></h4></div>" +
+                "<div id='" + req['id'] + "-progress-text' class='col-2'><h4>" + req['progress'] + "% complete</h4></div>" +
+                "<div class='col'><h4>processed by " + req['owner'] + "</h4></div>" +
+              "</div>" +
+              "<div class='row' style='width:100%; background-color: rgba(20, 20, 20, 0.2); border-radius: 2px;'>" +
+                "<div id='" + req['id'] + "-progress' style='width: " + req['progress'] + "%; height: 5px; left: 0; background-color: rgba(0, 230, 20, 0.8); border-radius: 2px;'></div>" +
+              "</div>" +
+            "</div>");
+          }
         });
       });
       setInterval(function() {
