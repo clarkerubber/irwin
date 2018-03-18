@@ -36,6 +36,15 @@ class DeepPlayerQueue(namedtuple('DeepPlayerQueue', ['id', 'origin', 'precedence
             'date': "{:%d %b %Y}".format(self.date)
         }
 
+    def complete(self):
+        return DeepPlayerQueue(
+            id=self.id,
+            origin=self.origin,
+            precedence=self.precedence,
+            progress=100,
+            owner=self.owner,
+            date=self.date)
+
 class DeepPlayerQueueBSONHandler:
     @staticmethod
     def reads(bson):
