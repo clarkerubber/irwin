@@ -13,9 +13,9 @@
         {% for analysisRequest in inProgress %}
         <div id="{{analysisRequest.id}}" class="col">
           <div class="row" style="margin-top: 10px;">
-            <div class="col-2"><h4><b>{{analysisRequest.id}}</b></h4></div>
-            <div id="{{analysisRequest.id}}-progress-text" class="col-2"><h4>{{analysisRequest.progress}}% complete</h4></div>
-            <div class="col"><h4>processed by {{analysisRequest.owner}}</h4></div>
+            <div class="col-4" style="text-align: right;"><h4><b><a href="{{url_for('player', userId=analysisRequest.id)}}">{{analysisRequest.id}}</a></b></h4></div>
+            <div id="{{analysisRequest.id}}-progress-text" class="col-2" style="text-align: center;"><h4>{{analysisRequest.progress}}% complete</h4></div>
+            <div class="col-4"><h4>processed by {{analysisRequest.owner}}</h4></div>
           </div>
           <div class="row" style="width:100%; background-color: rgba(20, 20, 20, 0.2); border-radius: 2px;">
             <div id="{{analysisRequest.id}}-progress" style="width: {{analysisRequest.progress}}%; height: 5px; left: 0; background-color: rgba(0, 230, 20, 0.8); border-radius: 2px;"></div>
@@ -64,20 +64,24 @@
           socket.emit('progress-request', {data: inProgress});
       });
       socket.on('progress-update', function(data) {
-        console.log(data);
         data['requests'].forEach(function(req) {
           if ($('#'+req['id']).length) {
+            if (req['complete']) {
+              inProgress.remove(req['id']); // no longer need to request updates for this person
+              // Provide link to the report
+              $('#'+req['id']+'-progress-text').html('<h4><a href="' + document.domain + '/player-report/latest/'+req['id']+'>'+req['progress']+'% complete</a></h4>');
+            } else {
+              $('#'+req['id']+'-progress-text').html('<h4>'+req['progress']+'% complete</h4>');
+            }
             $('#'+req['id']+'-progress').css('width', req['progress']+'%');
-            $('#'+req['id']+'-progress-text').html('<h4>'+req['progress']+'% complete</h4>');
-            console.log('updated ' + req['id']);
           } else {
             inProgress.push(req['id']);
             $('#in-progress').prepend(
               "<div id='" + req['id'] + "' class='col'>" +
               "<div class='row' style='margin-top: 10px;'>" +
-                "<div class='col-2'><h4><b>" + req['id'] + "</b></h4></div>" +
-                "<div id='" + req['id'] + "-progress-text' class='col-2'><h4>" + req['progress'] + "% complete</h4></div>" +
-                "<div class='col'><h4>processed by " + req['owner'] + "</h4></div>" +
+                "<div class='col-4' style='text-align: right;'><h4><b>" + req['id'] + "</b></h4></div>" +
+                "<div id='" + req['id'] + "-progress-text' style='text-align: center;' class='col-2'><h4>" + req['progress'] + "% complete</h4></div>" +
+                "<div class='col-4'><h4>processed by " + req['owner'] + "</h4></div>" +
               "</div>" +
               "<div class='row' style='width:100%; background-color: rgba(20, 20, 20, 0.2); border-radius: 2px;'>" +
                 "<div id='" + req['id'] + "-progress' style='width: " + req['progress'] + "%; height: 5px; left: 0; background-color: rgba(0, 230, 20, 0.8); border-radius: 2px;'></div>" +
