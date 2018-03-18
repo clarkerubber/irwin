@@ -273,16 +273,14 @@ def closeModReport():
 ###############
 ## WebSockets
 ###############
-lastProgress = []
 @socketio.on('progress-request')
 def handleInProgressReq(json):
+    updates = [env.deepPlayerQueueDB.byId(userId) for userId in json['data']]
     inProgress = env.deepPlayerQueueDB.inProgress()
     inProgressIds = [i.id for i in inProgress]
-    inProgress = inProgress + [i.complete() for i in lastProgress if i.id not in inProgressIds]
-    inProgressJson = {'requests': [i.json() for i in inProgress]}
-
-    emit('progress-update', inProgressJson, broadcast=True)
-    lastProgress = inProgress[:50]
+    inProgress = inProgress + [update for update in updates if update.id not in inProgressIds]
+    inProgressJson = [i.json() for i in inProgress]
+    emit('progress-update', {'requests': inProgressJson}, broadcast=True)
     
 if __name__ == '__main__':
     socketio.run(app)

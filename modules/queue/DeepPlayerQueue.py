@@ -5,7 +5,7 @@ from math import ceil
 import pymongo
 import numpy as np
 
-class DeepPlayerQueue(namedtuple('DeepPlayerQueue', ['id', 'origin', 'precedence', 'progress', 'owner', 'date'])):
+class DeepPlayerQueue(namedtuple('DeepPlayerQueue', ['id', 'origin', 'precedence', 'progress', 'complete', 'owner', 'date'])):
     @staticmethod
     def new(userId, origin, gamePredictions):
         if len(gamePredictions) > 0:
@@ -24,6 +24,7 @@ class DeepPlayerQueue(namedtuple('DeepPlayerQueue', ['id', 'origin', 'precedence
             precedence=top30avg+originPrecedence,
             owner=None,
             progress=0,
+            complete=False,
             date=datetime.now())
 
     def json(self):
@@ -32,16 +33,18 @@ class DeepPlayerQueue(namedtuple('DeepPlayerQueue', ['id', 'origin', 'precedence
             'origin': self.origin,
             'precedence': self.precedence,
             'progress': self.progress,
+            'complete': self.complete,
             'owner': self.owner,
             'date': "{:%d %b %Y}".format(self.date)
         }
 
-    def complete(self):
+    def __complete__(self):
         return DeepPlayerQueue(
             id=self.id,
             origin=self.origin,
             precedence=self.precedence,
             progress=100,
+            complete=True,
             owner=self.owner,
             date=self.date)
 
@@ -53,6 +56,7 @@ class DeepPlayerQueueBSONHandler:
             origin=bson['origin'],
             precedence=bson['precedence'],
             progress=bson.get('progress', 0),
+            complete=bson.get('complete', False),
             owner=bson.get('owner'),
             date=bson.get('date'))
 
@@ -63,6 +67,7 @@ class DeepPlayerQueueBSONHandler:
             'origin': deepPlayerQueue.origin,
             'precedence': deepPlayerQueue.precedence,
             'progress': deepPlayerQueue.progress,
+            'complete': deepPlayerQueue.complete,
             'owner': deepPlayerQueue.owner,
             'date': datetime.now()
         }
@@ -87,7 +92,7 @@ class DeepPlayerQueueDB(namedtuple('DeepPlayerQueueDB', ['deepPlayerQueueColl'])
 
     def complete(self, deepPlayerQueue):
         """remove a complete job from the queue"""
-        self.removeUserId(deepPlayerQueue.id)
+        self.write(deepPlayerQueue.__complete__())
 
     def removeUserId(self, userId):
         """remove all jobs related to userId"""
@@ -118,7 +123,7 @@ class DeepPlayerQueueDB(namedtuple('DeepPlayerQueueDB', ['deepPlayerQueueColl'])
             return DeepPlayerQueueBSONHandler.reads(incompleteBSON)
 
         deepPlayerQueueBSON = self.deepPlayerQueueColl.find_one_and_update(
-            filter={'owner': None},
+            filter={'owner': None, 'complete': False},
             update={'$set': {'owner': name}},
             sort=[("precedence", pymongo.DESCENDING),
                 ("date", pymongo.ASCENDING)])
