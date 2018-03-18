@@ -118,7 +118,7 @@ class DeepPlayerQueueDB(namedtuple('DeepPlayerQueueDB', ['deepPlayerQueueColl'])
 
     def nextUnprocessed(self, name):
         """find the next job to process"""
-        incompleteBSON = self.deepPlayerQueueColl.find_one({'owner': name})
+        incompleteBSON = self.deepPlayerQueueColl.find_one({'owner': name, '$or': [{'complete': {'$exists': False}}, {'complete': False}]})
         if incompleteBSON is not None: # owner has unfinished business
             return DeepPlayerQueueBSONHandler.reads(incompleteBSON)
 
