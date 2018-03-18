@@ -84,7 +84,7 @@ class DeepPlayerQueueDB(namedtuple('DeepPlayerQueueDB', ['deepPlayerQueueColl'])
             {'$set': {'progress': progress}})
 
     def inProgress(self):
-        return [DeepPlayerQueueBSONHandler.reads(bson) for bson in self.deepPlayerQueueColl.find({'owner': {'$ne': None}, '$or': [{'complete': {'$exists': False}}, {'complete': False}]})]
+        return [DeepPlayerQueueBSONHandler.reads(bson) for bson in self.deepPlayerQueueColl.find({'owner': {'$ne': None}, 'complete': False})]
 
     def byId(self, _id):
         bson = self.deepPlayerQueueColl.find_one({'_id': _id})
