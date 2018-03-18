@@ -26,6 +26,16 @@ class DeepPlayerQueue(namedtuple('DeepPlayerQueue', ['id', 'origin', 'precedence
             progress=0,
             date=datetime.now())
 
+    def json(self):
+        return {
+            'id': self.id,
+            'origin': self.origin,
+            'precedence': self.precedence,
+            'progress': self.progress,
+            'owner': self.owner,
+            'date': "{:%d %b %Y}".format(self.date)
+        }
+
 class DeepPlayerQueueBSONHandler:
     @staticmethod
     def reads(bson):
@@ -58,6 +68,9 @@ class DeepPlayerQueueDB(namedtuple('DeepPlayerQueueDB', ['deepPlayerQueueColl'])
         self.deepPlayerQueueColl.update_one(
             {'_id': _id},
             {'$set': {'progress': progress}})
+
+    def inProgress(self):
+        return [DeepPlayerQueueBSONHandler.reads(bson) for bson in self.deepPlayerQueueColl.find({'owner': {'$ne': None}})]
 
     def byId(self, _id):
         bson = self.deepPlayerQueueColl.find_one({'_id': _id})

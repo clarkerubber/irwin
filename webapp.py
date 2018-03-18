@@ -1,4 +1,5 @@
 from flask import Flask, render_template, url_for, redirect, request, jsonify
+from flask_socketio import SocketIO, emit
 from WebEnv import Env
 from pprint import pprint
 import numpy as np
@@ -26,6 +27,9 @@ if config == {}:
 
 env = Env(config)
 
+app = Flask(__name__)
+socketio = SocketIO(app)
+
 darkColors = [
           'rgba(84, 231, 96, 0.8)',
           'rgba(109, 231, 84, 0.8)',
@@ -42,6 +46,11 @@ def round_sig(x, sig=2):
     if x == 0:
         return 0
     return round(x, sig-int(floor(log10(abs(x))))-1)
+
+
+###############
+## Pages
+###############
 
 @app.route('/')
 @app.route('/watchlist')
@@ -188,6 +197,10 @@ def gameReport(gameId, reportId):
         pointColors=pointColors,
         gameUrl=gameUrl)
 
+###############
+## API
+###############
+
 @app.route('/api/update-player-data', methods=['GET', 'POST'])
 def updatePlayerData():
     content = request.json
@@ -255,6 +268,17 @@ def closeModReport():
     print("closing reports for " + userId)
     env.modReportDB.close(userId)
     return "{'queued': true}", 201
+
+
+###############
+## WebSockets
+###############
+
+@socketio.on('progress-request')
+def handleInProgressReq(json):
+    inProgress = {'requests': [i.json() for i in env.deepPlayerQueueDB.inProgress()]}
+    emit('progress-update', inProgress, broadcast=True)
     
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', debug=True)
+    socketio.run(app)
+    #app.run(host='0.0.0.0', debug=True)

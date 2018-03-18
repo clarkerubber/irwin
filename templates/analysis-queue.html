@@ -10,14 +10,14 @@
       <h1>Player Analysis Queue</h1>
       <h2>In Progress</h2>
       {% for analysisRequest in inProgress %}
-      <div class="col">
+      <div id="{{analysisRequest.id}}" class="col">
         <div class="row" style="margin-top: 10px;">
           <div class="col-2"><h4><b>{{analysisRequest.id}}</b></h4></div>
-          <div class="col-2"><h4>{{analysisRequest.progress}}% complete</h4></div>
+          <div id="{{analysisRequest.id}}-progress-text" class="col-2"><h4>{{analysisRequest.progress}}% complete</h4></div>
           <div class="col"><h4>processed by {{analysisRequest.owner}}</h4></div>
         </div>
         <div class="row" style="width:100%; background-color: rgba(20, 20, 20, 0.2); border-radius: 2px;">
-          <div style="width: {{analysisRequest.progress}}%; height: 5px; left: 0; background-color: rgba(0, 230, 20, 0.8); border-radius: 2px;"></div>
+          <div id="{{analysisRequest.id}}-progress" style="width: {{analysisRequest.progress}}%; height: 5px; left: 0; background-color: rgba(0, 230, 20, 0.8); border-radius: 2px;"></div>
         </div>
       </div>
       {% endfor %}
@@ -53,5 +53,24 @@
           </div>
     </main>
   {{ base.scripts() }}
+  <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.6/socket.io.min.js"></script>
+  <script type="text/javascript" charset="utf-8">
+      var socket = io.connect('http://' + document.domain + ':' + location.port);
+      socket.on('connect', function() {
+          socket.emit('progress-request', {data: 'update'});
+      });
+      socket.on('progress-update', function(data) {
+        console.log(data);
+        data['requests'].forEach(function(req) {
+          $('#'+req['id']+'-progress').css('width', req['progress']+'%');
+          $('#'+req['id']+'-progress-text').html('<h4>'+req['progress']+'% complete</h4>');
+          console.log('updated ' + req['id']);
+        });
+      });
+      setInterval(function() {
+        // request progress update evey 5 seconds
+        socket.emit('progress-request', {data: 'update'});
+      }, 5000);
+  </script>
   </body>
 </html>
