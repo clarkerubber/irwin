@@ -68,7 +68,7 @@
           if ($('#'+req['id']).length) {
             if (req['complete']) {
               // Provide link to the report
-              $('#'+req['id']+'-progress-text').html('<h4><a href="/player-report/latest/'+req['id']+'>View Report</a></h4>');
+              $('#'+req['id']+'-progress-text').html('<h4><a href="/player-report/latest/'+req['id']+'">View Report</a></h4>');
             } else {
               $('#'+req['id']+'-progress-text').html('<h4>'+req['progress']+'% complete</h4>');
             }
