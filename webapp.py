@@ -280,7 +280,7 @@ def handleInProgressReq(json):
     inProgressIds = [i.id for i in inProgress]
     inProgress = inProgress + [update for update in updates if update.id not in inProgressIds]
     inProgressJson = [i.json() for i in inProgress]
-    emit('progress-update', {'requests': inProgressJson}, broadcast=True)
+    emit('progress-update', {'requests': inProgressJson})
     
 if __name__ == '__main__':
     socketio.run(app)

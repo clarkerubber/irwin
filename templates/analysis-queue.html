@@ -67,9 +67,8 @@
         data['requests'].forEach(function(req) {
           if ($('#'+req['id']).length) {
             if (req['complete']) {
-              inProgress.remove(req['id']); // no longer need to request updates for this person
               // Provide link to the report
-              $('#'+req['id']+'-progress-text').html('<h4><a href="' + document.domain + '/player-report/latest/'+req['id']+'>'+req['progress']+'% complete</a></h4>');
+              $('#'+req['id']+'-progress-text').html('<h4><a href="/player-report/latest/'+req['id']+'>View Report</a></h4>');
             } else {
               $('#'+req['id']+'-progress-text').html('<h4>'+req['progress']+'% complete</h4>');
             }
@@ -79,7 +78,7 @@
             $('#in-progress').prepend(
               "<div id='" + req['id'] + "' class='col'>" +
               "<div class='row' style='margin-top: 10px;'>" +
-                "<div class='col-4' style='text-align: right;'><h4><b>" + req['id'] + "</b></h4></div>" +
+                "<div class='col-4' style='text-align: right;'><h4><b><a href='/player/" + req['id'] + "'>" + req['id'] + "</a></b></h4></div>" +
                 "<div id='" + req['id'] + "-progress-text' style='text-align: center;' class='col-2'><h4>" + req['progress'] + "% complete</h4></div>" +
                 "<div class='col-4'><h4>processed by " + req['owner'] + "</h4></div>" +
               "</div>" +
