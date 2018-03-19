@@ -131,7 +131,7 @@ class DeepPlayerQueueDB(namedtuple('DeepPlayerQueueDB', ['deepPlayerQueueColl'])
 
     def top(self, amount=20):
         bsons = self.deepPlayerQueueColl.find(
-            filter={},
+            filter={'complete': False},
             sort=[("precedence", pymongo.DESCENDING),
                 ("date", pymongo.ASCENDING)]).limit(amount)
         return [DeepPlayerQueueBSONHandler.reads(b) for b in bsons]
