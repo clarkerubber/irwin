@@ -35,7 +35,7 @@ class DeepPlayerQueue(namedtuple('DeepPlayerQueue', ['id', 'origin', 'precedence
             'progress': self.progress,
             'complete': self.complete,
             'owner': self.owner,
-            'date': "{:%d %b %Y}".format(self.date)
+            'date': "{:%d %b %Y at %H:%M}".format(self.date)
         }
 
     def __complete__(self):
