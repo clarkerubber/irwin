@@ -11,7 +11,7 @@
       <h1>
         <b>
           <span style="color: {{graphColor}}">{{gameReport.activation}}%</span>
-           {{ playerReport.userId }}
+           {{ playerReport.userId }} in {{ gameReport.gameId }}
         </b>
       </h1>
       <div class="row">
@@ -353,7 +353,7 @@
         labels: {{gameReport.moveNumbers()|safe}},
         datasets:[
           {
-            data: {{gameAnalysis.lossByTime()|safe}},
+            data: {{gameAnalysis.lossByTimeJSON()|safe}},
             pointBackgroundColor: {{pointColors|safe}},
             pointRadius: 10,
             pointHoverRadius: 12,
@@ -392,7 +392,7 @@
         labels: {{gameReport.moveNumbers()|safe}},
         datasets:[
           {
-            data: {{gameAnalysis.moveRankByTime()|safe}},
+            data: {{gameAnalysis.moveRankByTimeJSON()|safe}},
             pointBackgroundColor: {{pointColors|safe}},
             pointRadius: 10,
             pointHoverRadius: 12,
@@ -432,7 +432,7 @@
         labels: {{gameReport.moveNumbers()|safe}},
         datasets:[
           {
-            data: {{gameAnalysis.lossByRank()|safe}},
+            data: {{gameAnalysis.lossByRankJSON()|safe}},
             pointBackgroundColor: {{pointColors|safe}},
             pointRadius: 10,
             pointHoverRadius: 12,

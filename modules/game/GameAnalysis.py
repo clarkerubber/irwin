@@ -113,16 +113,25 @@ class GameAnalysis(namedtuple('GameAnalysis', ['id', 'userId', 'gameId', 'moveAn
         return {'data': json.dumps(data), 'labels': json.dumps(labels)}
 
     def moveRankByTime(self):
+        return [{'x': time, 'y': rank} for rank, time in zip(self.ranks(), self.emtSeconds())]
+
+    def moveRankByTimeJSON(self):
         # json format for graphing
-        return json.dumps([{'x': time, 'y': rank} for rank, time in zip(self.ranks(), self.emtSeconds())])
+        return json.dumps(self.moveRankByTime())
 
     def lossByTime(self):
+        return [{'x': time, 'y': loss} for loss, time in zip(self.winningChancesLossPercent(), self.emtSeconds())]
+
+    def lossByTimeJSON(self):
         # json format for graphing
-        return json.dumps([{'x': time, 'y': loss} for loss, time in zip(self.winningChancesLossPercent(), self.emtSeconds())])
+        return json.dumps(self.lossByTime())
 
     def lossByRank(self):
+        return [{'x': rank, 'y': loss} for loss, rank in zip(self.winningChancesLossPercent(), self.ranks())]
+
+    def lossByRankJSON(self):
         # json format for graphing
-        return json.dumps([{'x': rank, 'y': loss} for loss, rank in zip(self.winningChancesLossPercent(), self.ranks())])
+        return json.dumps(self.lossByRank())
 
     @staticmethod
     def gameAnalysisId(gameId, white):

@@ -5,6 +5,7 @@ from modules.game.GameAnalysis import GameAnalysis
 
 import numpy as np
 import math
+import json
 
 class GameAnalysisStore(namedtuple('GameAnalysisStore', ['games', 'gameAnalyses'])):
     def gamesWithoutAnalysis(self, excludeIds=[]):
@@ -44,6 +45,30 @@ class GameAnalysisStore(namedtuple('GameAnalysisStore', ['games', 'gameAnalyses'
 
     def gameAnalysisTensors(self):
         return [(gameAnalysis.moveAnalysisTensors(), gameAnalysis.length()) for gameAnalysis in self.gameAnalyses if len(gameAnalysis.moveAnalyses) < 60 and len(gameAnalysis.moveAnalyses) > 20 and gameAnalysis.emtAverage() < 2000]
+
+    def moveRankByTime(self):
+        output = []
+        [output.extend(ga.moveRankByTime()) for ga in self.gameAnalyses]
+        return output
+
+    def moveRankByTimeJSON(self):
+        return json.dumps(self.moveRankByTime())
+
+    def lossByTime(self):
+        output = []
+        [output.extend(ga.lossByTime()) for ga in self.gameAnalyses]
+        return output
+
+    def lossByTimeJSON(self):
+        return json.dumps(self.lossByTime())
+
+    def lossByRank(self):
+        output = []
+        [output.extend(ga.lossByRank()) for ga in self.gameAnalyses]
+        return output
+
+    def lossByRankJSON(self):
+        return json.dumps(self.lossByRank())
 
     @staticmethod
     def new():

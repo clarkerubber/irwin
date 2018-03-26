@@ -84,7 +84,7 @@ def handleLine(lineDict):
         if messageType == 'request':
             if lineDict['origin'] == 'moderator':
                 env.deepPlayerQueueDB.write(
-                    DeepPlayerQueue(id=userId, origin='moderator', owner=None, precedence=100000, date=datetime.now()))
+                    DeepPlayerQueue.new(userId=userId, origin='moderator', gamePredictions=[]))
         
         # all other types of request
         if not tooSoon and not inQueue:

@@ -84,6 +84,12 @@ class GameReportStore(namedtuple('GameReportStore', ['gameReports'])):
         moveActivations = reduce(operator.concat, [gameReport.activations() for gameReport in gameReports])
         return json.dumps([sum([int(moveActivation in range(i,i+10)) for moveActivation in moveActivations]) for i in range(0, 100, 10)][::-1])
 
+    def activations(self, top=False):
+        gameReports = self.topGames() if top else self.gameReports
+        activations = []
+        [activations.extend(gr.activations()) for gr in gameReports]
+        return activations
+        
     @staticmethod
     def zipLOL(lol):
         # List of Lists (can be different length)
