@@ -113,7 +113,7 @@ while True:
 
     logging.info('Posting report for ' + userId)
     env.api.postReport(env.irwin.report(
-        userId=userId,
+        player=player,
         gameAnalysisStore=gameAnalysisStore,
         owner=str(settings.name)))
     env.deepPlayerQueueDB.complete(deepPlayerQueue)

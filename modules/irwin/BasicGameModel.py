@@ -9,6 +9,7 @@ from collections import namedtuple
 from keras.models import load_model, Model
 from keras.layers import Dropout, Flatten, Dense, LSTM, Input, concatenate, Conv1D
 from keras.optimizers import Adam
+from keras.callbacks import TensorBoard
 
 from functools import lru_cache
 
@@ -73,7 +74,15 @@ class BasicGameModel(namedtuple('BasicGameModel', ['env'])):
         logging.debug("training")
         logging.debug("Batch Info: Games: " + str(len(batch['data'])))
 
-        model.fit(batch['data'], batch['labels'], epochs=epochs, batch_size=32, validation_split=0.2)
+        tensorBoard = TensorBoard(
+            log_dir='./logs/basicGameModel', 
+            histogram_freq=10,
+            batch_size=32, write_graph=True)
+
+        model.fit(
+            batch['data'], batch['labels'],
+            epochs=epochs, batch_size=32, validation_split=0.2,
+            callbacks=[tensorBoard])
 
         self.saveModel(model)
         logging.debug("complete")
@@ -91,6 +100,8 @@ class BasicGameModel(namedtuple('BasicGameModel', ['env'])):
         logging.debug("Getting games from DB")
         if filtered:
             legits = self.env.playerDB.byEngine(False)
+            shuffle(legits)
+            legits = legits[:10000]
             for p in legits:
                 legitTensors.extend([g.tensor(p.id) for g in self.env.gameDB.byUserIdAnalysed(p.id)])
             cheatGameActivations = self.env.gameBasicActivationDB.byEngineAndPrediction(True, 70)
@@ -99,6 +110,13 @@ class BasicGameModel(namedtuple('BasicGameModel', ['env'])):
         else:
             cheats = self.env.playerDB.byEngine(True)
             legits = self.env.playerDB.byEngine(False)
+
+            shuffle(cheats)
+            shuffle(legits)
+
+            cheats = cheats[:10000]
+            legits = legits[:10000]
+
             for p in legits + cheats:
                 if p.engine:
                     cheatTensors.extend([g.tensor(p.id) for g in self.env.gameDB.byUserIdAnalysed(p.id)])

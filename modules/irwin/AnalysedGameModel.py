@@ -9,6 +9,7 @@ from collections import namedtuple
 from keras.models import load_model, Model
 from keras.layers import Dropout, Dense, LSTM, Input, concatenate, Conv1D, Flatten
 from keras.optimizers import Adam
+from keras.callbacks import TensorBoard
 
 from functools import lru_cache
 
@@ -87,7 +88,15 @@ class AnalysedGameModel(namedtuple('AnalysedGameModel', ['env'])):
 
         logging.debug("Game Len: " + str(len(batch['data'][0])))
 
-        model.fit(batch['data'], batch['labels'], epochs=epochs, batch_size=32, validation_split=0.2)
+        tensorBoard = TensorBoard(
+            log_dir='./logs/analysedGameModel', 
+            histogram_freq=10,
+            batch_size=32, write_graph=True)
+
+        model.fit(
+            batch['data'], batch['labels'],
+            epochs=epochs, batch_size=32, validation_split=0.2,
+            callbacks=[tensorBoard])
 
         self.saveModel(model)
         logging.debug("complete")
@@ -105,6 +114,8 @@ class AnalysedGameModel(namedtuple('AnalysedGameModel', ['env'])):
             shuffle(cheatPivotEntries)
             shuffle(legits)
 
+            legits = legits[:10000]
+
             logging.debug("Getting game analyses from DB")
 
             legitGameAnalyses = []
@@ -118,6 +129,9 @@ class AnalysedGameModel(namedtuple('AnalysedGameModel', ['env'])):
 
             shuffle(cheats)
             shuffle(legits)
+
+            cheats = cheats[:10000]
+            legits = legits[:10000]
 
             cheatGameAnalyses = []
             legitGameAnalyses = []

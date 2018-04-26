@@ -26,7 +26,7 @@ parser.add_argument("--trainbasic", dest="trainbasic", nargs="?",
 parser.add_argument("--trainanalysed", dest="trainanalysed", nargs="?",
                     default=False, const=True, help="train analysed game model")
 parser.add_argument("--filtered", dest="filtered", nargs="?",
-                    default=False, const=True, help="use filtered dataset for training")
+                    default=False, const=True , help="use filtered dataset for training")
 parser.add_argument("--newmodel", dest="newmodel", nargs="?",
                     default=False, const=True, help="throw out current model. build new")
 
@@ -95,11 +95,12 @@ if settings.trainanalysed:
 
 # test on a single user in the DB
 if settings.test:
-    for userId in ['chess-network', 'clarkey', 'thibault', 'uyfadcrack']:
+    for userId in ['ralph27_velasco']:
+        player = env.playerDB.byUserId(userId)
         gameAnalysisStore = GameAnalysisStore.new()
         gameAnalysisStore.addGames(env.gameDB.byUserIdAnalysed(userId))
         gameAnalysisStore.addGameAnalyses(env.gameAnalysisDB.byUserId(userId))
-        env.api.postReport(env.irwin.report(userId, gameAnalysisStore))
+        env.api.postReport(env.irwin.report(player, gameAnalysisStore))
         logging.debug("posted")
 
 # how good is the network?

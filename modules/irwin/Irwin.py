@@ -38,7 +38,7 @@ class Irwin(Evaluation):
         return list(zip(gameIds, activations))
 
     @staticmethod
-    def activation(gameActivations):
+    def activation(player, gameActivations):
         sortedGameActivations = sorted(gameActivations, reverse=True)
         topXgames = sortedGameActivations[:ceil(0.15*len(sortedGameActivations))]
         topXgamesAvg = int(np.average(topXgames)) if len(topXgames) > 0 else 0
@@ -48,18 +48,16 @@ class Irwin(Evaluation):
         # 2 games > 95 and 3 > 90
         # 2 games > 95 and 5 > 85
 
-        aboveUpper = len([a for a in sortedGameActivations if a > 94])
-        aboveMid = len([a for a in sortedGameActivations if a > 89])
-        aboveLower = len([a for a in sortedGameActivations if a > 79])
+        aboveUpper = len([a for a in sortedGameActivations if a > 90])
+        #aboveMid = len([a for a in sortedGameActivations if a > 89])
+        aboveLower = len([a for a in sortedGameActivations if a > 69])
 
-        if (aboveUpper > 2
-            or aboveUpper > 1 and aboveMid > 2
-            or aboveUpper > 1 and aboveLower > 4):
+        if aboveUpper > 2 and player.gamesPlayed < 500:
             result = topXgamesAvg # enough games to mark
         elif aboveLower > 0:
-            result = min(94, topXgamesAvg) # Not enough games to mark
+            result = min(92, topXgamesAvg) # Not enough games to mark
         else:
-            result = min(84, topXgamesAvg) # Not enough games to report
+            result = min(64, topXgamesAvg) # Not enough games to report
 
         return result
 
@@ -72,16 +70,16 @@ class Irwin(Evaluation):
         topYavg = np.average(sortedMoveActivations[:ceil(0.9*len(moveActivations))]) # no outliers
         return int(np.average([pOverX, topXavg, topYavg]))
 
-    def report(self, userId, gameAnalysisStore, owner='test'):
+    def report(self, player, gameAnalysisStore, owner='test'):
         playerPredictions = self.predictAnalysed(gameAnalysisStore.gameAnalysisTensors())
         gameActivations = [Irwin.gameActivation(gamePredictions, gameLength) for gamePredictions, gameLength in playerPredictions]
 
         playerReport = PlayerReport.new(
-            userId=userId,
+            userId=player.id,
             owner=owner,
-            activation=self.activation(gameActivations))
+            activation=self.activation(player, gameActivations))
 
-        gameReports = [GameReport.new(ga, a, gp, playerReport.id, userId)
+        gameReports = [GameReport.new(ga, a, gp, playerReport.id, player.id)
             for ga, a, gp
             in zip(gameAnalysisStore.gameAnalyses, gameActivations, playerPredictions)]
 
@@ -108,12 +106,13 @@ class Irwin(Evaluation):
         logging.warning("Discovering unprocessed players")
         logging.debug("getting players")
         players = self.env.playerDB.byEngine(None)
+        totalPlayers = str(len(players))
         sus = []
-        for player in players:
-            logging.debug("investigating "+player.id)
+        for i, player in enumerate(players):
+            logging.debug("investigating "+player.id + " " + str(i) + "/" + totalPlayers)
             gameAnalysisStore = GameAnalysisStore([], [ga for ga in self.env.gameAnalysisDB.byUserId(player.id)])
             predictions = self.predictAnalysed(gameAnalysisStore.gameAnalysisTensors())
-            activation = self.activation(predictions)
+            activation = self.activation(player, predictions)
             logging.debug(str(activation))
             if activation > 90:
                 print("SUSPICIOUS")
@@ -125,14 +124,12 @@ class Irwin(Evaluation):
         logging.warning("Building Analysed Activation Table")
         logging.debug("getting players")
         cheats = self.env.playerDB.byEngine(True)
-        legits = self.env.playerDB.byEngine(False)
 
-        players = cheats + legits
-        lenPlayers = str(len(players))
+        lenPlayers = str(len(cheats))
 
         logging.info("gettings games and predicting")
 
-        for i, p in enumerate(players):
+        for i, p in enumerate(cheats):
             logging.info("predicting: " + p.id + "  -  " + str(i) + '/' + lenPlayers)
             gameAnalyses = self.env.gameAnalysisDB.byUserId(p.id)
             tensors = [(ga.moveAnalysisTensors(), ga.length()) for ga in gameAnalyses]
@@ -148,24 +145,18 @@ class Irwin(Evaluation):
         logging.debug("Building Basic Activation Table")
         logging.info("getting players")
         cheats = self.env.playerDB.byEngine(True)
-        legits = self.env.playerDB.byEngine(False)
 
-        gameBasicActivations = []
-        players = cheats + legits
-        lenPlayers = str(len(players))
+        lenPlayers = str(len(cheats))
 
         logging.info("getting games and predicting")
-        for i, p in enumerate(players):
+        for i, p in enumerate(cheats):
             logging.info("predicting: " + p.id + "  -  " + str(i) + "/" + lenPlayers)
             gameAnalysisStore = GameAnalysisStore(self.env.gameDB.byUserIdAnalysed(p.id), [])
             gameTensors = gameAnalysisStore.gameTensors(p.id)
             if len(gameTensors) > 0:
                 gamePredictions = self.predictBasicGames(gameTensors)
-                gameBasicActivations.extend([GameBasicActivation.fromPrediction(
+                self.env.gameBasicActivationDB.lazyWriteMany([GameBasicActivation.fromPrediction(
                     gameId=gameId,
                     userId=p.id,
                     prediction=prediction,
                     engine=p.engine) for gameId, prediction in gamePredictions])
-
-        logging.info("writing to db")
-        self.env.gameBasicActivationDB.lazyWriteMany(gameBasicActivations)
