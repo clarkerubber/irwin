@@ -52,7 +52,7 @@ class Irwin(Evaluation):
         #aboveMid = len([a for a in sortedGameActivations if a > 89])
         aboveLower = len([a for a in sortedGameActivations if a > 69])
 
-        if aboveUpper > 2 and player.gamesPlayed < 500:
+        if aboveUpper > 2 and player.gamesPlayed < 1000:
             result = topXgamesAvg # enough games to mark
         elif aboveLower > 0:
             result = min(92, topXgamesAvg) # Not enough games to mark
