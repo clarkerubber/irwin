@@ -20,12 +20,21 @@ from modules.irwin.AnalysisReport import PlayerReport, GameReport, moveActivatio
 from modules.game.GameAnalysisStore import GameAnalysisStore
 
 class Irwin(Evaluation):
+    """
+    Irwin(env: Env)
+
+    The main thinking and evalutaion engine of the application.
+    """
     def __init__(self, env):
         self.env = env
         self.basicGameModel = BasicGameModel(env)
         self.analysedGameModel = AnalysedGameModel(env)
 
     def predictAnalysed(self, tensors):
+        """
+        tensors: List([(numpy.Array, Int)]) => List(numpy.Array())
+        applies the analysed game model to a list of analysed game tensors (tensors)
+        """
         return [(self.analysedGameModel.model().predict(np.array([t])), length) for t, length in tensors]
 
     def predictBasicGames(self, gameTensors):

@@ -1,4 +1,4 @@
-"""Basic Queue manager. Gets next item in BasicPlayerQueue and creates entry for DeepPlayerQueue"""
+"""Goes through the database and finds players to update with new data from lichess"""
 import argparse
 import logging
 import json
