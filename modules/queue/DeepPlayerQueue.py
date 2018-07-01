@@ -94,6 +94,11 @@ class DeepPlayerQueueDB(namedtuple('DeepPlayerQueueDB', ['deepPlayerQueueColl'])
         """remove a complete job from the queue"""
         self.write(deepPlayerQueue.__complete__())
 
+    def updateComplete(self, _id, complete):
+        self.deepPlayerQueueColl.update_one(
+            {'_id': _id},
+            {'$set': {'complete': complete}})
+
     def removeUserId(self, userId):
         """remove all jobs related to userId"""
         self.deepPlayerQueueColl.remove({'_id': userId})
@@ -117,7 +122,7 @@ class DeepPlayerQueueDB(namedtuple('DeepPlayerQueueDB', ['deepPlayerQueueColl'])
         return None if bson is None else DeepPlayerQueueBSONHandler.reads(bson)
 
     def nextUnprocessed(self, name):
-        """find the next job to process"""
+        """find the next job to process against owner's name"""
         incompleteBSON = self.deepPlayerQueueColl.find_one({'owner': name, '$or': [{'complete': {'$exists': False}}, {'complete': False}]})
         if incompleteBSON is not None: # owner has unfinished business
             return DeepPlayerQueueBSONHandler.reads(incompleteBSON)
@@ -130,6 +135,7 @@ class DeepPlayerQueueDB(namedtuple('DeepPlayerQueueDB', ['deepPlayerQueueColl'])
         return None if deepPlayerQueueBSON is None else DeepPlayerQueueBSONHandler.reads(deepPlayerQueueBSON)
 
     def top(self, amount=20):
+        """Return the top `amount` of players, ranked by precedence"""
         bsons = self.deepPlayerQueueColl.find(
             filter={'complete': False},
             sort=[("precedence", pymongo.DESCENDING),

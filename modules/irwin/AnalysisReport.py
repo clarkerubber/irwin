@@ -92,8 +92,10 @@ class GameReportStore(namedtuple('GameReportStore', ['gameReports'])):
         
     @staticmethod
     def zipLOL(lol):
-        # List of Lists (can be different length)
-        # assumes the input isn't : []
+        """
+        lol: List[List[A]]
+        assumes the input isn't : []
+        """
         longest = max([len(l) for l in lol])
         bins = [[] for i in range(longest)]
         for l in lol:
@@ -105,14 +107,18 @@ class GameReportStore(namedtuple('GameReportStore', ['gameReports'])):
 
     @staticmethod
     def zipAvgLOL(lol):
-        # List of Lists (can be different length)
-        # assumes the input isn't : []
+        """
+        lol: List[List[A]]
+        assumes the input isn't : []
+        """
         return [np.average(b) for b in GameReportStore.zipLOL(lol)]
 
     @staticmethod
     def zipStdLOL(lol):
-        # List of Lists (can be different length)
-        # assumts the input isn't : []
+        """
+        lol: List[List[A]]
+        assumes the input isn't : []
+        """
         return [np.std(b) for b in GameReportStore.zipLOL(lol)]
 
     @staticmethod

@@ -1,6 +1,6 @@
 from collections import namedtuple
 
-class Priv(namedtuple('Priv', ['id', 'permission']))
+Priv = namedtuple('Priv', ['id', 'permission'])
 
 class PrivBSONHandler:
 	@staticmethod

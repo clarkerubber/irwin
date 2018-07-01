@@ -1,7 +1,7 @@
-from modules.auth.priv import PrivBSONHandler
+from modules.auth.Priv import PrivBSONHandler
 from collections import namedtuple
 
-class Token(namedtuple('id', 'privs'))
+Token = namedtuple('Token', ['id', 'privs'])
 
 class TokenBSONHandler:
 	@staticmethod

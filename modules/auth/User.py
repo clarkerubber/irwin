@@ -63,7 +63,7 @@ class UserBSONHandler:
 			'privs': [PrivBSONHandler.writes(p) for p in user.privs]
 		}
 
-class UserDB('UserDB', ['coll']):
+class UserDB(namedtuple('UserDB', ['coll'])):
 	def write(self, user):
 		self.coll.update_one({'_id': user.id}, {'$set': UserBSONHandler.writes(user)}, upsert=True)
 
