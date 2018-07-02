@@ -1,7 +1,9 @@
 from modules.auth.Priv import PrivBSONHandler
 from collections import namedtuple
 
-Token = namedtuple('Token', ['id', 'privs'])
+class Token(namedtuple('Token', ['id', 'privs'])):
+	def hasPermission(self, permission):
+		return permission in [p.permission for p in self.privs]
 
 class TokenBSONHandler:
 	@staticmethod

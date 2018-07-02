@@ -1,18 +1,16 @@
 from flask import Blueprint, request, jsonify
 
-def buildApiBlueprint(env, auth):
+def buildApiBlueprint(env):
     apiBlueprint = Blueprint('Api', __name__, url_prefix='/api')
 
     @apiBlueprint.route('/next', methods=['GET'])
     def apiNext():
         req = request.get_json(silent=True)
 
-        if req is not None:
-            tokenId = req.get('token')
+        authorised = env.auth.authoriseReq(req, 'request_job')
 
-            if tokenId is not None:
-                if env.auth.authoriseToken(tokenId, 'request_job'):
-                    print("authorised")
-        env.queue.deepPlayerQueue
+        if authorised:
+            print('authorised')
+            return env.queue.nextDeepAnalysis(authorised.id)
 
     return apiBlueprint
