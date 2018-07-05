@@ -1,31 +1,9 @@
+from modules.game.Blurs import Blurs, BlursBSONHandler
+from modules.game.EngineEval import EngineEval, EngineEvalBSONHandler
+
 from collections import namedtuple
 import math
 import numpy as np
-
-class Blurs(namedtuple('Blurs', ['nb', 'moves'])):
-    @staticmethod
-    def fromDict(d, l):
-        moves = [i == '1' for i in list(d.get('bits', ''))]
-        moves += [False] * (l - len(moves))
-        return Blurs(
-            nb = d.get('nb', 0),
-            moves = moves
-        )
-
-class Score(namedtuple('Score', ['cp', 'mate'])):
-    @staticmethod
-    def fromDict(d):
-        return Score(d.get('cp', None), d.get('mate', None))
-
-    def toDict(self):
-        return {'cp': self.cp} if self.cp is not None else {'mate': self.mate}
-
-    def winningChances(self, white):
-        if self.mate is not None:
-            base = (1 if self.mate > 0 else 0)
-        else:
-            base = 1 / (1 + math.exp(-0.004 * self.cp))
-        return 100*(base if white else (1-base))
 
 class Game(namedtuple('Game', ['id', 'white', 'black', 'pgn', 'emts', 'whiteBlurs', 'blackBlurs', 'analysis'])):
     @staticmethod
@@ -44,7 +22,7 @@ class Game(namedtuple('Game', ['id', 'white', 'black', 'pgn', 'emts', 'whiteBlur
             emts = d.get('emts'),
             whiteBlurs = Blurs.fromDict(d['blurs']['white'], math.ceil(len(pgn)/2)),
             blackBlurs = Blurs.fromDict(d['blurs']['black'], math.floor(len(pgn)/2)),
-            analysis = [Score.fromDict(a) for a in d.get('analysis', []) if a is not None]
+            analysis = [EngineEval.fromDict(a) for a in d.get('analysis', []) if a is not None]
         )
 
     @staticmethod
@@ -96,27 +74,6 @@ class Game(namedtuple('Game', ['id', 'white', 'black', 'pgn', 'emts', 'whiteBlur
             return self.whiteBlurs.moves[moveNumber-1]
         return self.blackBlurs.moves[moveNumber-1]
 
-class BlursBSONHandler:
-    @staticmethod
-    def reads(bson):
-        return Blurs(
-            nb = bson['nb'],
-            moves = [i == 1 for i in list(bson['bits'])]
-            )
-    def writes(blurs):
-        return {
-            'nb': blurs.nb,
-            'bits': ''.join(['1' if i else '0' for i in blurs.moves])
-        }
-
-class ScoreBSONHandler:
-    @staticmethod
-    def reads(bson):
-        return [Score.fromDict(s) for s in bson]
-
-    def writes(scores):
-        return [s.toDict() for s in scores]
-
 class GameBSONHandler:
     @staticmethod
     def reads(bson):
@@ -128,7 +85,7 @@ class GameBSONHandler:
             emts = bson['emts'],
             whiteBlurs = BlursBSONHandler.reads(bson['whiteBlurs']),
             blackBlurs = BlursBSONHandler.reads(bson['blackBlurs']),
-            analysis = ScoreBSONHandler.reads(bson.get('analysis', [])))
+            analysis = EngineEvalBSONHandler.reads(bson.get('analysis', [])))
 
     @staticmethod
     def writes(game):
@@ -140,7 +97,7 @@ class GameBSONHandler:
             'emts': game.emts,
             'whiteBlurs': BlursBSONHandler.writes(game.whiteBlurs),
             'blackBlurs': BlursBSONHandler.writes(game.blackBlurs),
-            'analysis': ScoreBSONHandler.writes(game.analysis),
+            'analysis': EngineEvalBSONHandler.writes(game.analysis),
             'analysed': len(game.analysis) > 0
         }
 

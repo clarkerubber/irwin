@@ -9,15 +9,15 @@ from modules.fishnet.fishnet import stockfish_command
 from modules.lichess.Api import Api
 
 from modules.game.Game import GameDB
-from modules.game.GameAnalysis import GameAnalysisDB
+from modules.game.AnalysedGame import AnalysedGameDB
 from modules.game.Player import PlayerDB
-from modules.game.PositionAnalysis import PositionAnalysisDB
+from modules.game.AnalysedPosition import AnalysedPositionDB
 
 from modules.queue.BasicPlayerQueue import BasicPlayerQueueDB
 from modules.queue.DeepPlayerQueue import DeepPlayerQueueDB
 from modules.queue.ModReport import ModReportDB
 
-from modules.irwin.GameAnalysisActivation import GameAnalysisActivationDB
+from modules.irwin.AnalysedGameActivation import AnalysedGameActivationDB
 from modules.irwin.GameBasicActivation import GameBasicActivationDB
 
 from modules.irwin.AnalysisReport import PlayerReportDB, GameReportDB
@@ -49,14 +49,14 @@ class Env:
         # Colls
         self.playerColl = self.db.player
         self.gameColl = self.db.game
-        self.gameAnalysisColl = self.db.gameAnalysis
-        self.positionAnalysisColl = self.db.positionAnalysis
+        self.analysedGameColl = self.db.analysedGame
+        self.analysedPositionColl = self.db.analysedPosition
 
         self.basicPlayerQueueColl = self.db.basicPlayerQueue
         self.deepPlayerQueueColl = self.db.deepPlayerQueue
         self.reportColl = self.db.report
 
-        self.gameAnalysisActivationColl = self.db.gameAnalysisActivation
+        self.analysedGameActivationColl = self.db.analysedGameActivation
         self.gameBasicActivationColl = self.db.gameBasicActivation
 
         self.playerReportColl = self.db.playerReport
@@ -65,14 +65,14 @@ class Env:
         # database abstraction
         self.playerDB = PlayerDB(self.playerColl)
         self.gameDB = GameDB(self.gameColl)
-        self.gameAnalysisDB = GameAnalysisDB(self.gameAnalysisColl)
-        self.positionAnalysisDB = PositionAnalysisDB(self.positionAnalysisColl)
+        self.analysedGameDB = AnalysedGameDB(self.analysedGameColl)
+        self.analysedPositionDB = AnalysedPositionDB(self.analysedPositionColl)
 
         self.basicPlayerQueueDB = BasicPlayerQueueDB(self.basicPlayerQueueColl)
         self.deepPlayerQueueDB = DeepPlayerQueueDB(self.deepPlayerQueueColl)
         self.modReportDB = ModReportDB(self.reportColl)
 
-        self.gameAnalysisActivationDB = GameAnalysisActivationDB(self.gameAnalysisActivationColl)
+        self.analysedGameActivationDB = AnalysedGameActivationDB(self.analysedGameActivationColl)
         self.gameBasicActivationDB = GameBasicActivationDB(self.gameBasicActivationColl)
 
         self.playerReportDB = PlayerReportDB(self.playerReportColl)

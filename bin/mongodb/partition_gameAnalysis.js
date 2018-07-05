@@ -1,5 +1,5 @@
-db.gameAnalysis.find({}).forEach(function(o) {
-  db.gameAnalysis.update({
+db.analysedGame.find({}).forEach(function(o) {
+  db.analysedGame.update({
     _id: o._id
   }, {
     $set: {

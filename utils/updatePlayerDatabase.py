@@ -3,7 +3,7 @@ import logging
 
 from modules.game.Player import Player
 from modules.game.Game import Game
-from modules.game.GameAnalysisStore import GameAnalysisStore
+from modules.game.GameStore import GameStore
 
 def updatePlayerDatabase(env):
     players= env.playerDB.all()

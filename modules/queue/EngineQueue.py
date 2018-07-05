@@ -5,7 +5,7 @@ from math import ceil
 import pymongo
 import numpy as np
 
-class DeepPlayerQueue(namedtuple('DeepPlayerQueue', ['id', 'origin', 'precedence', 'progress', 'complete', 'owner', 'date'])):
+class EngineQueue(namedtuple('EngineQueue', ['id', 'origin', 'precedence', 'progress', 'complete', 'owner', 'date'])):
     @staticmethod
     def new(userId, origin, gamePredictions):
         if len(gamePredictions) > 0:
@@ -18,7 +18,7 @@ class DeepPlayerQueue(namedtuple('DeepPlayerQueue', ['id', 'origin', 'precedence
             precedence += 5000
         elif origin == 'moderator':
             precedence = 100000
-        return DeepPlayerQueue(
+        return EngineQueue(
             id=userId,
             origin=origin,
             precedence=precedence,
@@ -39,7 +39,7 @@ class DeepPlayerQueue(namedtuple('DeepPlayerQueue', ['id', 'origin', 'precedence
         }
 
     def __complete__(self):
-        return DeepPlayerQueue(
+        return EngineQueue(
             id=self.id,
             origin=self.origin,
             precedence=self.precedence,
@@ -48,10 +48,10 @@ class DeepPlayerQueue(namedtuple('DeepPlayerQueue', ['id', 'origin', 'precedence
             owner=self.owner,
             date=self.date)
 
-class DeepPlayerQueueBSONHandler:
+class EngineQueueBSONHandler:
     @staticmethod
     def reads(bson):
-        return DeepPlayerQueue(
+        return EngineQueue(
             id=bson['_id'],
             origin=bson['origin'],
             precedence=bson['precedence'],
@@ -61,83 +61,83 @@ class DeepPlayerQueueBSONHandler:
             date=bson.get('date'))
 
     @staticmethod
-    def writes(deepPlayerQueue):
+    def writes(engineQueue):
         return {
-            '_id': deepPlayerQueue.id,
-            'origin': deepPlayerQueue.origin,
-            'precedence': deepPlayerQueue.precedence,
-            'progress': deepPlayerQueue.progress,
-            'complete': deepPlayerQueue.complete,
-            'owner': deepPlayerQueue.owner,
+            '_id': engineQueue.id,
+            'origin': engineQueue.origin,
+            'precedence': engineQueue.precedence,
+            'progress': engineQueue.progress,
+            'complete': engineQueue.complete,
+            'owner': engineQueue.owner,
             'date': datetime.now()
         }
 
-class DeepPlayerQueueDB(namedtuple('DeepPlayerQueueDB', ['deepPlayerQueueColl'])):
-    def write(self, deepPlayerQueue):
-        self.deepPlayerQueueColl.update_one(
-            {'_id': deepPlayerQueue.id},
-            {'$set': DeepPlayerQueueBSONHandler.writes(deepPlayerQueue)}, upsert=True)
+class EngineQueueDB(namedtuple('EngineQueueDB', ['engineQueueColl'])):
+    def write(self, engineQueue):
+        self.engineQueueColl.update_one(
+            {'_id': engineQueue.id},
+            {'$set': EngineQueueBSONHandler.writes(engineQueue)}, upsert=True)
 
     def updateProgress(self, _id, progress):
-        self.deepPlayerQueueColl.update_one(
+        self.engineQueueColl.update_one(
             {'_id': _id},
             {'$set': {'progress': progress}})
 
     def inProgress(self):
-        return [DeepPlayerQueueBSONHandler.reads(bson) for bson in self.deepPlayerQueueColl.find({'owner': {'$ne': None}, 'complete': False})]
+        return [EngineQueueBSONHandler.reads(bson) for bson in self.engineQueueColl.find({'owner': {'$ne': None}, 'complete': False})]
 
     def byId(self, _id):
-        bson = self.deepPlayerQueueColl.find_one({'_id': _id})
-        return None if bson is None else DeepPlayerQueueBSONHandler.reads(bson)
+        bson = self.engineQueueColl.find_one({'_id': _id})
+        return None if bson is None else EngineQueueBSONHandler.reads(bson)
 
-    def complete(self, deepPlayerQueue):
+    def complete(self, engineQueue):
         """remove a complete job from the queue"""
-        self.write(deepPlayerQueue.__complete__())
+        self.write(engineQueue.__complete__())
 
     def updateComplete(self, _id, complete):
-        self.deepPlayerQueueColl.update_one(
+        self.engineQueueColl.update_one(
             {'_id': _id},
             {'$set': {'complete': complete}})
 
     def removeUserId(self, userId):
         """remove all jobs related to userId"""
-        self.deepPlayerQueueColl.remove({'_id': userId})
+        self.engineQueueColl.remove({'_id': userId})
 
     def exists(self, userId):
-        """userId has a deepPlayerQueue object against their name"""
-        return self.deepPlayerQueueColl.find_one({'_id': userId}) is not None
+        """userId has a engineQueue object against their name"""
+        return self.engineQueueColl.find_one({'_id': userId}) is not None
 
     def owned(self, userId):
         """Does any deep player queue for userId have an owner"""
-        bson = self.deepPlayerQueueColl.find_one({'_id': userId, 'owner': None})
+        bson = self.engineQueueColl.find_one({'_id': userId, 'owner': None})
         hasOwner = False
         if bson is not None:
             hasOwner = bson['owner'] is not None
         return hasOwner
 
     def oldest(self):
-        bson = self.deepPlayerQueueColl.find_one(
+        bson = self.engineQueueColl.find_one(
             filter={'date': {'$lt': datetime.now() - timedelta(days=2)}},
             sort=[('date', pymongo.ASCENDING)])
-        return None if bson is None else DeepPlayerQueueBSONHandler.reads(bson)
+        return None if bson is None else EngineQueueBSONHandler.reads(bson)
 
     def nextUnprocessed(self, name):
         """find the next job to process against owner's name"""
-        incompleteBSON = self.deepPlayerQueueColl.find_one({'owner': name, '$or': [{'complete': {'$exists': False}}, {'complete': False}]})
+        incompleteBSON = self.engineQueueColl.find_one({'owner': name, '$or': [{'complete': {'$exists': False}}, {'complete': False}]})
         if incompleteBSON is not None: # owner has unfinished business
-            return DeepPlayerQueueBSONHandler.reads(incompleteBSON)
+            return EngineQueueBSONHandler.reads(incompleteBSON)
 
-        deepPlayerQueueBSON = self.deepPlayerQueueColl.find_one_and_update(
+        engineQueueBSON = self.engineQueueColl.find_one_and_update(
             filter={'owner': None, 'complete': False},
             update={'$set': {'owner': name}},
             sort=[("precedence", pymongo.DESCENDING),
                 ("date", pymongo.ASCENDING)])
-        return None if deepPlayerQueueBSON is None else DeepPlayerQueueBSONHandler.reads(deepPlayerQueueBSON)
+        return None if engineQueueBSON is None else EngineQueueBSONHandler.reads(engineQueueBSON)
 
     def top(self, amount=20):
         """Return the top `amount` of players, ranked by precedence"""
-        bsons = self.deepPlayerQueueColl.find(
+        bsons = self.engineQueueColl.find(
             filter={'complete': False},
             sort=[("precedence", pymongo.DESCENDING),
                 ("date", pymongo.ASCENDING)]).limit(amount)
-        return [DeepPlayerQueueBSONHandler.reads(b) for b in bsons]
+        return [EngineQueueBSONHandler.reads(b) for b in bsons]

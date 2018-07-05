@@ -1,6 +1,6 @@
 db.player.find({}).forEach(function(p) {
-  db.gameAnalysis.find({userId: p._id}).forEach(function(g) {
-    db.gameAnalysisPlayerPivot.update({
+  db.analysedGame.find({userId: p._id}).forEach(function(g) {
+    db.analysedGamePlayerPivot.update({
         _id: g._id
       }, {
         _id: g._id,

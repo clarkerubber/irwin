@@ -76,6 +76,9 @@ class AnalysedGameModel(namedtuple('AnalysedGameModel', ['env'])):
             metrics=['accuracy'])
         return model
 
+    def predict(self, analysedGames):
+        return [self.model().predict(np.array([ag.tensor()])) for ag in analysedGames]
+
     def train(self, epochs, filtered=True, newmodel=False):
         # get player sample
         logging.debug("getting model")
@@ -108,7 +111,7 @@ class AnalysedGameModel(namedtuple('AnalysedGameModel', ['env'])):
     def getTrainingDataset(self, filtered):
         if filtered:
             logging.debug("gettings game IDs from DB")
-            cheatPivotEntries = self.env.gameAnalysisActivationDB.byEngineAndPrediction(True, 80)
+            cheatPivotEntries = self.env.analysedGameActivationDB.byEngineAndPrediction(True, 80)
             legits = self.env.playerDB.byEngine(False)
 
             shuffle(cheatPivotEntries)
@@ -118,10 +121,10 @@ class AnalysedGameModel(namedtuple('AnalysedGameModel', ['env'])):
 
             logging.debug("Getting game analyses from DB")
 
-            legitGameAnalyses = []
+            legitAnalysedGames = []
 
-            cheatGameAnalyses = self.env.gameAnalysisDB.byIds([cpe.id for cpe in cheatPivotEntries])
-            [legitGameAnalyses.extend(ga) for ga in self.env.gameAnalysisDB.byUserIds([u.id for u in legits])]
+            cheatAnalysedGames = self.env.analysedGameDB.byIds([cpe.id for cpe in cheatPivotEntries])
+            [legitAnalysedGames.extend(ga) for ga in self.env.analysedGameDB.byUserIds([u.id for u in legits])]
         else:
             logging.debug("getting players by engine")
             cheats = self.env.playerDB.byEngine(True)
@@ -133,16 +136,16 @@ class AnalysedGameModel(namedtuple('AnalysedGameModel', ['env'])):
             cheats = cheats[:10000]
             legits = legits[:10000]
 
-            cheatGameAnalyses = []
-            legitGameAnalyses = []
+            cheatAnalysedGames = []
+            legitAnalysedGames = []
 
             logging.debug("getting game analyses from DB")
-            [cheatGameAnalyses.extend(ga) for ga in self.env.gameAnalysisDB.byUserIds([u.id for u in cheats])]
-            [legitGameAnalyses.extend(ga) for ga in self.env.gameAnalysisDB.byUserIds([u.id for u in legits])]
+            [cheatAnalysedGames.extend(ga) for ga in self.env.analysedGameDB.byUserIds([u.id for u in cheats])]
+            [legitAnalysedGames.extend(ga) for ga in self.env.analysedGameDB.byUserIds([u.id for u in legits])]
 
-        logging.debug("building moveAnalysisTensors")
-        cheatGameTensors = [tga.moveAnalysisTensors() for tga in cheatGameAnalyses if tga.gameLength() <= 60]
-        legitGameTensors = [tga.moveAnalysisTensors() for tga in legitGameAnalyses if tga.gameLength() <= 60]
+        logging.debug("building tensor")
+        cheatGameTensors = [tga.tensor() for tga in cheatAnalysedGames if tga.gameLength() <= 60]
+        legitGameTensors = [tga.tensor() for tga in legitAnalysedGames if tga.gameLength() <= 60]
 
         logging.debug("batching tensors")
         return self.createBatchAndLabels(cheatGameTensors, legitGameTensors)

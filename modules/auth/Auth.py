@@ -64,12 +64,15 @@ class Auth(namedtuple('Auth', ['env'])):
 
 		Checks if a request is verified with permission.
 		"""
-		tokenId = reg.get('auth', {}).get('token')
-		if tokenId is not None:
-			return self.authoriseTokenId(tokenId, permission)
+		if req is not None:
+			tokenId = reg.get('auth', {}).get('token')
+			if tokenId is not None:
+				return self.authoriseTokenId(tokenId, permission)
 
-		username = req.get('auth', {}).get('username')
-		password = req.get('auth', {}).get('password')
+			username = req.get('auth', {}).get('username')
+			password = req.get('auth', {}).get('password')
 
-		if None not in [username, password]:
-			return self.authoriseUser(username, password, permission)
+			if None not in [username, password]:
+				return self.authoriseUser(username, password, permission)
+
+		return (None, False)

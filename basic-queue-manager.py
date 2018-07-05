@@ -7,7 +7,7 @@ from time import sleep
 
 from modules.queue.DeepPlayerQueue import DeepPlayerQueue
 
-from modules.game.GameAnalysisStore import GameAnalysisStore
+from modules.game.GameStore import GameStore
 
 from modules.irwin.GameBasicActivation import GameBasicActivation
 
@@ -53,9 +53,9 @@ while True:
         continue
     
     # get analysed (by fishnet/lichess) games from the db
-    gameAnalysisStore = GameAnalysisStore.new()
-    gameAnalysisStore.addGames(env.gameDB.byUserIdAnalysed(userId))
-    gameTensors = gameAnalysisStore.gameTensors(userId)
+    gameStore = GameStore.new()
+    gameStore.addGames(env.gameDB.byUserIdAnalysed(userId))
+    gameTensors = gameStore.gameTensors(userId)
 
     if len(gameTensors) > 0:
         gamePredictions = env.irwin.predictBasicGames(gameTensors)

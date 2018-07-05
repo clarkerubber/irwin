@@ -5,10 +5,10 @@ import sys
 import logging
 import json
 
-from modules.game.GameAnalysisStore import GameAnalysisStore
+from modules.game.GameStore import GameStore
 
 from utils.updatePlayerDatabase import updatePlayerDatabase
-from utils.buildPositionAnalysisTable import buildPositionAnalysisTable
+from utils.buildAnalysedPositionTable import buildAnalysedPositionTable
 from utils.buildAverageReport import buildAverageReport
 
 from Env import Env
@@ -86,7 +86,7 @@ if settings.buildanalysedtable:
     env.irwin.buildAnalysedTable()
 
 if settings.buildpositiontable:
-    buildPositionAnalysisTable(env)
+    buildAnalysedPositionTable(env)
 
 if settings.trainanalysed:
     env.irwin.analysedGameModel.train(
@@ -97,10 +97,10 @@ if settings.trainanalysed:
 if settings.test:
     for userId in ['ralph27_velasco']:
         player = env.playerDB.byUserId(userId)
-        gameAnalysisStore = GameAnalysisStore.new()
-        gameAnalysisStore.addGames(env.gameDB.byUserIdAnalysed(userId))
-        gameAnalysisStore.addGameAnalyses(env.gameAnalysisDB.byUserId(userId))
-        env.api.postReport(env.irwin.report(player, gameAnalysisStore))
+        gameStore = GameStore.new()
+        gameStore.addGames(env.gameDB.byUserIdAnalysed(userId))
+        gameStore.addAnalysedGames(env.analysedGameDB.byUserId(userId))
+        env.api.postReport(env.irwin.report(player, gameStore))
         logging.debug("posted")
 
 # how good is the network?

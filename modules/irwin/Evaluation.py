@@ -1,7 +1,7 @@
 import logging
 from pprint import pprint
 
-from modules.game.GameAnalysisStore import GameAnalysisStore
+from modules.game.GameStore import GameStore
 
 class Evaluation:
     def getEvaluationDataset(self, batchSize):
@@ -9,14 +9,14 @@ class Evaluation:
         players = self.env.playerDB.balancedSample(batchSize)
         print(" %d" % len(players))
         print("getting game analyses")
-        analysesByPlayer = [(player, GameAnalysisStore([], [ga for ga in self.env.gameAnalysisDB.byUserId(player.id)])) for player in players]
+        analysesByPlayer = [(player, GameStore([], [ga for ga in self.env.analysedGameDB.byUserId(player.id)])) for player in players]
         return analysesByPlayer
 
     def evaluate(self):
         logging.warning("Evaluating Model")
         logging.debug("Getting Dataset")
         analysisStoreByPlayer = self.getEvaluationDataset(self.env.settings['irwin']['evalSize'])
-        activations = [self.activation(player, [self.gameActivation(gp, l) for gp, l in self.predictAnalysed(gameAnalysisStore.gameAnalysisTensors())]) for player, gameAnalysisStore in analysisStoreByPlayer]
+        activations = [self.activation(player, [self.gameActivation(gp, l) for gp, l in self.predictAnalysed(gameStore.analysedGameTensors())]) for player, gameStore in analysisStoreByPlayer]
         outcomes = list([(ap, Evaluation.outcome(a, 92, 64, ap[0].engine)) for ap, a in zip(analysisStoreByPlayer, activations)])
         tp = len([a for a in outcomes if a[1] == 1])
         fn = len([a for a in outcomes if a[1] == 2])

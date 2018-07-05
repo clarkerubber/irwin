@@ -7,8 +7,8 @@ from time import sleep
 
 from modules.game.Player import Player
 from modules.game.Game import Game
-from modules.game.GameAnalysis import GameAnalysis
-from modules.game.GameAnalysisStore import GameAnalysisStore
+from modules.game.AnalysedGame import AnalysedGame
+from modules.game.GameStore import GameStore
 
 from Env import Env
 
@@ -58,61 +58,61 @@ while True:
     player = env.playerDB.byId(userId)
 
     # pull what we already have on the player
-    gameAnalysisStore = GameAnalysisStore.new()
-    gameAnalysisStore.addGames(env.gameDB.byUserId(userId))
-    gameAnalysisStore.addGameAnalyses(env.gameAnalysisDB.byUserId(userId))
+    gameStore = GameStore.new()
+    gameStore.addGames(env.gameDB.byUserId(userId))
+    gameStore.addAnalysedGames(env.analysedGameDB.byUserId(userId))
 
     # Filter games and assessments for relevant info
     try:
-        gameAnalysisStore.addGames(Game.fromPlayerData(playerData))
+        gameStore.addGames(Game.fromPlayerData(playerData))
     except KeyError:
         logging.warning("KeyError warning when adding games to analysisStore")
         env.deepPlayerQueueDB.complete(deepPlayerQueue)
         continue # if this doesn't gather any useful data, skip
 
-    env.gameDB.lazyWriteGames(gameAnalysisStore.games)
+    env.gameDB.lazyWriteGames(gameStore.games)
 
-    logging.info("Already Analysed: " + str(len(gameAnalysisStore.gameAnalyses)))
+    logging.info("Already Analysed: " + str(len(gameStore.analysedGames)))
 
     # decide which games should be analysed
-    gameTensors = gameAnalysisStore.gameTensorsWithoutAnalysis(userId)
+    gameTensors = gameStore.gameTensorsWithoutAnalysis(userId)
 
     if len(gameTensors) > 0:
         gamePredictions = env.irwin.predictBasicGames(gameTensors) # [(gameId, prediction)]
         gamePredictions.sort(key=lambda tup: -tup[1])
         gids = [gid for gid, _ in gamePredictions][:5]
-        gamesFromPredictions = [gameAnalysisStore.gameById(gid) for gid in gids]
+        gamesFromPredictions = [gameStore.gameById(gid) for gid in gids]
         gamesFromPredictions = [g for g in gamesFromPredictions if g is not None] # just in case
-        gamesToAnalyse = gamesFromPredictions + gameAnalysisStore.randomGamesWithoutAnalysis(10 - len(gids), excludeIds=gamesFromPredictions)
+        gamesToAnalyse = gamesFromPredictions + gameStore.randomGamesWithoutAnalysis(10 - len(gids), excludeIds=gamesFromPredictions)
     else:
-        gamesToAnalyse = gameAnalysisStore.randomGamesWithoutAnalysis()
+        gamesToAnalyse = gameStore.randomGamesWithoutAnalysis()
 
     if len(player.mustAnalyse) > 0:
-        games = [gameAnalysisStore.gameById(gid) for gid in player.mustAnalyse]
+        games = [gameStore.gameById(gid) for gid in player.mustAnalyse]
         mustAnalyseGames = [game for game in games if game is not None]
         gamesToAnalyse = gamesToAnalyse + mustAnalyseGames
 
     # analyse games with SF
     sumGamestoAnalyse = len(gamesToAnalyse)
     for i, game in enumerate(gamesToAnalyse):
-        gameAnalysisStore.addGameAnalysis(
-            GameAnalysis.fromGame(
+        gameStore.addAnalysedGame(
+            AnalysedGame.fromGame(
                 game=game,
                 engine=env.engine,
                 infoHandler=env.infoHandler,
                 white=game.white == userId,
                 nodes=env.settings['stockfish']['nodes'],
-                positionAnalysisDB=env.positionAnalysisDB
+                analysedPositionDB=env.analysedPositionDB
             ))
         # update progress for logging
         env.deepPlayerQueueDB.updateProgress(deepPlayerQueue.id, int(100*i/sumGamestoAnalyse))
 
-    env.gameAnalysisDB.lazyWriteGameAnalyses(gameAnalysisStore.gameAnalyses)
+    env.analysedGameDB.lazyWriteAnalysedGames(gameStore.analysedGames)
 
     logging.info('Posting report for ' + userId)
     env.api.postReport(env.irwin.report(
         player=player,
-        gameAnalysisStore=gameAnalysisStore,
+        gameStore=gameStore,
         owner=str(settings.name)))
     env.deepPlayerQueueDB.complete(deepPlayerQueue)
 

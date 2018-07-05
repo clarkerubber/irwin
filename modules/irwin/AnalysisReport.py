@@ -132,14 +132,14 @@ class GameReportStore(namedtuple('GameReportStore', ['gameReports'])):
 
 class GameReport(namedtuple('GameReport', ['id', 'reportId', 'gameId', 'activation', 'moves'])):
     @staticmethod
-    def new(gameAnalysis, gameActivation, gamePredictions, reportId, userId):
-        gameId = gameAnalysis.gameId
+    def new(analysedGame, gameActivation, gamePredictions, reportId, userId):
+        gameId = analysedGame.gameId
         return GameReport(
             id=gameId + '/' + reportId,
             reportId=reportId,
             gameId=gameId,
             activation=gameActivation,
-            moves=[MoveReport.new(am, p) for am, p in zip(gameAnalysis.moveAnalyses, movePredictions(gamePredictions[0]))])
+            moves=[MoveReport.new(am, p) for am, p in zip(analysedGame.analysedMoves, movePredictions(gamePredictions[0]))])
 
     def reportDict(self):
         return {

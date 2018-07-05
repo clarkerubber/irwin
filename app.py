@@ -17,8 +17,10 @@ with open('conf/server_config.json') as confFile:
 if config == {}:
     raise Exception('Config file empty or does not exist!')
 
+## Database
 dbManager = DBManager(config)
 
+## Modules
 auth = Auth(AuthEnv(config, dbManager.db()))
 
 webEnv = WebEnv(config)

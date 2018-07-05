@@ -1,22 +1,22 @@
 from chess.pgn import read_game
-from modules.game.PositionAnalysis import PositionAnalysis
+from modules.game.AnalysedPosition import AnalysedPosition
 import logging
 
-def buildPositionAnalysisTable(env):
-    logging.info("buildPositionAnalysisColl")
-    logging.info("Getting GameAnalyses")
+def buildAnalysedPositionTable(env):
+    logging.info("buildAnalysedPositionColl")
+    logging.info("Getting AnalysedGames")
     batch = 908
     while True:
         logging.info("Processing Batch: " + str(batch))
-        gameAnalyses = env.gameAnalysisDB.allBatch(batch)
+        analysedGames = env.analysedGameDB.allBatch(batch)
         batch += 1
-        if len(gameAnalyses) == 0:
-            logging.info("reached end of gameAnalysisDB")
+        if len(analysedGames) == 0:
+            logging.info("reached end of analysedGameDB")
             return
-        gameAnalysesLength = str(len(gameAnalyses))
-        for i, gameAnalysis in enumerate(gameAnalyses):
-            game = env.gameDB.byId(gameAnalysis.gameId)
-            white = gameAnalysis.userId == game.white # is the player black or white
+        analysedGamesLength = str(len(analysedGames))
+        for i, analysedGame in enumerate(analysedGames):
+            game = env.gameDB.byId(analysedGame.gameId)
+            white = analysedGame.userId == game.white # is the player black or white
             try:
                 from StringIO import StringIO
             except ImportError:
@@ -30,14 +30,14 @@ def buildPositionAnalysisTable(env):
             node = playableGame
 
             index = 0
-            positionAnalyses = []
-            logging.info("walking through game - " + game.id + " - " + str(i) + "/" + gameAnalysesLength)
+            analysedPositions = []
+            logging.info("walking through game - " + game.id + " - " + str(i) + "/" + analysedGamesLength)
             while not node.is_end():
                 nextNode = node.variation(0)
                 if white == node.board().turn: # if it is the turn of the player of interest
-                    positionAnalyses.append(PositionAnalysis.fromBoardAndAnalyses(
+                    analysedPositions.append(AnalysedPosition.fromBoardAndAnalyses(
                         node.board(),
-                        gameAnalysis.moveAnalyses[index].analyses))
+                        analysedGame.analysedMoves[index].analyses))
                     index += 1
                 node = nextNode
-            env.positionAnalysisDB.lazyWriteMany(positionAnalyses)
+            env.analysedPositionDB.lazyWriteMany(analysedPositions)

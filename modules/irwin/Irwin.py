@@ -10,14 +10,14 @@ import os.path
 from modules.irwin.AnalysedGameModel import AnalysedGameModel
 from modules.irwin.BasicGameModel import BasicGameModel
 
-from modules.irwin.GameAnalysisActivation import GameAnalysisActivation
+from modules.irwin.AnalysedGameActivation import AnalysedGameActivation
 from modules.irwin.GameBasicActivation import GameBasicActivation
 
 from modules.irwin.Evaluation import Evaluation
 
 from modules.irwin.AnalysisReport import PlayerReport, GameReport, moveActivation, movePredictions
 
-from modules.game.GameAnalysisStore import GameAnalysisStore
+from modules.game.GameStore import GameStore
 
 class Irwin(Evaluation):
     """
@@ -52,7 +52,7 @@ class Irwin(Evaluation):
         topXgames = sortedGameActivations[:ceil(0.15*len(sortedGameActivations))]
         topXgamesAvg = int(np.average(topXgames)) if len(topXgames) > 0 else 0
 
-        # Rules to be able to score > 95
+        # Rules to be able to engineEval > 95
         # 3 games > 95
         # 2 games > 95 and 3 > 90
         # 2 games > 95 and 5 > 85
@@ -79,8 +79,8 @@ class Irwin(Evaluation):
         topYavg = np.average(sortedMoveActivations[:ceil(0.9*len(moveActivations))]) # no outliers
         return int(np.average([pOverX, topXavg, topYavg]))
 
-    def report(self, player, gameAnalysisStore, owner='test'):
-        playerPredictions = self.predictAnalysed(gameAnalysisStore.gameAnalysisTensors())
+    def report(self, player, gameStore, owner='test'):
+        playerPredictions = self.predictAnalysed(gameStore.analysedGameTensors())
         gameActivations = [Irwin.gameActivation(gamePredictions, gameLength) for gamePredictions, gameLength in playerPredictions]
 
         playerReport = PlayerReport.new(
@@ -90,7 +90,7 @@ class Irwin(Evaluation):
 
         gameReports = [GameReport.new(ga, a, gp, playerReport.id, player.id)
             for ga, a, gp
-            in zip(gameAnalysisStore.gameAnalyses, gameActivations, playerPredictions)]
+            in zip(gameStore.analysedGames, gameActivations, playerPredictions)]
 
         self.env.playerReportDB.write(playerReport)
         self.env.gameReportDB.lazyWriteMany(gameReports)
@@ -110,6 +110,24 @@ class Irwin(Evaluation):
         res = int(np.average(top30)) if len(top30) > 0 else 0
         return res
 
+       
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+
     def discover(self):
         """discover potential cheaters in the database of un-marked players"""
         logging.warning("Discovering unprocessed players")
@@ -119,8 +137,8 @@ class Irwin(Evaluation):
         sus = []
         for i, player in enumerate(players):
             logging.debug("investigating "+player.id + " " + str(i) + "/" + totalPlayers)
-            gameAnalysisStore = GameAnalysisStore([], [ga for ga in self.env.gameAnalysisDB.byUserId(player.id)])
-            predictions = self.predictAnalysed(gameAnalysisStore.gameAnalysisTensors())
+            gameStore = GameStore([], [ga for ga in self.env.analysedGameDB.byUserId(player.id)])
+            predictions = self.predictAnalysed(gameStore.analysedGameTensors())
             activation = self.activation(player, predictions)
             logging.debug(str(activation))
             if activation > 90:
@@ -140,14 +158,14 @@ class Irwin(Evaluation):
 
         for i, p in enumerate(cheats):
             logging.info("predicting: " + p.id + "  -  " + str(i) + '/' + lenPlayers)
-            gameAnalyses = self.env.gameAnalysisDB.byUserId(p.id)
-            tensors = [(ga.moveAnalysisTensors(), ga.length()) for ga in gameAnalyses]
+            analysedGames = self.env.analysedGameDB.byUserId(p.id)
+            tensors = [(ga.analysedMoveTensors(), ga.length()) for ga in analysedGames]
             predictions = self.predictAnalysed(tensors)
-            gameAnalysisActivations = [GameAnalysisActivation.fromGamesAnalysisandPrediction(
-                gameAnalysis,
+            analysedGameActivations = [AnalysedGameActivation.fromGamesAnalysisandPrediction(
+                analysedGame,
                 int(100*prediction[0][0]),
-                engine=p.engine) for gameAnalysis, prediction in zip(gameAnalyses, predictions)]
-            self.env.gameAnalysisActivationDB.lazyWriteMany(gameAnalysisActivations)
+                engine=p.engine) for analysedGame, prediction in zip(analysedGames, predictions)]
+            self.env.analysedGameActivationDB.lazyWriteMany(analysedGameActivations)
 
     def buildBasicTable(self):
         """Build table of activations for basic games (analysed by lichess). used for training"""
@@ -160,8 +178,8 @@ class Irwin(Evaluation):
         logging.info("getting games and predicting")
         for i, p in enumerate(cheats):
             logging.info("predicting: " + p.id + "  -  " + str(i) + "/" + lenPlayers)
-            gameAnalysisStore = GameAnalysisStore(self.env.gameDB.byUserIdAnalysed(p.id), [])
-            gameTensors = gameAnalysisStore.gameTensors(p.id)
+            gameStore = GameStore(self.env.gameDB.byUserIdAnalysed(p.id), [])
+            gameTensors = gameStore.gameTensors(p.id)
             if len(gameTensors) > 0:
                 gamePredictions = self.predictBasicGames(gameTensors)
                 self.env.gameBasicActivationDB.lazyWriteMany([GameBasicActivation.fromPrediction(
