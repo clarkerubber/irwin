@@ -1,11 +1,21 @@
+from default_imports import *
+
+from conf.ConfigWrapper import ConfigWrapper
+
 from modules.game.Game import GameDB
 from modules.game.AnalysedGame import AnalysedGameDB
 from modules.game.Player import PlayerDB
 from modules.game.AnalysedPosition import AnalysedPositionDB
 
+from pymongo.database import Database
+
 class Env:
-	def __init__(self, settings, db):
-		gameDB = GameDB(db[settings['game']['coll']['game']])
-		analysedGameDB = AnalysedGameDB(db[settings['game']['coll']['game_analysis']])
-		playerDB = PlayerDB(db['game']['coll']['player'])
-		analysedPositionDB = AnalysedPositionDB(db['game']['coll']['position_analysis'])
+    @validated
+	def __init__(self, config: ConfigWrapper, db: Database):
+        self.config = config
+        self.db = db
+
+		self.gameDB = GameDB(self.db[self.config.coll.game])
+		self.analysedGameDB = AnalysedGameDB(self.db[self.config.coll.game_analysis])
+		self.playerDB = PlayerDB(self.db[self.config.coll.player])
+		self.analysedPositionDB = AnalysedPositionDB(self.db[self.config.coll.analysed_position])

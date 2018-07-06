@@ -1,6 +1,14 @@
 from collections import namedtuple
 
 class AnalysedGameActivation(namedtuple('AnalysedGameActivation', ['id', 'userId', 'engine', 'length', 'prediction'])):
+    """
+    id: String (gameId)
+    userId: String (userId)
+    engine: Bool (is the user and engine?)
+    length: Int (length of the game in plys)
+    prediction: Int (Irwin's last reported confidence that this user is a cheater)
+    Used as a pivot coll for training.
+    """
     @staticmethod
     def fromGamesAnalysisandPrediction(analysedGame, prediction, engine):
         return AnalysedGameActivation(

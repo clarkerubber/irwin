@@ -1,11 +1,15 @@
-import logging
-
-from collections import namedtuple
+from default_imports import *
 
 from modules.game.AnalysedGame import AnalysedGameBSONHandler
 
-class Api(namedtuple('Api', ['env'])):
-	def insertAnalysedGames(self, analysedGamesBSON):
+from modules.game.Env import Env
+
+@validated
+class Api(NamedTuple('Api', [
+        ('env', Env)
+    ])):
+    @validated
+	def insertAnalysedGames(self, analysedGamesBSON: Dict):
 		try:
 			analysedGames = [AnalysedGameBSONHandler.reads(g) for g in analysedGamesBSON]
 			env.analysedGameDB.lazyWriteMany(analysedGames)

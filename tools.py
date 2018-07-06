@@ -60,41 +60,41 @@ parser.add_argument("--discover", dest="discover", nargs="?",
 parser.add_argument("--quiet", dest="loglevel",
                     default=logging.DEBUG, action="store_const", const=logging.INFO,
                     help="reduce the number of logged messages")
-settings = parser.parse_args()
+config = parser.parse_args()
 
-logging.basicConfig(format="%(message)s", level=settings.loglevel, stream=sys.stdout)
+logging.basicConfig(format="%(message)s", level=config.loglevel, stream=sys.stdout)
 logging.getLogger("requests.packages.urllib3").setLevel(logging.WARNING)
 logging.getLogger("chess.uci").setLevel(logging.WARNING)
 logging.getLogger("modules.fishnet.fishnet").setLevel(logging.INFO)
 
 env = Env(config)
 
-if settings.updatedatabase:
+if config.updatedatabase:
     updatePlayerDatabase()
 
 # train on a single batch
-if settings.trainbasic:
+if config.trainbasic:
     env.irwin.basicGameModel.train(
         config['irwin']['train']['epochs'],
-        settings.filtered,
-        settings.newmodel)
+        config.filtered,
+        config.newmodel)
 
-if settings.buildbasictable:
+if config.buildbasictable:
     env.irwin.buildBasicTable()
 
-if settings.buildanalysedtable:
+if config.buildanalysedtable:
     env.irwin.buildAnalysedTable()
 
-if settings.buildpositiontable:
+if config.buildpositiontable:
     buildAnalysedPositionTable(env)
 
-if settings.trainanalysed:
+if config.trainanalysed:
     env.irwin.analysedGameModel.train(
         config['irwin']['train']['epochs'],
-        settings.filtered, settings.newmodel)
+        config.filtered, config.newmodel)
 
 # test on a single user in the DB
-if settings.test:
+if config.test:
     for userId in ['ralph27_velasco']:
         player = env.playerDB.byUserId(userId)
         gameStore = GameStore.new()
@@ -104,11 +104,11 @@ if settings.test:
         logging.debug("posted")
 
 # how good is the network?
-if settings.eval:
+if config.eval:
     env.irwin.evaluate()
 
-if settings.discover:
+if config.discover:
     env.irwin.discover()
 
-if settings.buildaveragereport:
+if config.buildaveragereport:
     buildAverageReport(env)

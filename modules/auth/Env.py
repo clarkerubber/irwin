@@ -11,5 +11,6 @@ class Env:
     @validated
 	def __init__(self, config: ConfigWrapper, db: Database):
 		self.db = db
-		self.userDB = UserDB(self.db[config.coll.user])
-		self.tokenDB = TokenDB(self.db[config.coll.token])
+        self.config = config
+		self.userDB = UserDB(self.db[self.config.coll.user])
+		self.tokenDB = TokenDB(self.db[self.config.coll.token])

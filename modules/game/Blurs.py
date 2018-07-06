@@ -1,11 +1,19 @@
-from collections import namedtuple
+from default_imports import *
 
-class Blurs(namedtuple('Blurs', ['nb', 'moves'])):
+@validated
+class Blurs(NamedTuple('Blurs', [
+        ('nb', int),
+        ('moves', List[bool])
+    ])):
+    """
+    The blurs for a single side in a Game
+    """
     @staticmethod
-    def fromDict(d, l):
+    @validated
+    def fromDict(d: Dict, l: int) -> Blurs:
         """
-        d: Dict (game data)
-        l: Int (amount of plys played by player)
+        d being from game data
+        l being the amount of plys played by the player
         """
         moves = [i == '1' for i in list(d.get('bits', ''))]
         moves += [False] * (l - len(moves))
@@ -16,13 +24,16 @@ class Blurs(namedtuple('Blurs', ['nb', 'moves'])):
 
 class BlursBSONHandler:
     @staticmethod
-    def reads(bson):
+    @validated
+    def reads(bson: Dict) -> Blurs:
         return Blurs(
-            nb = bson['nb'],
+            nb = sum(list(bson['bits'])),
             moves = [i == 1 for i in list(bson['bits'])]
             )
-    def writes(blurs):
+
+    @staticmethod
+    @validated
+    def writes(blurs: Blurs) -> Dict:
         return {
-            'nb': blurs.nb,
             'bits': ''.join(['1' if i else '0' for i in blurs.moves])
         }

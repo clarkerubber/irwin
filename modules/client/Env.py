@@ -1,9 +1,8 @@
+from default_imports import *
+
 from conf.ConfigWrapper import ConfigWrapper
-import enforce
 
 class Env:
-    @enforce.runtime_validation
-    def __init__(self, settings: ConfigWrapper):
-        self.settings = settings
-
-        
+    @validated
+    def __init__(self, config: ConfigWrapper):
+        self.config = config

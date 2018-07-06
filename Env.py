@@ -25,26 +25,26 @@ from modules.irwin.AnalysisReport import PlayerReportDB, GameReportDB
 from modules.irwin.Irwin import Irwin
 
 class Env:
-    def __init__(self, settings, engine=True):
-        self.settings = settings
+    def __init__(self, config, engine=True):
+        self.config = config
         self.engine = engine
 
         if self.engine:
-            self.engine = uci.popen_engine(stockfish_command(settings['stockfish']['update']))
-            self.engine.setoption({'Threads': settings['stockfish']['threads'], 'Hash': settings['stockfish']['memory']})
+            self.engine = uci.popen_engine(stockfish_command(config['stockfish']['update']))
+            self.engine.setoption({'Threads': config['stockfish']['threads'], 'Hash': config['stockfish']['memory']})
             self.engine.uci()
             self.infoHandler = uci.InfoHandler()
             self.engine.info_handlers.append(self.infoHandler)
 
-        self.api = Api(settings['api']['url'], settings['api']['token'])
+        self.api = Api(config['api']['url'], config['api']['token'])
 
         # Set up mongodb
-        self.client = MongoClient(settings['db']['host'])
+        self.client = MongoClient(config['db']['host'])
         self.db = self.client.irwin
-        if settings['db']['authenticate']:
+        if config['db']['authenticate']:
             self.db.authenticate(
-                settings['db']['authentication']['username'],
-                settings['db']['authentication']['password'], mechanism='MONGODB-CR')
+                config['db']['authentication']['username'],
+                config['db']['authentication']['password'], mechanism='MONGODB-CR')
 
         # Colls
         self.playerColl = self.db.player
@@ -84,8 +84,8 @@ class Env:
     def restartEngine(self):
         if self.engine:
             self.engine.kill()
-            self.engine = uci.popen_engine(stockfish_command(self.settings['stockfish']['update']))
-            self.engine.setoption({'Threads': self.settings['stockfish']['threads'], 'Hash': self.settings['stockfish']['memory']})
+            self.engine = uci.popen_engine(stockfish_command(self.config['stockfish']['update']))
+            self.engine.setoption({'Threads': self.config['stockfish']['threads'], 'Hash': self.config['stockfish']['memory']})
             self.engine.uci()
             self.infoHandler = uci.InfoHandler()
             self.engine.info_handlers.append(self.infoHandler)

@@ -1,32 +1,49 @@
+from default_imports import *
+
 from math import log10, floor
 import logging
 import numpy as np
 import json
 
+from modules.game.Game import GameID, Blur, Emt
+from modules.game.Colour import Colour
+from modules.game.Player import PlayerID
 from modules.game.AnalysedMove import AnalysedMove, AnalysedMoveBSONHandler, EngineEval, Analysis
 from modules.game.AnalysedPosition import AnalysedPosition
 
-from collections import namedtuple
+from pymongo.collection import Collection
 
-def round_sig(x, sig=2):
-    if x == 0:
-        return 0
-    return round(x, sig-int(floor(log10(abs(x))))-1)
+AnalysedGameID = NewType('AnalysedGameID', str)
 
-class AnalysedGame(namedtuple('AnalysedGame', ['id', 'userId', 'gameId', 'analysedMoves'])):
+AnalysedGameTensor = NewType('AnalysedGameTensor', np.ndarray)
+
+@validated
+class AnalysedGame(NamedTuple('AnalysedGame', [
+        ('id', AnalysedGameID),
+        ('playerId', PlayerID),
+        ('gameId', GameID),
+        ('analysedMoves', List[AnalysedMove])
+    ])):
+    """
+    An analysed game is a game that has been deeply analysed from a single
+    player's perspective.
+    """
     @staticmethod
-    def new(gameId, white, userId, analysedMoves):
+    @validated
+    def new(gameId: GameID, colour: Colour, playerId: PlayerID, analysedMoves: List[AnalysedMove]) -> AnalysedGame:
         return AnalysedGame(
-            id=AnalysedGame.makeId(gameId, white),
-            userId=userId,
+            id=AnalysedGame.makeId(gameId, colour),
+            playerId=playerId,
             gameId=gameId,
             analysedMoves=analysedMoves)
 
     @staticmethod
-    def makeId(gameId, white):
-        return gameId + '/' + ('white' if white else 'black')
+    @validated
+    def makeId(gameId: GameID, colour: Colour) -> AnalysedGameID:
+        return gameId + '/' + ('white' if colour else 'black')
 
-    def tensor(self, length=60):
+    @validated
+    def tensor(self, length: int = 60) -> AnalysedGameTensor:
         emtAvg = self.emtAverage()
         wclAvg = self.wclAverage()
         ts = [ma.tensor(emtAvg, wclAvg) for ma in self.analysedMoves]
@@ -34,31 +51,40 @@ class AnalysedGame(namedtuple('AnalysedGame', ['id', 'userId', 'gameId', 'analys
         ts = ts + (length-len(ts))*[AnalysedMove.nullTensor()]
         return np.array(ts)
 
-    def emtAverage(self):
+    @validated
+    def emtAverage(self) -> Number:
         return np.average([m.emt for m in self.analysedMoves])
 
-    def wclAverage(self):
+    @validated
+    def wclAverage(self) -> Number:
         return np.average([m.winningChancesLoss() for m in self.analysedMoves])
 
-    def gameLength(self):
+    @validated
+    def gameLength(self) -> int:
         return len(self.analysedMoves)
 
-    def blurs(self):
+    @validated
+    def blurs(self) -> List[Blur]:
         return [move.blur for move in self.analysedMoves]
 
-    def emts(self):
+    @validated
+    def emts(self) -> List[Emt]:
         return [m.emt for m in self.analysedMoves]
 
-    def emtSeconds(self):
+    @validated
+    def emtSeconds(self) -> List[Number]:
         return [emt/100 for emt in self.emts()]
 
-    def winningChances(self):
+    @validated
+    def winningChances(self) -> List[Number]:
         return [m.advantage() for m in self.analysedMoves]
 
-    def winningChancesPercent(self):
+    @validated
+    def winningChancesPercent(self) -> List[Number]:
         return [100*m.advantage() for m in self.analysedMoves]
 
-    def winningChancesLossPercent(self, usePV=True):
+    @validated
+    def winningChancesLossPercent(self, usePV: bool = True) -> List[Number]:
         return [100*m.winningChancesLoss(usePV=usePV) for m in self.analysedMoves]
 
     def winningChancesLossByPV(self):
@@ -76,15 +102,18 @@ class AnalysedGame(namedtuple('AnalysedGame', ['id', 'userId', 'gameId', 'analys
                     pvs[i][2].append('null')
         return pvs
 
-    def ranks(self):
+    @validated
+    def ranks(self) -> List[Rank]:
         """ for generating graphs """
         return [move.trueRank() for move in self.analysedMoves]
 
-    def ambiguities(self):
+    @validated
+    def ambiguities(self) -> List[int]:
         """ for generating graphs """
         return [move.ambiguity() for move in self.analysedMoves]
 
-    def length(self):
+    @validated
+    def length(self) -> int:
         return len(self.analysedMoves)
 
     def ranksJSON(self):
@@ -144,46 +173,68 @@ class AnalysedGame(namedtuple('AnalysedGame', ['id', 'userId', 'gameId', 'analys
         # json format for graphing
         return json.dumps(self.lossByRank())
 
+def round_sig(x, sig=2):
+    if x == 0:
+        return 0
+    return round(x, sig-int(floor(log10(abs(x))))-1)
+
 class AnalysedGameBSONHandler:
     @staticmethod
-    def reads(bson):
+    @validated
+    def reads(bson: Dict) -> AnalysedGame:
         return AnalysedGame(
             id = bson['_id'],
-            userId = bson['userId'],
+            playerId = bson['playerId'],
             gameId = bson['gameId'],
             analysedMoves = [AnalysedMoveBSONHandler.reads(am) for am in bson['analysis']])
 
     @staticmethod
-    def writes(analysedGame):
+    @validated
+    def writes(analysedGame: AnalysedGame) -> Dict:
         return {
             '_id': analysedGame.id,
-            'userId': analysedGame.userId,
+            'playerId': analysedGame.playerId,
             'gameId': analysedGame.gameId,
             'analysis': [AnalysedMoveBSONHandler.writes(am) for am in analysedGame.analysedMoves]
         }
 
-class AnalysedGameDB(namedtuple('AnalysedGameDB', ['analysedGameColl'])):
-    def write(self, analysedGame):
+@validated
+class AnalysedGameDB(NamedTuple('AnalysedGameDB', [
+        ('analysedGameColl', Collection)
+    ])):
+    @validated
+    def write(self, analysedGame: AnalysedGame):
         self.analysedGameColl.update_one(
             {'_id': analysedGame.id},
             {'$set': AnalysedGameBSONHandler.writes(analysedGame)},
             upsert=True)
 
-    def lazyWriteAnalysedGames(self, analysedGames):
+    @validated
+    def lazyWriteAnalysedGames(self, analysedGames: List[AnalysedGame]):
         [self.write(ga) for ga in analysedGames]
 
-    def byUserId(self, userId):
-        return [AnalysedGameBSONHandler.reads(ga) for ga in self.analysedGameColl.find({'userId': userId})]
+    @validated
+    def byUserId(self, playerId: PlayerID) -> List[AnalysedGame]:
+        return [AnalysedGameBSONHandler.reads(ga) for ga in self.analysedGameColl.find({'playerId': playerId})]
 
-    def byUserIds(self, userIds):
-        return [self.byUserId(userId) for userId in userIds]
+    @validated
+    def byUserIds(self, playerIds: List[PlayerID]) -> List[AnalysedGame]:
+        return [self.byUserId(playerId) for playerId in playerIds]
 
-    def byIds(self, ids):
+    @validated
+    def byIds(self, ids: List[AnalysedGameID]) -> List[AnalysedGame]:
         return [AnalysedGameBSONHandler.reads(ga) for ga in self.analysedGameColl.find({"_id": {"$in": ids}})]
 
-    def allBatch(self, batch, batchSize=500):
+    @validated
+    def allBatch(self, batch: int, batchSize: int = 500):
+        """
+        Gets all analysed games in a paged format
+        batch = page number
+        batchSize = size of page
+        """
         return [AnalysedGameBSONHandler.reads(ga) for ga in self.analysedGameColl.find(skip=batch*batchSize, limit=batchSize)]
 
-    def byGameIdAndUserId(self, gameId, userId):
-        bson = self.analysedGameColl.find_one({'gameId': gameId, 'userId': userId})
+    @validated
+    def byGameIdAndUserId(self, gameId: GameID, playerId: PlayerID) -> Opt[AnalysedGame]:
+        bson = self.analysedGameColl.find_one({'gameId': gameId, 'playerId': playerId})
         return None if bson is None else AnalysedGameBSONHandler.reads(bson)

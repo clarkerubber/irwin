@@ -5,11 +5,11 @@ from modules.auth.Priv import Priv, PrivBSONHandler
 from pymongo.collection import Collection
 import hashlib, uuid
 
-Username = TypeVar('Username', str)
+Username = NewType('Username', str)
 UserID = Username
-Name = TypeVar('Name', str)
-Password = TypeVar('Password', str)
-Salt = TypeVar('Salt', str)
+Name = NewType('Name', str)
+Password = NewType('Password', str)
+Salt = NewType('Salt', str)
 
 @validated
 class User(NamedTuple('User', [

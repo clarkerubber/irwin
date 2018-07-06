@@ -1,19 +1,37 @@
-from collections import namedtuple
+from default_imports import *
+
+from modules.game.EngineEval import EngineEval, EngineEvalBSONHandler
+
+from modules.game.Game import Emt
 from functools import lru_cache
 from math import exp
 import numpy as np
 
 # For moves that have been analysed by stockfish
 
-Analysis = namedtuple('Analysis', ['uci', 'engineEval'])
+UCI = NewType('UCI', str)
 
-class EngineEval(namedtuple('EngineEval', ['cp', 'mate'])):
-    def inverse(self):
-        return EngineEval(-self.cp if self.cp is not None else None,
-            -self.mate if self.mate is not None else None)
+MoveNumber = NewType('MoveNumber', int)
 
-class AnalysedMove(namedtuple('AnalysedMove', ['uci', 'move', 'emt', 'blur', 'engineEval', 'analyses'])):
-    def tensor(self, timeAvg, wclAvg):
+Analysis = validated(NamedTuple('Analysis', [
+    ('uci', UCI),
+    ('engineEval', EngineEval)
+]))
+
+Rank = NewType('Rank', int)
+TrueRank = NewType('TrueRank', Opt[Rank])
+
+@validated
+class AnalysedMove(NamedTuple('AnalysedMove', [
+        ('uci', UCI),
+        ('move', MoveNumber),
+        ('emt', Emt),
+        ('blur', bool),
+        ('engineEval', EngineEval),
+        ('analyses', List[Analysis])
+    ])):
+    @validated
+    def tensor(self, timeAvg: Number, wclAvg: Number) -> List[Number]:
         return [
             self.rank() + 1,
             self.ambiguity() + 1,
@@ -28,13 +46,16 @@ class AnalysedMove(namedtuple('AnalysedMove', ['uci', 'move', 'emt', 'blur', 'en
         ]
 
     @staticmethod
-    def nullTensor():
+    @validated
+    def nullTensor() -> List[int]:
         return 10*[0]
 
-    def top(self):
+    @validated
+    def top(self) -> Opt[Analysis]:
         return next(iter(self.analyses or []), None)
 
-    def difToNextBest(self):
+    @validated
+    def difToNextBest(self) -> Number:
         tr = self.trueRank()
         if tr is not None and tr != 1:
             return winningChances(self.analyses[tr-2].engineEval) - self.advantage()
@@ -43,19 +64,23 @@ class AnalysedMove(namedtuple('AnalysedMove', ['uci', 'move', 'emt', 'blur', 'en
         else:
             return winningChances(self.analyses[-1].engineEval) - self.advantage()
 
-    def difToNextWorst(self):
+    @validated
+    def difToNextWorst(self) -> Number:
         tr = self.trueRank()
         if tr is not None and tr <= len(self.analyses)-1:
             return winningChances(self.analyses[tr].engineEval) - self.advantage()
         return 0
 
-    def PVsWinningChancesLoss(self):
+    @validated
+    def PVsWinningChancesLoss(self) -> Number:
         return [winningChances(self.top().engineEval) - winningChances(a.engineEval) for a in self.analyses]
 
-    def averageWinningChancesLoss(self):
+    @validated
+    def averageWinningChancesLoss(self) -> Number:
         return np.average(self.PVsWinningChancesLoss())
 
-    def winningChancesLoss(self, usePV=False):
+    @validated
+    def winningChancesLoss(self, usePV: bool = False) -> Number:
         adv = self.advantage()
         if usePV:
             r = self.trueRank()
@@ -64,19 +89,24 @@ class AnalysedMove(namedtuple('AnalysedMove', ['uci', 'move', 'emt', 'blur', 'en
                 
         return max(0, winningChances(self.top().engineEval) - adv)
 
-    def advantage(self):
+    @validated
+    def advantage(self) -> Number:
         return winningChances(self.engineEval)
 
-    def ambiguity(self): # 1 = only one top move, 5 = all moves good
+    @validated
+    def ambiguity(self) -> int: # 1 = only one top move, 5 = all moves good
         return sum(int(similarChances(winningChances(self.top().engineEval), winningChances(analysis.engineEval))) for analysis in self.analyses)
 
-    def trueRank(self):
+    @validated
+    def trueRank(self) -> TrueRank:
         return next((x+1 for x, am in enumerate(self.analyses) if am.uci == self.uci), None)
 
-    def rank(self):
+    @validated
+    def rank(self) -> Rank:
         return min(15, next((x for x, am in enumerate(self.analyses) if am.uci == self.uci), self.projectedRank()) + 1)
 
-    def projectedRank(self):
+    @validated
+    def projectedRank(self) -> Number:
         if len(self.analyses) == 1:
             return 10
         else: # rise over run prediction of move rank given the difference between the winning chances in the bottom two analysed moves
@@ -86,38 +116,36 @@ class AnalysedMove(namedtuple('AnalysedMove', ['uci', 'move', 'emt', 'blur', 'en
                 return 10
 
 @lru_cache(maxsize=64)
-def winningChances(engineEval):
+@validated
+def winningChances(engineEval: EngineEval) -> Number:
     if engineEval.mate is not None:
         return 1 if engineEval.mate > 0 else 0
     else:
         return 1 / (1 + exp(-0.004 * engineEval.cp))
 
-def similarChances(c1, c2):
+@validated
+def similarChances(c1: Number, c2: Number) -> bool:
     return abs(c1 - c2) < 0.05
 
 class AnalysisBSONHandler:
     @staticmethod
-    def reads(bson):
+    @validated
+    def reads(bson: Dict) -> Analysis:
         return Analysis(bson['uci'], EngineEvalBSONHandler.reads(bson['engineEval']))
 
     @staticmethod
-    def writes(analysis):
+    @validated
+    def writes(analysis: Analysis) -> Dict:
         return {
             'uci': analysis.uci,
             'engineEval': EngineEvalBSONHandler.writes(analysis.engineEval)
         }
 
-class EngineEvalBSONHandler:
-    @staticmethod
-    def reads(bson):
-        return EngineEval(**bson)
-
-    def writes(engineEval):
-        return engineEval._asdict()
 
 class AnalysedMoveBSONHandler:
     @staticmethod
-    def reads(bson):
+    @validated
+    def reads(bson: Dict) -> AnalysedMove:
         return AnalysedMove(
             uci = bson['uci'],
             move = bson['move'],
@@ -128,7 +156,8 @@ class AnalysedMoveBSONHandler:
             )
 
     @staticmethod
-    def writes(analysedMove):
+    @validated
+    def writes(analysedMove: AnalysedMove) -> Dict:
         return {
             'uci': analysedMove.uci,
             'move': analysedMove.move,

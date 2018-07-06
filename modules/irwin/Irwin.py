@@ -159,7 +159,7 @@ class Irwin(Evaluation):
         for i, p in enumerate(cheats):
             logging.info("predicting: " + p.id + "  -  " + str(i) + '/' + lenPlayers)
             analysedGames = self.env.analysedGameDB.byUserId(p.id)
-            tensors = [(ga.analysedMoveTensors(), ga.length()) for ga in analysedGames]
+            tensors = [(ga.tensor(), ga.length()) for ga in analysedGames]
             predictions = self.predictAnalysed(tensors)
             analysedGameActivations = [AnalysedGameActivation.fromGamesAnalysisandPrediction(
                 analysedGame,

@@ -20,11 +20,11 @@ parser.add_argument("--quiet", dest="loglevel",
                     default=logging.DEBUG, action="store_const", const=logging.INFO,
                     help="reduce the number of logged messages")
 
-settings = parser.parse_args()
+config = parser.parse_args()
 
-logging.info("Starting: " + str(settings.name))
+logging.info("Starting: " + str(config.name))
 
-logging.basicConfig(format="%(message)s", level=settings.loglevel, stream=sys.stdout)
+logging.basicConfig(format="%(message)s", level=config.loglevel, stream=sys.stdout)
 logging.getLogger("requests.packages.urllib3").setLevel(logging.WARNING)
 logging.getLogger("chess.uci").setLevel(logging.WARNING)
 logging.getLogger("modules.fishnet.fishnet").setLevel(logging.INFO)
@@ -38,7 +38,7 @@ if config == {}:
 env = Env(config)
 
 while True:
-    deepPlayerQueue = env.deepPlayerQueueDB.nextUnprocessed(settings.name)
+    deepPlayerQueue = env.deepPlayerQueueDB.nextUnprocessed(config.name)
     if deepPlayerQueue is None:
         # no entries in the queue. sleep and wait for line to fill
         logging.info("No players in deepPlayerQueue to analyse. Waiting")
@@ -101,7 +101,7 @@ while True:
                 engine=env.engine,
                 infoHandler=env.infoHandler,
                 white=game.white == userId,
-                nodes=env.settings['stockfish']['nodes'],
+                nodes=env.config['stockfish']['nodes'],
                 analysedPositionDB=env.analysedPositionDB
             ))
         # update progress for logging
@@ -113,7 +113,7 @@ while True:
     env.api.postReport(env.irwin.report(
         player=player,
         gameStore=gameStore,
-        owner=str(settings.name)))
+        owner=str(config.name)))
     env.deepPlayerQueueDB.complete(deepPlayerQueue)
 
     # do this last. Reset games that must be analysed

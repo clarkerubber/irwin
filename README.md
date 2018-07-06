@@ -49,7 +49,7 @@ pip3 install pymongo python-chess numpy requests
 }
 ```
 
-`conf/config.json` contains settings for stockfish, mongodb, tensorflow, lichess (authentication token and URL), etc...
+`conf/config.json` contains config for stockfish, mongodb, tensorflow, lichess (authentication token and URL), etc...
 ### Build a database of analysed players
 If you do not already have a database of analysed players, it will be necessary to analyse
 a few hundred players to train the neural networks on.

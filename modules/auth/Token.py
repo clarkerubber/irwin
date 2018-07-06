@@ -4,7 +4,7 @@ from modules.auth.Priv import Priv, PrivBSONHandler
 
 from pymongo.collection import Collection
 
-TokenID = TypeVar('TokenID', str)
+TokenID = NewType('TokenID', str)
 
 @validated
 class Token(NamedTuple('Token', [
