@@ -20,7 +20,8 @@ class ConfigWrapper:
         allows for accessing like, conf["index items like this"]
         """
         try:
-            head, tail = (key.split(' ')[0], ' '.join(key.split(' ')[1:]))
+            parts = key.split(' ')
+            head, tail = (parts[0], ' '.join(parts[1:]))
             if tail != '':
                 return ConfigWrapper(self.d[head])[tail]
             return self.d[head]
