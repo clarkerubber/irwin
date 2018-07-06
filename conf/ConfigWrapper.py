@@ -23,15 +23,9 @@ class ConfigWrapper:
         """
         try:
             head, tail = key.split(' ', 1)
-            r = self.d.get(head)
-            if isinstance(r, dict):
-                return ConfigWrapper(r)[tail]
-            return r
+            return self.__getattr__(head)[tail]
         except ValueError:
-            r = self.d.get(key)
-            if isinstance(r, dict):
-                return ConfigWrapper(r)
-            return r
+            return self.__getattr__(head)
 
     @validated
     def __getattr__(self, key: str):
