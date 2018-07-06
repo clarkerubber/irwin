@@ -1,12 +1,19 @@
-from modules.auth.User import User
-from collections import namedtuple
+from default_imports import *
 
-class Auth(namedtuple('Auth', ['env'])):
-	def loginUser(self, username, password):
+from modules.auth.Env import Env
+from modules.auth.User import User, Username, Password
+from modules.auth.Token import Token
+from modules.auth.Priv import Priv
+
+TokenID = NewType('TokenID', str)
+
+Authable = TypeVar('Authable', User, Token)
+
+@validated
+class Auth(NamedTuple('Auth', [('env', Env)])):
+    @validated
+	def loginUser(self, username: Username, password: Password) -> Tuple[Opt[User], bool]:
 		"""
-		username: String
-		password: String (raw password)
-		
 		Attempts to log in a user.
 		Returns True is successful.
 		False if the user exists and the password is incorrect.
@@ -17,12 +24,9 @@ class Auth(namedtuple('Auth', ['env'])):
 			return (user, user.checkPassword(password))
 		return (None, False)
 
-	def registerUser(self, name, password, privs=[]):
+    @validated
+	def registerUser(self, name: str, password: Password, privs: List[Priv] = []) -> Opt[User]:
 		"""
-		name: String
-		password: String
-		privs: List[Priv]
-
 		Will attempt to register a user.
 		Returns User object if successful, otherwise None.
 		"""
@@ -32,47 +36,42 @@ class Auth(namedtuple('Auth', ['env'])):
 			return user
 		return None
 
-	def authoriseTokenId(self, tokenId, permission):
+    @validated
+	def authoriseTokenId(self, tokenId: TokenID, priv: Priv) -> Tuple[Opt[Token], bool]:
 		"""
-		tokenId: String
-		permission: String
-
-		Given a tokenId, will check if the tokenId has permission.
+		Given a tokenId, will check if the tokenId has priv.
 		"""
 		token = self.env.tokenDB.byId(tokenId)
 		if token is not None:
-			return (token, token.hasPermission(permission))
+			return (token, token.hasPriv(priv))
 		return (None, False)
 
-	def authoriseUser(self, username, password, permission):
+    @validated
+	def authoriseUser(self, username: Username, password: Password, priv: Priv) -> Tuple[Opt[User], bool]:
 		"""
-		username: String
-		password: String
-		permission: String
-
-		Checks if user has permission in list of privs. 
+		Checks if user has priv in list of privs. 
 		"""
 		user, loggedIn = self.loginUser(username, password)
 		if user if not None:
-			return (user, loggedIn and user.hasPermission(permission))
+			return (user, loggedIn and user.hasPriv(priv))
 		return (None, False)
 
-	def authoriseRequest(self, req, permission):
+	def authoriseRequest(self, req, priv):
 		"""
 		req: Dict
-		permission: String
+		priv: String
 
-		Checks if a request is verified with permission.
+		Checks if a request is verified with priv.
 		"""
 		if req is not None:
 			tokenId = reg.get('auth', {}).get('token')
 			if tokenId is not None:
-				return self.authoriseTokenId(tokenId, permission)
+				return self.authoriseTokenId(tokenId, priv)
 
 			username = req.get('auth', {}).get('username')
 			password = req.get('auth', {}).get('password')
 
 			if None not in [username, password]:
-				return self.authoriseUser(username, password, permission)
+				return self.authoriseUser(username, password, priv)
 
 		return (None, False)

@@ -1,16 +1,20 @@
-from collections import namedtuple
+from defaul_imports import *
 
-Priv = namedtuple('Priv', ['id', 'permission'])
+Permission = NewType('Permission', str)
+
+Priv = validated(NamedTuple('Priv' [
+        ('permission', Permission)
+    ]))
 
 class PrivBSONHandler:
 	@staticmethod
-	def reads(bson):
+    @validated
+	def reads(bson: Dict) -> Priv:
 		return Priv(
-			id=bson['_id'],
-			permission=bson['permission'])
+			permission=bson['_id'])
 
 	@staticmethod
-	def writes(priv):
+    @validated
+	def writes(priv: Priv) -> Dict:
 		return {
-			'_id': priv.id,
-			'permission': priv.permission}
+			'_id': priv.permission}

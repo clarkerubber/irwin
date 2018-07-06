@@ -1,7 +1,7 @@
 import logging
 from flask import Blueprint, request, jsonify, json, Response
 
-defaultResponses = {
+default_responses = {
     'success': Response(
         response=json({
             'success': True,
@@ -22,8 +22,8 @@ defaultResponses = {
 def buildApiBlueprint(env):
     apiBlueprint = Blueprint('Api', __name__, url_prefix='/api')
 
-    @apiBlueprint.route('/next_job', methods=['GET', 'POST'])
-    def apiNextJob():
+    @apiBlueprint.route('/request_job', methods=['GET', 'POST'])
+    def api_request_job():
         req = request.get_json(silent=True)
 
         account, authorised = env.auth.authoriseReq(req, 'request_job')
@@ -33,7 +33,7 @@ def buildApiBlueprint(env):
             return env.queue.nextDeepAnalysis(account.id)
 
     @apiBlueprint.route('/complete_job', method=['GET', 'POST'])
-    def apiCompleteJob():
+    def api_complete_job():
         req = request.get_json(silent=True)
 
         account, authorised = env.auth.authoriseReq(req, 'complete_job')
@@ -45,5 +45,5 @@ def buildApiBlueprint(env):
                 env.gameApi.insertAnalysedGames(req.get('game_analyses'))
                 env.queue.queueNerualAnalysis(analysisId)
                 env.queue.completeEngineAnalysis(analysisId)
-                return defaultResponses['success']
-        return defaultResponses['bad_request']
+                return default_responses['success']
+        return default_responses['bad_request']

@@ -9,16 +9,16 @@ from modules.game.Api import Api as GameApi
 import logging
 
 class Env:
-    def __init__(self, settings):
-        self.settings = settings
+    def __init__(self, config):
+        self.config = config
         
         ## Database
-        self.dbManager = DBManager(settings)
+        self.dbManager = DBManager(config)
         self.db = self.dbManager.db()
 
         ## Envs
-        self.authEnv = AuthEnv(self.settings, self.db)
-        self.gameEnv = GameEnv(self.settings, self.db)
+        self.authEnv = AuthEnv(self.config.auth, self.db)
+        self.gameEnv = GameEnv(self.config.game, self.db)
 
         ## Modules
         self.auth = Auth(self.authEnv)
