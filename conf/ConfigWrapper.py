@@ -40,8 +40,5 @@ class ConfigWrapper:
     def asdict(self) -> Dict:
         return self.d
 
-    def __str__(self) -> str:
-        return "ConfigWrapper({})".format(self.d)
-
     def __repr__(self):
-        return str(self)
+        return "ConfigWrapper({})".format(self.d)
