@@ -4,6 +4,9 @@ import logging
 import json
 
 class ConfigWrapper:
+    """
+    Used for loading and accessing values from a json config file.
+    """
     @validated
     def __init__(self, d: Dict):
         self.d = d
