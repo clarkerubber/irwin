@@ -25,7 +25,7 @@ class ConfigWrapper:
             head, tail = key.split(' ', 1)
             return self.__getattr__(head)[tail]
         except ValueError:
-            return self.__getattr__(head)
+            return self.__getattr__(key)
 
     @validated
     def __getattr__(self, key: str):
