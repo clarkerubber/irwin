@@ -56,11 +56,9 @@ class Auth(NamedTuple('Auth', [('env', Env)])):
 			return (user, loggedIn and user.hasPriv(priv))
 		return (None, False)
 
-	def authoriseRequest(self, req, priv):
+    @validated
+	def authoriseRequest(self, req: Dict, priv: Priv) -> Tuple[Opt[Authable], bool]:
 		"""
-		req: Dict
-		priv: String
-
 		Checks if a request is verified with priv.
 		"""
 		if req is not None:

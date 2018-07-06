@@ -1,6 +1,5 @@
 from default_imports import *
 
-import logging
 import json
 
 class ConfigWrapper:
@@ -23,32 +22,32 @@ class ConfigWrapper:
         allows for accessing like, conf["index items like this"]
         """
         try:
-            parts = key.split(' ')
-            head, tail = (parts[0], ' '.join(parts[1:]))
-            if tail != '':
-                return ConfigWrapper(self.d[head])[tail]
-            return self.d[head]
-        except KeyError:
-            return None
+            head, tail = key.split(' ', 1)
+            r = self.d.get(head)
+            if isinstance(r, dict):
+                return ConfigWrapper(r)[tail]
+            return r
+        except ValueError:
+            r = self.d.get(key)
+            if isinstance(r, dict):
+                return ConfigWrapper(r)
+            return r
 
     @validated
     def __getattr__(self, key: str):
         """
         allows for accessing like, conf.index.like.this
         """
-        try:
-            r = self.d[key]
-            if type(r) is dict:
-                return ConfigWrapper(r)
-            return r
-        except KeyError:
-            return None
+        r = self.d.get(key)
+        if isinstance(r, dict):
+            return ConfigWrapper(r)
+        return r
 
     def asdict(self) -> Dict:
         return self.d
 
     def __str__(self) -> str:
-        return "ConfigWrapper(" + str(self.d) + ")"
+        return "ConfigWrapper({})".format(self.d)
 
     def __repr__(self):
         return str(self)
