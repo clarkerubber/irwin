@@ -16,14 +16,12 @@ try:
 except ImportError:
     from io import StringIO
 
-@validated
 class EngineTools(NamedTuple('EngineTools', [
         ('engine', Engine),
         ('infoHandler', InfoHandler),
         ('analysedPositionDB', AnalysedPositionDB)
     ])):
     @staticmethod
-    @validated
     def analyseGame(game: Game, colour: Colour, nodes: int) -> Opt[AnalysedGame]:
         logging.info("analysing: " + game.id)
         if len(game.pgn) < 40 or len(game.pgn) > 120:
@@ -86,6 +84,5 @@ class EngineTools(NamedTuple('EngineTools', [
         return AnalysedGame.new(game.id, colour, userId, analysedMoves)
 
     @staticmethod
-    @validated
     def ply(moveNumber, colour: Colour) -> int:
         return (2*(moveNumber-1)) + (0 if colour else 1)

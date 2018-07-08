@@ -1,3 +1,7 @@
+from default_imports import *
+
+from conf.ConfigWrapper import ConfigWrapper
+
 import numpy as np
 import logging
 import os
@@ -13,12 +17,15 @@ from keras.callbacks import TensorBoard
 
 from functools import lru_cache
 
-class BasicGameModel(namedtuple('BasicGameModel', ['env'])):
-    @lru_cache(maxsize=2)
-    def model(self, newmodel=False):
-        if os.path.isfile('modules/irwin/models/basicGame.h5') and not newmodel:
+class BasicGameModel:
+    def __init__(self, config: ConfigWrapper, newmodel: bool = False):
+        self.config = config
+        self.model = self.createModel(newmodel)
+
+    def createModel(self, newmodel: bool = False):
+        if os.path.isfile(self.config["irwin model basic file"]) and not newmodel:
             logging.debug("model already exists, opening from file")
-            return load_model('modules/irwin/models/basicGame.h5')
+            return load_model(self.config["irwin model basic file"])
         logging.debug('model does not exist, building from scratch')
 
         moveStatsInput = Input(shape=(100, 6), dtype='float32', name='move_input')
@@ -64,90 +71,6 @@ class BasicGameModel(namedtuple('BasicGameModel', ['env'])):
             metrics=['accuracy'])
         return model
 
-    def train(self, epochs, filtered=True, newmodel=False):
-        # get player sample
-        logging.debug("getting model")
-        model = self.model(newmodel)
-        logging.debug("getting dataset")
-        batch = self.getTrainingDataset(filtered)
-
-        logging.debug("training")
-        logging.debug("Batch Info: Games: " + str(len(batch['data'])))
-
-        tensorBoard = TensorBoard(
-            log_dir='./logs/basicGameModel', 
-            histogram_freq=10,
-            batch_size=32, write_graph=True)
-
-        model.fit(
-            batch['data'], batch['labels'],
-            epochs=epochs, batch_size=32, validation_split=0.2,
-            callbacks=[tensorBoard])
-
-        self.saveModel(model)
-        logging.debug("complete")
-
-    def saveModel(self, model):
+    def saveModel(self):
         logging.debug("saving model")
-        model.save('modules/irwin/models/basicGame.h5')
-
-    def getTrainingDataset(self, filtered):
-        logging.debug("Getting players from DB")
-
-        cheatTensors = []
-        legitTensors = []
-
-        logging.debug("Getting games from DB")
-        if filtered:
-            legits = self.env.playerDB.byEngine(False)
-            shuffle(legits)
-            legits = legits[:10000]
-            for p in legits:
-                legitTensors.extend([g.tensor(p.id) for g in self.env.gameDB.byUserIdAnalysed(p.id)])
-            cheatGameActivations = self.env.gameBasicActivationDB.byEngineAndPrediction(True, 70)
-            cheatGames = self.env.gameDB.byIds([ga.gameId for ga in cheatGameActivations])
-            cheatTensors.extend([g.tensor(ga.userId) for g, ga in zip(cheatGames, cheatGameActivations)])
-        else:
-            cheats = self.env.playerDB.byEngine(True)
-            legits = self.env.playerDB.byEngine(False)
-
-            shuffle(cheats)
-            shuffle(legits)
-
-            cheats = cheats[:10000]
-            legits = legits[:10000]
-
-            for p in legits + cheats:
-                if p.engine:
-                    cheatTensors.extend([g.tensor(p.id) for g in self.env.gameDB.byUserIdAnalysed(p.id)])
-                else:
-                    legitTensors.extend([g.tensor(p.id) for g in self.env.gameDB.byUserIdAnalysed(p.id)])
-
-        cheatTensors = [t for t in cheatTensors if t is not None]
-        legitTensors = [t for t in legitTensors if t is not None]
-
-        shuffle(cheatTensors)
-        shuffle(legitTensors)
-
-        logging.debug("batching tensors")
-        return self.createBatchAndLabels(cheatTensors, legitTensors)
-
-    @staticmethod
-    def createBatchAndLabels(cheatBatch, legitBatch):
-        # group the dataset into batches by the length of the dataset, because numpy needs it that way
-        mlen = min(len(cheatBatch), len(legitBatch))
-
-        cheats = cheatBatch[:mlen]
-        legits = legitBatch[:mlen]
-
-        logging.debug("batch size " + str(len(cheats + legits)))
-
-        labels = [1]*len(cheats) + [0]*len(legits)
-
-        blz = list(zip(cheats+legits, labels))
-        shuffle(blz)
-
-        return {
-            'data': np.array([t for t, l in blz]),
-            'labels': np.array([l for t, l in blz])
-        }
+        self.model.save(config["irwin model basic file"])

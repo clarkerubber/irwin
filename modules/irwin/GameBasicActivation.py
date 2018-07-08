@@ -1,63 +1,67 @@
 """Type used for pivot coll for basic game model training"""
-from collections import namedtuple
+from default_imports import *
 
-class GameBasicActivation(namedtuple('GameBasicActivation', ['id', 'gameId', 'userId', 'engine', 'prediction'])):
+from modules.game.Game import GameID, PlayerID
+
+from pymongo.collection import Collection
+
+GameBasicActivationID = NewType('GameBasicActivationID', str)
+Prediction = NewType('Prediction', int)
+
+class GameBasicActivation(NamedTuple('GameBasicActivation', [
+        ('id', GameBasicActivationID),
+        ('gameId', GameID),
+        ('playerId', PlayerID),
+        ('engine', bool),
+        ('prediction', int)
+    ])):
     @staticmethod
-    def fromPrediction(gameId, userId, prediction, engine):
+    def fromPrediction(gameId: GameID, playerId: PlayerID, prediction: Prediction, engine: bool) -> GameBasicActivation:
         return GameBasicActivation(
-            id = gameId + '/' + userId,
+            id = gameId + '/' + playerId,
             gameId = gameId,
-            userId = userId,
+            playerId = playerId,
             engine = engine,
             prediction = prediction
             )
 
-    def color(self):
-        darkColours = [
-          'rgba(84, 231, 96, 0.8)',
-          'rgba(109, 231, 84, 0.8)',
-          'rgba(131, 231, 84, 0.8)',
-          'rgba(163, 231, 84, 0.8)',
-          'rgba(197, 231, 84, 0.8)',
-          'rgba(231, 229, 84, 0.8)',
-          'rgba(231, 194, 84, 0.8)',
-          'rgba(231, 158, 84, 0.8)',
-          'rgba(231, 118, 84, 0.8)',
-          'rgba(231, 84, 84, 0.8)']
-
-        return darkColours[int(self.prediction/10)]
+    @staticmethod
+    def makeId(gameId: GameID, playerId: PlayerID) -> GameBasicActivationID:
+        return gameId + '/' + playerId
 
 class GameBasicActivationBSONHandler:
     @staticmethod
-    def reads(bson):
+    def reads(bson: Dict) -> GameBasicActivation:
         return GameBasicActivation(
             id = bson['_id'],
             gameId = bson['gameId'],
-            userId = bson['userId'],
+            playerId = bson['playerId'],
             engine = bson['engine'],
             prediction = bson['prediction'])
 
     @staticmethod
-    def writes(gba):
+    def writes(gba: GameBasicActivation) -> Dict:
         return {
             '_id': gba.id,
             'gameId': gba.gameId,
-            'userId': gba.userId,
+            'playerId': gba.playerId,
             'engine': gba.engine,
             'prediction': gba.prediction
         }
 
-class GameBasicActivationDB(namedtuple('GameBasicActivationDB', ['gameBasicActivationColl'])):
-    def byUserId(self, userId):
-        return [GameBasicActivationBSONHandler.reads(bson) for bson in self.gameBasicActivationColl.find({'userId': userId})]
+class GameBasicActivationDB(NamedTuple('GameBasicActivationDB', [
+        ('gameBasicActivationColl', Collection)
+    ])):
+    def byPlayerId(self, playerId: PlayerID) -> List[GameBasicActivation]:
+        return [GameBasicActivationBSONHandler.reads(bson) for bson in self.gameBasicActivationColl.find({'playerId': playerId})]
 
-    def byEngineAndPrediction(self, engine, prediction):
+    def byEngineAndPrediction(self, engine: bool, prediction: Prediction) -> List[GameBasicActivation]:
         if engine:
             return [GameBasicActivationBSONHandler.reads(bson) for bson in self.gameBasicActivationColl.find({'engine': engine, 'prediction': {'$gte': prediction}})]
         return [GameBasicActivationBSONHandler.reads(bson) for bson in self.gameBasicActivationColl.find({'engine': engine, 'prediction': {'$lte': prediction}})]
 
-    def write(self, gba): # Game
+    def write(self, gba: GameBasicActivation):
         self.gameBasicActivationColl.update_one({'_id': gba.id}, {'$set': GameBasicActivationBSONHandler.writes(gba)}, upsert=True)
 
-    def lazyWriteMany(self, gbas):
+    def lazyWriteMany(self, gbas: List[GameBasicActivation]):
         [self.write(gba) for gba in gbas]

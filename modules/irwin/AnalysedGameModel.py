@@ -1,24 +1,34 @@
+from default_imports import *
+
+from conf.ConfigWrapper import ConfigWrapper
+
 import numpy as np
 import logging
 import os
 
 from random import shuffle
 
-from collections import namedtuple
+from modules.game.AnalysedGame import AnalysedGame
 
 from keras.models import load_model, Model
 from keras.layers import Dropout, Dense, LSTM, Input, concatenate, Conv1D, Flatten
 from keras.optimizers import Adam
-from keras.callbacks import TensorBoard
+
+from keras.engine.training import Model
+
+from numpy import ndarray
 
 from functools import lru_cache
 
-class AnalysedGameModel(namedtuple('AnalysedGameModel', ['env'])):
-    @lru_cache(maxsize=2)
-    def model(self, newmodel=False):
-        if os.path.isfile('modules/irwin/models/analysedGame.h5') and not newmodel:
+class AnalysedGameModel:
+    def __init__(self, config: ConfigWrapper, newmodel: bool = False):
+        self.config = config
+        self.model = self.createModel(newmodel)
+    
+    def createModel(self, newmodel: bool = False) -> Model:
+        if os.path.isfile(self.config["irwin model analysed file"]) and not newmodel:
             logging.debug("model already exists, opening from file")
-            return load_model('modules/irwin/models/analysedGame.h5')
+            return load_model(self.config["irwin model analysed file"])
         logging.debug('model does not exist, building from scratch')
         inputGame = Input(shape=(60, 10), dtype='float32', name='game_input')
 
@@ -76,100 +86,8 @@ class AnalysedGameModel(namedtuple('AnalysedGameModel', ['env'])):
             metrics=['accuracy'])
         return model
 
-    def predict(self, analysedGames):
-        return [self.model().predict(np.array([ag.tensor()])) for ag in analysedGames]
+    def predict(self, analysedGames: List[AnalysedGame]) -> List[ndarray]:
+        return [self.model.predict(np.array([ag.tensor()])) for ag in analysedGames]
 
-    def train(self, epochs, filtered=True, newmodel=False):
-        # get player sample
-        logging.debug("getting model")
-        model = self.model(newmodel)
-        logging.debug("getting dataset")
-        batch = self.getTrainingDataset(filtered)
-
-        logging.debug("training")
-        logging.debug("Batch Info: Games: " + str(len(batch['data'])))
-
-        logging.debug("Game Len: " + str(len(batch['data'][0])))
-
-        tensorBoard = TensorBoard(
-            log_dir='./logs/analysedGameModel', 
-            histogram_freq=10,
-            batch_size=32, write_graph=True)
-
-        model.fit(
-            batch['data'], batch['labels'],
-            epochs=epochs, batch_size=32, validation_split=0.2,
-            callbacks=[tensorBoard])
-
-        self.saveModel(model)
-        logging.debug("complete")
-
-    def saveModel(self, model):
-        logging.debug("saving model")
-        model.save('modules/irwin/models/analysedGame.h5')
-
-    def getTrainingDataset(self, filtered):
-        if filtered:
-            logging.debug("gettings game IDs from DB")
-            cheatPivotEntries = self.env.analysedGameActivationDB.byEngineAndPrediction(True, 80)
-            legits = self.env.playerDB.byEngine(False)
-
-            shuffle(cheatPivotEntries)
-            shuffle(legits)
-
-            legits = legits[:10000]
-
-            logging.debug("Getting game analyses from DB")
-
-            legitAnalysedGames = []
-
-            cheatAnalysedGames = self.env.analysedGameDB.byIds([cpe.id for cpe in cheatPivotEntries])
-            [legitAnalysedGames.extend(ga) for ga in self.env.analysedGameDB.byUserIds([u.id for u in legits])]
-        else:
-            logging.debug("getting players by engine")
-            cheats = self.env.playerDB.byEngine(True)
-            legits = self.env.playerDB.byEngine(False)
-
-            shuffle(cheats)
-            shuffle(legits)
-
-            cheats = cheats[:10000]
-            legits = legits[:10000]
-
-            cheatAnalysedGames = []
-            legitAnalysedGames = []
-
-            logging.debug("getting game analyses from DB")
-            [cheatAnalysedGames.extend(ga) for ga in self.env.analysedGameDB.byUserIds([u.id for u in cheats])]
-            [legitAnalysedGames.extend(ga) for ga in self.env.analysedGameDB.byUserIds([u.id for u in legits])]
-
-        logging.debug("building tensor")
-        cheatGameTensors = [tga.tensor() for tga in cheatAnalysedGames if tga.gameLength() <= 60]
-        legitGameTensors = [tga.tensor() for tga in legitAnalysedGames if tga.gameLength() <= 60]
-
-        logging.debug("batching tensors")
-        return self.createBatchAndLabels(cheatGameTensors, legitGameTensors)
-
-    @staticmethod
-    def createBatchAndLabels(cheatBatch, legitBatch):
-        # group the dataset into batches by the length of the dataset, because numpy needs it that way
-        mlen = min(len(cheatBatch), len(legitBatch))
-
-        cheats = cheatBatch[:mlen]
-        legits = legitBatch[:mlen]
-
-        logging.debug("batch size " + str(len(cheats + legits)))
-
-        labels = [1.0]*len(cheats) + [0.0]*len(legits)
-
-        blz = list(zip(cheats+legits, labels))
-        shuffle(blz)
-
-        return {
-            'data': np.array([t for t, l in blz]),
-            'labels': [
-                np.array([l for t, l in blz]), 
-                np.array([[[l]]*(len(t)-13) for t, l in blz]),
-                np.array([[[l]]*(len(t)-4) for t, l in blz])
-            ]
-        }
+    def saveModel(self):
+        self.model.save(self.config["irwin model analysed file"])

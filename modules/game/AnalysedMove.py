@@ -13,15 +13,14 @@ UCI = NewType('UCI', str)
 
 MoveNumber = NewType('MoveNumber', int)
 
-Analysis = validated(NamedTuple('Analysis', [
-    ('uci', UCI),
-    ('engineEval', EngineEval)
-]))
+Analysis = NamedTuple('Analysis', [
+    ('uci', 'UCI'),
+    ('engineEval', 'EngineEval')
+])
 
 Rank = NewType('Rank', int)
 TrueRank = NewType('TrueRank', Opt[Rank])
 
-@validated
 class AnalysedMove(NamedTuple('AnalysedMove', [
         ('uci', UCI),
         ('move', MoveNumber),
@@ -30,7 +29,6 @@ class AnalysedMove(NamedTuple('AnalysedMove', [
         ('engineEval', EngineEval),
         ('analyses', List[Analysis])
     ])):
-    @validated
     def tensor(self, timeAvg: Number, wclAvg: Number) -> List[Number]:
         return [
             self.rank() + 1,
@@ -46,15 +44,12 @@ class AnalysedMove(NamedTuple('AnalysedMove', [
         ]
 
     @staticmethod
-    @validated
     def nullTensor() -> List[int]:
         return 10*[0]
 
-    @validated
     def top(self) -> Opt[Analysis]:
         return next(iter(self.analyses or []), None)
 
-    @validated
     def difToNextBest(self) -> Number:
         tr = self.trueRank()
         if tr is not None and tr != 1:
@@ -64,22 +59,18 @@ class AnalysedMove(NamedTuple('AnalysedMove', [
         else:
             return winningChances(self.analyses[-1].engineEval) - self.advantage()
 
-    @validated
     def difToNextWorst(self) -> Number:
         tr = self.trueRank()
         if tr is not None and tr <= len(self.analyses)-1:
             return winningChances(self.analyses[tr].engineEval) - self.advantage()
         return 0
 
-    @validated
     def PVsWinningChancesLoss(self) -> Number:
         return [winningChances(self.top().engineEval) - winningChances(a.engineEval) for a in self.analyses]
 
-    @validated
     def averageWinningChancesLoss(self) -> Number:
         return np.average(self.PVsWinningChancesLoss())
 
-    @validated
     def winningChancesLoss(self, usePV: bool = False) -> Number:
         adv = self.advantage()
         if usePV:
@@ -89,23 +80,18 @@ class AnalysedMove(NamedTuple('AnalysedMove', [
                 
         return max(0, winningChances(self.top().engineEval) - adv)
 
-    @validated
     def advantage(self) -> Number:
         return winningChances(self.engineEval)
 
-    @validated
     def ambiguity(self) -> int: # 1 = only one top move, 5 = all moves good
         return sum(int(similarChances(winningChances(self.top().engineEval), winningChances(analysis.engineEval))) for analysis in self.analyses)
 
-    @validated
     def trueRank(self) -> TrueRank:
         return next((x+1 for x, am in enumerate(self.analyses) if am.uci == self.uci), None)
 
-    @validated
     def rank(self) -> Rank:
         return min(15, next((x for x, am in enumerate(self.analyses) if am.uci == self.uci), self.projectedRank()) + 1)
 
-    @validated
     def projectedRank(self) -> Number:
         if len(self.analyses) == 1:
             return 10
@@ -116,25 +102,21 @@ class AnalysedMove(NamedTuple('AnalysedMove', [
                 return 10
 
 @lru_cache(maxsize=64)
-@validated
 def winningChances(engineEval: EngineEval) -> Number:
     if engineEval.mate is not None:
         return 1 if engineEval.mate > 0 else 0
     else:
         return 1 / (1 + exp(-0.004 * engineEval.cp))
 
-@validated
 def similarChances(c1: Number, c2: Number) -> bool:
     return abs(c1 - c2) < 0.05
 
 class AnalysisBSONHandler:
     @staticmethod
-    @validated
     def reads(bson: Dict) -> Analysis:
         return Analysis(bson['uci'], EngineEvalBSONHandler.reads(bson['engineEval']))
 
     @staticmethod
-    @validated
     def writes(analysis: Analysis) -> Dict:
         return {
             'uci': analysis.uci,
@@ -144,7 +126,6 @@ class AnalysisBSONHandler:
 
 class AnalysedMoveBSONHandler:
     @staticmethod
-    @validated
     def reads(bson: Dict) -> AnalysedMove:
         return AnalysedMove(
             uci = bson['uci'],
@@ -156,7 +137,6 @@ class AnalysedMoveBSONHandler:
             )
 
     @staticmethod
-    @validated
     def writes(analysedMove: AnalysedMove) -> Dict:
         return {
             'uci': analysedMove.uci,

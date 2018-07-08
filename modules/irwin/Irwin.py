@@ -137,7 +137,7 @@ class Irwin(Evaluation):
         sus = []
         for i, player in enumerate(players):
             logging.debug("investigating "+player.id + " " + str(i) + "/" + totalPlayers)
-            gameStore = GameStore([], [ga for ga in self.env.analysedGameDB.byUserId(player.id)])
+            gameStore = GameStore([], [ga for ga in self.env.analysedGameDB.byPlayerId(player.id)])
             predictions = self.predictAnalysed(gameStore.analysedGameTensors())
             activation = self.activation(player, predictions)
             logging.debug(str(activation))
@@ -158,7 +158,7 @@ class Irwin(Evaluation):
 
         for i, p in enumerate(cheats):
             logging.info("predicting: " + p.id + "  -  " + str(i) + '/' + lenPlayers)
-            analysedGames = self.env.analysedGameDB.byUserId(p.id)
+            analysedGames = self.env.analysedGameDB.byPlayerId(p.id)
             tensors = [(ga.tensor(), ga.length()) for ga in analysedGames]
             predictions = self.predictAnalysed(tensors)
             analysedGameActivations = [AnalysedGameActivation.fromGamesAnalysisandPrediction(
@@ -178,7 +178,7 @@ class Irwin(Evaluation):
         logging.info("getting games and predicting")
         for i, p in enumerate(cheats):
             logging.info("predicting: " + p.id + "  -  " + str(i) + "/" + lenPlayers)
-            gameStore = GameStore(self.env.gameDB.byUserIdAnalysed(p.id), [])
+            gameStore = GameStore(self.env.gameDB.byPlayerIdAnalysed(p.id), [])
             gameTensors = gameStore.gameTensors(p.id)
             if len(gameTensors) > 0:
                 gamePredictions = self.predictBasicGames(gameTensors)

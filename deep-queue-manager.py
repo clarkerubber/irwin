@@ -15,9 +15,9 @@ from Env import Env
 parser = argparse.ArgumentParser(description=__doc__)
 
 parser.add_argument("--name", dest="name",
-                    default=None, type=str, help="name of the thread")
+                default=None, type=str, help="name of the thread")
 parser.add_argument("--quiet", dest="loglevel",
-                    default=logging.DEBUG, action="store_const", const=logging.INFO,
+                default=logging.DEBUG, action="store_const", const=logging.INFO,
                     help="reduce the number of logged messages")
 
 config = parser.parse_args()
@@ -45,8 +45,8 @@ while True:
         sleep(30)
         continue
     logging.info("Deep Queue: " + str(deepPlayerQueue))
-    userId = deepPlayerQueue.id
-    playerData = env.api.getPlayerData(userId)
+    playerId = deepPlayerQueue.id
+    playerData = env.api.getPlayerData(playerId)
 
     if playerData is None:
         logging.warning("getPlayerData returned None")
@@ -55,12 +55,12 @@ while True:
 
     # get player data, this is really only
     # useful for knowing which games must be analysed
-    player = env.playerDB.byId(userId)
+    player = env.playerDB.byId(playerId)
 
     # pull what we already have on the player
     gameStore = GameStore.new()
-    gameStore.addGames(env.gameDB.byUserId(userId))
-    gameStore.addAnalysedGames(env.analysedGameDB.byUserId(userId))
+    gameStore.addGames(env.gameDB.byPlayerId(playerId))
+    gameStore.addAnalysedGames(env.analysedGameDB.byPlayerId(playerId))
 
     # Filter games and assessments for relevant info
     try:
@@ -70,12 +70,12 @@ while True:
         env.deepPlayerQueueDB.complete(deepPlayerQueue)
         continue # if this doesn't gather any useful data, skip
 
-    env.gameDB.lazyWriteGames(gameStore.games)
+    env.gameDB.lazyWriteMany(gameStore.games)
 
     logging.info("Already Analysed: " + str(len(gameStore.analysedGames)))
 
     # decide which games should be analysed
-    gameTensors = gameStore.gameTensorsWithoutAnalysis(userId)
+    gameTensors = gameStore.gameTensorsWithoutAnalysis(playerId)
 
     if len(gameTensors) > 0:
         gamePredictions = env.irwin.predictBasicGames(gameTensors) # [(gameId, prediction)]
@@ -100,7 +100,7 @@ while True:
                 game=game,
                 engine=env.engine,
                 infoHandler=env.infoHandler,
-                white=game.white == userId,
+                white=game.white == playerId,
                 nodes=env.config['stockfish']['nodes'],
                 analysedPositionDB=env.analysedPositionDB
             ))
@@ -109,7 +109,7 @@ while True:
 
     env.analysedGameDB.lazyWriteAnalysedGames(gameStore.analysedGames)
 
-    logging.info('Posting report for ' + userId)
+    logging.info('Posting report for ' + playerId)
     env.api.postReport(env.irwin.report(
         player=player,
         gameStore=gameStore,

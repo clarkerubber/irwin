@@ -263,7 +263,7 @@ class MoveReportBSONHandler:
         }
 
 class PlayerReportDB(namedtuple('PlayerReportDB', ['playerReportColl'])):
-    def byUserId(self, userId):
+    def byPlayerId(self, userId):
         return [PlayerReportBSONHandler.reads(bson)
             for bson
             in self.playerReportColl.find(
@@ -276,7 +276,7 @@ class PlayerReportDB(namedtuple('PlayerReportDB', ['playerReportColl'])):
             sort=[('date', pymongo.DESCENDING)])
         return None if bson is None else PlayerReportBSONHandler.reads(bson)
 
-    def byUserIds(self, userIds):
+    def byPlayerIds(self, userIds):
         return [self.newestByUserId(userId) for userId in userIds]
 
     def newest(self, amount=50):

@@ -1,11 +1,16 @@
-from collections import namedtuple
+from default_imports import *
 
-class Queue(namedtuple('Queue', ['env'])):
-	def nextEngineAnalysis(self, token):
-		return self.env.engineAnalysisQueueDB.nextUnprocessed(token.id)
+from modules.queue.Env import Env
+from modules.queue.EngineQueue import EngineQueueID
 
-	def completeEngineAnalysis(self, _id):
+from modules.auth.Auth import Authable
+
+class Queue(NamedTuple('Queue', [('env', Env)])):
+    	def nextEngineAnalysis(self, authable: Authable):
+		return self.env.engineAnalysisQueueDB.nextUnprocessed(authable.id)
+
+    	def completeEngineAnalysis(self, _id: EngineQueueID):
 		return self.env.engineAnalysisQueueDB.updateComplete(_id, complete=True)
 
-	def nextIrwinAnalysis(self):
+    	def nextIrwinAnalysis(self):
 		return self.env.irwinAnalysisQueueDB.

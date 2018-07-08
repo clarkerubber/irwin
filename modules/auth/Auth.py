@@ -1,18 +1,18 @@
 from default_imports import *
 
 from modules.auth.Env import Env
-from modules.auth.User import User, Username, Password
-from modules.auth.Token import Token
+from modules.auth.User import User, UserID, Username, Password
+from modules.auth.Token import Token, TokeniD
 from modules.auth.Priv import Priv
-
-TokenID = NewType('TokenID', str)
 
 Authable = TypeVar('Authable', User, Token)
 
-@validated
+Authorised = NewType('Authorised', bool)
+
+AuthID = TypeVar('AuthID', UserID, TokenID)
+
 class Auth(NamedTuple('Auth', [('env', Env)])):
-    @validated
-	def loginUser(self, username: Username, password: Password) -> Tuple[Opt[User], bool]:
+    	def loginUser(self, username: Username, password: Password) -> Tuple[Opt[User], Authorised]:
 		"""
 		Attempts to log in a user.
 		Returns True is successful.
@@ -24,8 +24,7 @@ class Auth(NamedTuple('Auth', [('env', Env)])):
 			return (user, user.checkPassword(password))
 		return (None, False)
 
-    @validated
-	def registerUser(self, name: str, password: Password, privs: List[Priv] = []) -> Opt[User]:
+    	def registerUser(self, name: Username, password: Password, privs: List[Priv] = []) -> Opt[User]:
 		"""
 		Will attempt to register a user.
 		Returns User object if successful, otherwise None.
@@ -36,8 +35,7 @@ class Auth(NamedTuple('Auth', [('env', Env)])):
 			return user
 		return None
 
-    @validated
-	def authoriseTokenId(self, tokenId: TokenID, priv: Priv) -> Tuple[Opt[Token], bool]:
+    	def authoriseTokenId(self, tokenId: TokenID, priv: Priv) -> Tuple[Opt[Token], Authorised]:
 		"""
 		Given a tokenId, will check if the tokenId has priv.
 		"""
@@ -46,8 +44,7 @@ class Auth(NamedTuple('Auth', [('env', Env)])):
 			return (token, token.hasPriv(priv))
 		return (None, False)
 
-    @validated
-	def authoriseUser(self, username: Username, password: Password, priv: Priv) -> Tuple[Opt[User], bool]:
+    	def authoriseUser(self, username: Username, password: Password, priv: Priv) -> Tuple[Opt[User], Authorised]:
 		"""
 		Checks if user has priv in list of privs. 
 		"""
@@ -56,20 +53,23 @@ class Auth(NamedTuple('Auth', [('env', Env)])):
 			return (user, loggedIn and user.hasPriv(priv))
 		return (None, False)
 
-    @validated
-	def authoriseRequest(self, req: Dict, priv: Priv) -> Tuple[Opt[Authable], bool]:
+    	def authoriseRequest(self, req: Opt[Dict], priv: Priv) -> Tuple[Opt[Authable], Authorised]:
 		"""
 		Checks if a request is verified with priv.
 		"""
 		if req is not None:
-			tokenId = reg.get('auth', {}).get('token')
-			if tokenId is not None:
-				return self.authoriseTokenId(tokenId, priv)
+            # Attempt to authorise token first
+            authReq = req.get('auth')
+            if authReq is not None:
+    			tokenId = authReq.get('token')
+    			if tokenId is not None:
+    				return self.authoriseTokenId(tokenId, priv)
 
-			username = req.get('auth', {}).get('username')
-			password = req.get('auth', {}).get('password')
+                # Then attempt to authorise user/password
+    			username = authReq.get('username')
+    			password = authReq.get('password')
 
-			if None not in [username, password]:
-				return self.authoriseUser(username, password, priv)
+    			if None not in [username, password]:
+    				return self.authoriseUser(username, password, priv)
 
 		return (None, False)

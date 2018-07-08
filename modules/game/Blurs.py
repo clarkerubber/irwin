@@ -1,6 +1,5 @@
 from default_imports import *
 
-@validated
 class Blurs(NamedTuple('Blurs', [
         ('nb', int),
         ('moves', List[bool])
@@ -9,8 +8,7 @@ class Blurs(NamedTuple('Blurs', [
     The blurs for a single side in a Game
     """
     @staticmethod
-    @validated
-    def fromDict(d: Dict, l: int) -> Blurs:
+    def fromDict(d: Dict, l: int):
         """
         d being from game data
         l being the amount of plys played by the player
@@ -24,7 +22,6 @@ class Blurs(NamedTuple('Blurs', [
 
 class BlursBSONHandler:
     @staticmethod
-    @validated
     def reads(bson: Dict) -> Blurs:
         return Blurs(
             nb = sum(list(bson['bits'])),
@@ -32,7 +29,6 @@ class BlursBSONHandler:
             )
 
     @staticmethod
-    @validated
     def writes(blurs: Blurs) -> Dict:
         return {
             'bits': ''.join(['1' if i else '0' for i in blurs.moves])

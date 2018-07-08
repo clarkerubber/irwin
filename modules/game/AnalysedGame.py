@@ -8,7 +8,7 @@ import json
 from modules.game.Game import GameID, Blur, Emt
 from modules.game.Colour import Colour
 from modules.game.Player import PlayerID
-from modules.game.AnalysedMove import AnalysedMove, AnalysedMoveBSONHandler, EngineEval, Analysis
+from modules.game.AnalysedMove import AnalysedMove, AnalysedMoveBSONHandler, EngineEval, Analysis, Rank, TrueRank
 from modules.game.AnalysedPosition import AnalysedPosition
 
 from pymongo.collection import Collection
@@ -17,7 +17,6 @@ AnalysedGameID = NewType('AnalysedGameID', str)
 
 AnalysedGameTensor = NewType('AnalysedGameTensor', np.ndarray)
 
-@validated
 class AnalysedGame(NamedTuple('AnalysedGame', [
         ('id', AnalysedGameID),
         ('playerId', PlayerID),
@@ -29,8 +28,7 @@ class AnalysedGame(NamedTuple('AnalysedGame', [
     player's perspective.
     """
     @staticmethod
-    @validated
-    def new(gameId: GameID, colour: Colour, playerId: PlayerID, analysedMoves: List[AnalysedMove]) -> AnalysedGame:
+    def new(gameId: GameID, colour: Colour, playerId: PlayerID, analysedMoves: List[AnalysedMove]):
         return AnalysedGame(
             id=AnalysedGame.makeId(gameId, colour),
             playerId=playerId,
@@ -38,11 +36,9 @@ class AnalysedGame(NamedTuple('AnalysedGame', [
             analysedMoves=analysedMoves)
 
     @staticmethod
-    @validated
     def makeId(gameId: GameID, colour: Colour) -> AnalysedGameID:
         return gameId + '/' + ('white' if colour else 'black')
 
-    @validated
     def tensor(self, length: int = 60) -> AnalysedGameTensor:
         emtAvg = self.emtAverage()
         wclAvg = self.wclAverage()
@@ -51,39 +47,30 @@ class AnalysedGame(NamedTuple('AnalysedGame', [
         ts = ts + (length-len(ts))*[AnalysedMove.nullTensor()]
         return np.array(ts)
 
-    @validated
     def emtAverage(self) -> Number:
         return np.average([m.emt for m in self.analysedMoves])
 
-    @validated
     def wclAverage(self) -> Number:
         return np.average([m.winningChancesLoss() for m in self.analysedMoves])
 
-    @validated
     def gameLength(self) -> int:
         return len(self.analysedMoves)
 
-    @validated
     def blurs(self) -> List[Blur]:
         return [move.blur for move in self.analysedMoves]
 
-    @validated
     def emts(self) -> List[Emt]:
         return [m.emt for m in self.analysedMoves]
 
-    @validated
     def emtSeconds(self) -> List[Number]:
         return [emt/100 for emt in self.emts()]
 
-    @validated
     def winningChances(self) -> List[Number]:
         return [m.advantage() for m in self.analysedMoves]
 
-    @validated
     def winningChancesPercent(self) -> List[Number]:
         return [100*m.advantage() for m in self.analysedMoves]
 
-    @validated
     def winningChancesLossPercent(self, usePV: bool = True) -> List[Number]:
         return [100*m.winningChancesLoss(usePV=usePV) for m in self.analysedMoves]
 
@@ -102,24 +89,21 @@ class AnalysedGame(NamedTuple('AnalysedGame', [
                     pvs[i][2].append('null')
         return pvs
 
-    @validated
-    def ranks(self) -> List[Rank]:
+    def ranks(self) -> List[TrueRank]:
         """ for generating graphs """
         return [move.trueRank() for move in self.analysedMoves]
 
-    @validated
     def ambiguities(self) -> List[int]:
         """ for generating graphs """
         return [move.ambiguity() for move in self.analysedMoves]
 
-    @validated
     def length(self) -> int:
         return len(self.analysedMoves)
 
-    def ranksJSON(self):
+    def ranksJSON(self) -> str:
         return json.dumps(self.ranks())
 
-    def binnedSeconds(self, bins=10):
+    def binnedSeconds(self, bins: int = 10) -> Dict:
         # JSON format for graphing
         emts = self.emts()
         minSec = min(emts)
@@ -132,7 +116,7 @@ class AnalysedGame(NamedTuple('AnalysedGame', [
             labels[min(bins-1, i)] = str(round_sig(stepStart/100)) + '-' + str(round_sig((stepStart+step)/100)) + 's'
         return {'data': json.dumps(data), 'labels': json.dumps(labels)}
 
-    def binnedLosses(self, bins=10):
+    def binnedLosses(self, bins: int = 10) -> Dict:
         # JSON format for graphing
         losses = self.winningChancesLossPercent()
         data = [[] for i in range(bins+1)]
@@ -143,7 +127,7 @@ class AnalysedGame(NamedTuple('AnalysedGame', [
         labels.append('Other')
         return {'data': json.dumps(data), 'labels': json.dumps(labels)}
 
-    def binnedPVs(self, bins=6):
+    def binnedPVs(self, bins: int = 6) -> Dict:
         # JSON format for graphing
         pvs = self.ranks()
         data = [[] for i in range(bins)]
@@ -152,24 +136,24 @@ class AnalysedGame(NamedTuple('AnalysedGame', [
         labels = ['PV 1', 'PV 2', 'PV 3', 'PV 4', 'PV 5', 'Other']
         return {'data': json.dumps(data), 'labels': json.dumps(labels)}
 
-    def moveRankByTime(self):
+    def moveRankByTime(self) -> List[Dict]:
         return [{'x': time, 'y': rank} for rank, time in zip(self.ranks(), self.emtSeconds())]
 
-    def moveRankByTimeJSON(self):
+    def moveRankByTimeJSON(self) -> str:
         # json format for graphing
         return json.dumps(self.moveRankByTime())
 
-    def lossByTime(self):
+    def lossByTime(self) -> List[Dict]:
         return [{'x': time, 'y': loss} for loss, time in zip(self.winningChancesLossPercent(), self.emtSeconds())]
 
-    def lossByTimeJSON(self):
+    def lossByTimeJSON(self) -> str:
         # json format for graphing
         return json.dumps(self.lossByTime())
 
-    def lossByRank(self):
+    def lossByRank(self) -> List[Dict]:
         return [{'x': rank, 'y': loss} for loss, rank in zip(self.winningChancesLossPercent(), self.ranks())]
 
-    def lossByRankJSON(self):
+    def lossByRankJSON(self) -> str:
         # json format for graphing
         return json.dumps(self.lossByRank())
 
@@ -180,7 +164,6 @@ def round_sig(x, sig=2):
 
 class AnalysedGameBSONHandler:
     @staticmethod
-    @validated
     def reads(bson: Dict) -> AnalysedGame:
         return AnalysedGame(
             id = bson['_id'],
@@ -189,7 +172,6 @@ class AnalysedGameBSONHandler:
             analysedMoves = [AnalysedMoveBSONHandler.reads(am) for am in bson['analysis']])
 
     @staticmethod
-    @validated
     def writes(analysedGame: AnalysedGame) -> Dict:
         return {
             '_id': analysedGame.id,
@@ -198,34 +180,27 @@ class AnalysedGameBSONHandler:
             'analysis': [AnalysedMoveBSONHandler.writes(am) for am in analysedGame.analysedMoves]
         }
 
-@validated
 class AnalysedGameDB(NamedTuple('AnalysedGameDB', [
         ('analysedGameColl', Collection)
     ])):
-    @validated
     def write(self, analysedGame: AnalysedGame):
         self.analysedGameColl.update_one(
             {'_id': analysedGame.id},
             {'$set': AnalysedGameBSONHandler.writes(analysedGame)},
             upsert=True)
 
-    @validated
     def lazyWriteAnalysedGames(self, analysedGames: List[AnalysedGame]):
         [self.write(ga) for ga in analysedGames]
 
-    @validated
-    def byUserId(self, playerId: PlayerID) -> List[AnalysedGame]:
+    def byPlayerId(self, playerId: PlayerID) -> List[AnalysedGame]:
         return [AnalysedGameBSONHandler.reads(ga) for ga in self.analysedGameColl.find({'playerId': playerId})]
 
-    @validated
-    def byUserIds(self, playerIds: List[PlayerID]) -> List[AnalysedGame]:
-        return [self.byUserId(playerId) for playerId in playerIds]
+    def byPlayerIds(self, playerIds: List[PlayerID]) -> List[AnalysedGame]:
+        return [self.byPlayerId(playerId) for playerId in playerIds]
 
-    @validated
     def byIds(self, ids: List[AnalysedGameID]) -> List[AnalysedGame]:
         return [AnalysedGameBSONHandler.reads(ga) for ga in self.analysedGameColl.find({"_id": {"$in": ids}})]
 
-    @validated
     def allBatch(self, batch: int, batchSize: int = 500):
         """
         Gets all analysed games in a paged format
@@ -234,7 +209,6 @@ class AnalysedGameDB(NamedTuple('AnalysedGameDB', [
         """
         return [AnalysedGameBSONHandler.reads(ga) for ga in self.analysedGameColl.find(skip=batch*batchSize, limit=batchSize)]
 
-    @validated
     def byGameIdAndUserId(self, gameId: GameID, playerId: PlayerID) -> Opt[AnalysedGame]:
         bson = self.analysedGameColl.find_one({'gameId': gameId, 'playerId': playerId})
         return None if bson is None else AnalysedGameBSONHandler.reads(bson)

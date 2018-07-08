@@ -6,17 +6,14 @@ class ConfigWrapper:
     """
     Used for loading and accessing values from a json config file.
     """
-    @validated
     def __init__(self, d: Dict):
         self.d = d
 
     @staticmethod
-    @validated
     def new(filename: str):
         with open(filename) as confFile:
             return ConfigWrapper(json.load(confFile))
 
-    @validated
     def __getitem__(self, key: str):
         """
         allows for accessing like, conf["index items like this"]
@@ -27,7 +24,6 @@ class ConfigWrapper:
         except ValueError:
             return self.__getattr__(key)
 
-    @validated
     def __getattr__(self, key: str):
         """
         allows for accessing like, conf.index.like.this

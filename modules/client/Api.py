@@ -4,11 +4,9 @@ from conf.ConfigWrapper import ConfigWrapper
 
 from modules.game.Game import GameBSONHandler
 
-@validated
 class Api(NamedTuple('Api', [
         ('config', ConfigWrapper)
     ])):
-    @validated
     def request_job(self) -> Opt[Dict]:
         for i in range(5):
             try:

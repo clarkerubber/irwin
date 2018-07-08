@@ -18,7 +18,6 @@ Analysis = NewType('Analysis', List[EngineEval])
 MoveTensor = NewType('MoveTensor', List[Number])
 GameTensor = NewType('GameTensor', List[MoveTensor])
 
-@validated
 class Game(NamedTuple('Game', [
         ('id', GameID),
         ('white', PlayerID),
@@ -30,8 +29,7 @@ class Game(NamedTuple('Game', [
         ('analysis', Analysis)
     ])):
     @staticmethod
-    @validated
-    def fromDict(gid: GameID, playerId: PlayerID, d: Dict) -> Game:
+    def fromDict(gid: GameID, playerId: PlayerID, d: Dict):
         pgn = d['pgn'].split(" ")
         white, black = None, None
         if d['color'] == 'white':
@@ -50,13 +48,11 @@ class Game(NamedTuple('Game', [
         )
 
     @staticmethod
-    @validated
-    def fromPlayerData(playerData: Dict) -> List[Game]:
-        """Returns a list of Game items from playerData json object from lichess api"""
-        return [Game.fromDict(gid, playerData['user']['id'], g) for gid, g in playerData['games'].items() \
+    def fromJson(json: Dict):
+        """Returns a list of Game items from json json object from lichess api"""
+        return [Game.fromDict(gid, json['user']['id'], g) for gid, g in json['games'].items() \
                  if g.get('initialFen') is None and g.get('variant') is None]
 
-    @validated
     def tensor(self, playerId: PlayerID) -> GameTensor:
         if self.analysis == [] or self.emts is None and (self.white == playerId or self.black == playerId):
             return None
@@ -73,12 +69,10 @@ class Game(NamedTuple('Game', [
         tensors = (max(0, 100-len(tensors)))*[Game.nullMoveTensor()] + tensors
         return tensors[:100]
 
-    @validated
     def emtsByColour(self, colour: Colour) -> List[Emt]:
         return self.emts[(0 if colour else 1)::2]
 
     @staticmethod
-    @validated
     def moveTensor(analysis: Analysis, blur: Blur, emt: Emt, avgEmt: Number, colour: Colour) -> MoveTensor:
         return [
             analysis[1].winningChances(colour),
@@ -90,16 +84,13 @@ class Game(NamedTuple('Game', [
         ]
 
     @staticmethod
-    @validated
     def nullMoveTensor() -> MoveTensor:
         return [0, 0, 0, 0, 0, 0]
 
     @staticmethod
-    @validated
     def ply(moveNumber: int, colour: Colour) -> int:
         return (2*(moveNumber-1)) + (0 if colour else 1)
 
-    @validated
     def getBlur(self, colour: Colour, moveNumber: int) -> Blur:
         if colour:
             return self.whiteBlurs.moves[moveNumber-1]
@@ -107,7 +98,6 @@ class Game(NamedTuple('Game', [
 
 class GameBSONHandler:
     @staticmethod
-    @validated
     def reads(bson: Dict) -> Game:
         return Game(
             id = bson['_id'],
@@ -120,7 +110,6 @@ class GameBSONHandler:
             analysis = EngineEvalBSONHandler.reads(bson.get('analysis', [])))
 
     @staticmethod
-    @validate
     def writes(game: Game) -> Dict:
         return {
             '_id': game.id,
@@ -134,31 +123,24 @@ class GameBSONHandler:
             'analysed': len(game.analysis) > 0
         }
 
-@validated
 class GameDB(NamedTuple('GameDB', [
         ('gameColl', Collection)
     ])):
-    @validated
     def byId(self, _id: GameID) -> Opt[Game]:
         bson = self.gameColl.find_one({'_id': _id})
         return None if bson is None else GameBSONHandler.reads(bson)
 
-    @validated
     def byIds(self, ids: List[GameID]) -> List[Game]:
         return [GameBSONHandler.reads(g) for g in self.gameColl.find({'_id': {'$in': [i for i in ids]}})]
 
-    @validated
     def byPlayerId(self, playerId: PlayerID) -> List[Game]:
         return [GameBSONHandler.reads(g) for g in self.gameColl.find({"$or": [{"white": playerId}, {"black": playerId}]})]
 
-    @validated
     def byPlayerIdAndAnalysed(self, playerId: PlayerID, analysed: bool = True) -> List[Game]:
         return [GameBSONHandler.reads(g) for g in self.gameColl.find({"analysed": analysed, "$or": [{"white": playerId}, {"black": playerId}]})]
 
-    @validated
     def write(self, game: Game):
         self.gameColl.update_one({'_id': game.id}, {'$set': GameBSONHandler.writes(game)}, upsert=True)
 
-    @validated
-    def lazyWriteGames(self, games: List[Game]):
+    def lazyWriteMany(self, games: List[Game]):
         [self.write(g) for g in games]

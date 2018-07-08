@@ -9,7 +9,7 @@ class Evaluation:
         players = self.env.playerDB.balancedSample(batchSize)
         print(" %d" % len(players))
         print("getting game analyses")
-        analysesByPlayer = [(player, GameStore([], [ga for ga in self.env.analysedGameDB.byUserId(player.id)])) for player in players]
+        analysesByPlayer = [(player, GameStore([], [ga for ga in self.env.analysedGameDB.byPlayerId(player.id)])) for player in players]
         return analysesByPlayer
 
     def evaluate(self):

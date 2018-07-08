@@ -16,7 +16,7 @@ from Env import Env
 parser = argparse.ArgumentParser(description=__doc__)
 
 parser.add_argument("--quiet", dest="loglevel",
-                    default=logging.DEBUG, action="store_const", const=logging.INFO,
+                default=logging.DEBUG, action="store_const", const=logging.INFO,
                     help="reduce the number of logged messages")
 config = parser.parse_args()
 
@@ -39,7 +39,7 @@ while True:
     basicPlayerQueue = env.basicPlayerQueueDB.nextUnprocessed()
     if basicPlayerQueue is not None:
         logging.info("Basic Queue: " + str(basicPlayerQueue))
-        userId = basicPlayerQueue.id
+        playerId = basicPlayerQueue.id
         origin = basicPlayerQueue.origin
     else:
         logging.info("Basic Queue empty. Pausing")
@@ -49,21 +49,21 @@ while True:
     # if there is already a deep queue item open
     # don't update. This will push the request
     # down the queue
-    if env.deepPlayerQueueDB.exists(userId):
+    if env.deepPlayerQueueDB.exists(playerId):
         continue
     
     # get analysed (by fishnet/lichess) games from the db
     gameStore = GameStore.new()
-    gameStore.addGames(env.gameDB.byUserIdAnalysed(userId))
-    gameTensors = gameStore.gameTensors(userId)
+    gameStore.addGames(env.gameDB.byPlayerIdAnalysed(playerId))
+    gameTensors = gameStore.gameTensors(playerId)
 
     if len(gameTensors) > 0:
         gamePredictions = env.irwin.predictBasicGames(gameTensors)
-        gameActivations = [GameBasicActivation.fromPrediction(gameId, userId, prediction, False)
+        gameActivations = [GameBasicActivation.fromPrediction(gameId, playerId, prediction, False)
             for gameId, prediction in gamePredictions]
         env.gameBasicActivationDB.lazyWriteMany(gameActivations)
         deepPlayerQueue = DeepPlayerQueue.new(
-            userId=userId,
+            playerId=playerId,
             origin=origin,
             gamePredictions=gamePredictions)
         logging.info("Writing DeepPlayerQueue: " + str(deepPlayerQueue))
@@ -71,7 +71,7 @@ while True:
     else:
         logging.info("No gameTensors")
         deepPlayerQueue = DeepPlayerQueue.new(
-            userId=userId,
+            playerId=playerId,
             origin=origin,
             gamePredictions=[])
         logging.info("Writing DeepPlayerQueue: " + str(deepPlayerQueue))

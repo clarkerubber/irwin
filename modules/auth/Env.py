@@ -8,9 +8,8 @@ from modules.auth.Token import TokenDB
 from pymongo.database import Database
 
 class Env:
-    @validated
-	def __init__(self, config: ConfigWrapper, db: Database):
+    	def __init__(self, config: ConfigWrapper, db: Database):
 		self.db = db
         self.config = config
-		self.userDB = UserDB(self.db[self.config.coll.user])
-		self.tokenDB = TokenDB(self.db[self.config.coll.token])
+		self.userDB = UserDB(self.db[self.config["auth coll user"]])
+		self.tokenDB = TokenDB(self.db[self.config["auth coll token"]])
