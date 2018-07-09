@@ -98,7 +98,7 @@ if config.test:
     for userId in ['ralph27_velasco']:
         player = env.playerDB.byPlayerId(userId)
         gameStore = GameStore.new()
-        gameStore.addGames(env.gameDB.byPlayerIdAnalysed(userId))
+        gameStore.addGames(env.gameDB.byPlayerIdAndAnalysed(userId))
         gameStore.addAnalysedGames(env.analysedGameDB.byPlayerId(userId))
         env.api.postReport(env.irwin.report(player, gameStore))
         logging.debug("posted")

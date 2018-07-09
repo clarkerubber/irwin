@@ -18,7 +18,7 @@ from modules.queue.DeepPlayerQueue import DeepPlayerQueueDB
 from modules.queue.ModReport import ModReportDB
 
 from modules.irwin.AnalysedGameActivation import AnalysedGameActivationDB
-from modules.irwin.GameBasicActivation import GameBasicActivationDB
+from modules.irwin.BasicGameActivation import BasicGameActivationDB
 
 from modules.irwin.AnalysisReport import PlayerReportDB, GameReportDB
 
@@ -57,7 +57,7 @@ class Env:
         self.reportColl = self.db.report
 
         self.analysedGameActivationColl = self.db.analysedGameActivation
-        self.gameBasicActivationColl = self.db.gameBasicActivation
+        self.basicGameActivationColl = self.db.basicGameActivation
 
         self.playerReportColl = self.db.playerReport
         self.gameReportColl = self.db.gameReport
@@ -73,7 +73,7 @@ class Env:
         self.modReportDB = ModReportDB(self.reportColl)
 
         self.analysedGameActivationDB = AnalysedGameActivationDB(self.analysedGameActivationColl)
-        self.gameBasicActivationDB = GameBasicActivationDB(self.gameBasicActivationColl)
+        self.basicGameActivationDB = BasicGameActivationDB(self.basicGameActivationColl)
 
         self.playerReportDB = PlayerReportDB(self.playerReportColl)
         self.gameReportDB = GameReportDB(self.gameReportColl)

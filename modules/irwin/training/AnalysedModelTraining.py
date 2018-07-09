@@ -4,13 +4,13 @@ from modules.irwin.training.Env import Env
 from modules.game.AnalysedGame import AnalysedGameTensor
 from modules.irwin.AnalysedGameModel import AnalysedGameModel
 
-from numpy import ndarray
+import numpy as np
 
-from random import shuffe
+from random import shuffle
 
 Batch = NamedTuple('Batch', [
-        ('data', ndarray),
-        ('labels', List[ndarray])
+        ('data', np.ndarray),
+        ('labels', List[np.ndarray])
     ])
 
 class AnalysedModelTraining(NamedTuple('AnalysedModelTraining', [
@@ -42,7 +42,7 @@ class AnalysedModelTraining(NamedTuple('AnalysedModelTraining', [
             shuffle(cheatPivotEntries)
             shuffle(legits)
 
-            legits = legits[:10000]
+            legits = legits[:self.env.config["irwin model analysed training sample_size"]]
 
             logging.debug("Getting game analyses from DB")
 
@@ -58,8 +58,8 @@ class AnalysedModelTraining(NamedTuple('AnalysedModelTraining', [
             shuffle(cheats)
             shuffle(legits)
 
-            cheats = cheats[:10000]
-            legits = legits[:10000]
+            cheats = cheats[:self.env.config["irwin model analysed training sample_size"]]
+            legits = legits[:self.env.config["irwin model analysed training sample_size"]]
 
             cheatAnalysedGames = []
             legitAnalysedGames = []

@@ -11,7 +11,7 @@ from modules.irwin.AnalysedGameModel import AnalysedGameModel
 from modules.irwin.BasicGameModel import BasicGameModel
 
 from modules.irwin.AnalysedGameActivation import AnalysedGameActivation
-from modules.irwin.GameBasicActivation import GameBasicActivation
+from modules.irwin.BasicGameActivation import BasicGameActivation
 
 from modules.irwin.Evaluation import Evaluation
 
@@ -178,11 +178,11 @@ class Irwin(Evaluation):
         logging.info("getting games and predicting")
         for i, p in enumerate(cheats):
             logging.info("predicting: " + p.id + "  -  " + str(i) + "/" + lenPlayers)
-            gameStore = GameStore(self.env.gameDB.byPlayerIdAnalysed(p.id), [])
+            gameStore = GameStore(self.env.gameDB.byPlayerIdAndAnalysed(p.id), [])
             gameTensors = gameStore.gameTensors(p.id)
             if len(gameTensors) > 0:
                 gamePredictions = self.predictBasicGames(gameTensors)
-                self.env.gameBasicActivationDB.lazyWriteMany([GameBasicActivation.fromPrediction(
+                self.env.basicGameActivationDB.lazyWriteMany([BasicGameActivation.fromPrediction(
                     gameId=gameId,
                     userId=p.id,
                     prediction=prediction,

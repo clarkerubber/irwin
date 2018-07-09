@@ -167,7 +167,7 @@ class AnalysedGameBSONHandler:
     def reads(bson: Dict) -> AnalysedGame:
         return AnalysedGame(
             id = bson['_id'],
-            playerId = bson['playerId'],
+            playerId = bson['userId'],
             gameId = bson['gameId'],
             analysedMoves = [AnalysedMoveBSONHandler.reads(am) for am in bson['analysis']])
 
@@ -175,7 +175,7 @@ class AnalysedGameBSONHandler:
     def writes(analysedGame: AnalysedGame) -> Dict:
         return {
             '_id': analysedGame.id,
-            'playerId': analysedGame.playerId,
+            'userId': analysedGame.playerId,
             'gameId': analysedGame.gameId,
             'analysis': [AnalysedMoveBSONHandler.writes(am) for am in analysedGame.analysedMoves]
         }
@@ -193,7 +193,7 @@ class AnalysedGameDB(NamedTuple('AnalysedGameDB', [
         [self.write(ga) for ga in analysedGames]
 
     def byPlayerId(self, playerId: PlayerID) -> List[AnalysedGame]:
-        return [AnalysedGameBSONHandler.reads(ga) for ga in self.analysedGameColl.find({'playerId': playerId})]
+        return [AnalysedGameBSONHandler.reads(ga) for ga in self.analysedGameColl.find({'userId': playerId})]
 
     def byPlayerIds(self, playerIds: List[PlayerID]) -> List[AnalysedGame]:
         return [self.byPlayerId(playerId) for playerId in playerIds]
@@ -210,5 +210,5 @@ class AnalysedGameDB(NamedTuple('AnalysedGameDB', [
         return [AnalysedGameBSONHandler.reads(ga) for ga in self.analysedGameColl.find(skip=batch*batchSize, limit=batchSize)]
 
     def byGameIdAndUserId(self, gameId: GameID, playerId: PlayerID) -> Opt[AnalysedGame]:
-        bson = self.analysedGameColl.find_one({'gameId': gameId, 'playerId': playerId})
+        bson = self.analysedGameColl.find_one({'gameId': gameId, 'userId': playerId})
         return None if bson is None else AnalysedGameBSONHandler.reads(bson)

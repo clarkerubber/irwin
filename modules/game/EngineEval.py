@@ -2,6 +2,8 @@ from default_imports import *
 
 from modules.game.Colour import Colour
 
+from math import exp
+
 class EngineEval(NamedTuple('EngineEval', [
         ('cp', Opt[Number]),
         ('mate', Opt[int])
@@ -21,7 +23,7 @@ class EngineEval(NamedTuple('EngineEval', [
         if self.mate is not None:
             base = (1 if self.mate > 0 else 0)
         else:
-            base = 1 / (1 + math.exp(-0.004 * self.cp))
+            base = 1 / (1 + exp(-0.004 * self.cp))
         return 100*(base if colour else (1-base))
 
 class EngineEvalBSONHandler:

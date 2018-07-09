@@ -23,9 +23,10 @@ class Blurs(NamedTuple('Blurs', [
 class BlursBSONHandler:
     @staticmethod
     def reads(bson: Dict) -> Blurs:
+        moves = [i == '1' for i in list(bson['bits'])]
         return Blurs(
-            nb = sum(list(bson['bits'])),
-            moves = [i == 1 for i in list(bson['bits'])]
+            nb = sum(moves),
+            moves = moves
             )
 
     @staticmethod

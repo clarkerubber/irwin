@@ -5,13 +5,13 @@ from modules.game.Game import GameTensor
 from modules.irwin.training.Env import Env
 from modules.irwin.BasicGameModel import BasicGameModel
 
-from numpy import ndarray
+import numpy as np
 
 from random import shuffle
 
 Batch = NamedTuple('Batch', [
-        ('data', ndarray),
-        ('labels', ndarray)
+        ('data', np.ndarray),
+        ('labels', np.ndarray)
     ])
 
 class BasicModelTraining(NamedTuple('BasicModelTraining', [
@@ -42,10 +42,10 @@ class BasicModelTraining(NamedTuple('BasicModelTraining', [
         if filtered:
             legits = self.env.playerDB.byEngine(False)
             shuffle(legits)
-            legits = legits[:10000]
+            legits = legits[:self.env.config["irwin model basic training sample_size"]]
             for p in legits:
-                legitTensors.extend([g.tensor(p.id) for g in self.env.gameDB.byPlayerIdAnalysed(p.id)])
-            cheatGameActivations = self.env.gameBasicActivationDB.byEngineAndPrediction(True, 70)
+                legitTensors.extend([g.tensor(p.id) for g in self.env.gameDB.byPlayerIdAndAnalysed(p.id)])
+            cheatGameActivations = self.env.basicGameActivationDB.byEngineAndPrediction(True, 70)
             cheatGames = self.env.gameDB.byIds([ga.gameId for ga in cheatGameActivations])
             cheatTensors.extend([g.tensor(ga.userId) for g, ga in zip(cheatGames, cheatGameActivations)])
 
@@ -56,14 +56,14 @@ class BasicModelTraining(NamedTuple('BasicModelTraining', [
             shuffle(cheats)
             shuffle(legits)
 
-            cheats = cheats[:10000]
-            legits = legits[:10000]
+            cheats = cheats[:self.env.config["irwin model basic training sample_size"]]
+            legits = legits[:self.env.config["irwin model basic training sample_size"]]
 
             for p in legits + cheats:
                 if p.engine:
-                    cheatTensors.extend([g.tensor(p.id) for g in self.env.gameDB.byPlayerIdAnalysed(p.id)])
+                    cheatTensors.extend([g.tensor(p.id) for g in self.env.gameDB.byPlayerIdAndAnalysed(p.id)])
                 else:
-                    legitTensors.extend([g.tensor(p.id) for g in self.env.gameDB.byPlayerIdAnalysed(p.id)])
+                    legitTensors.extend([g.tensor(p.id) for g in self.env.gameDB.byPlayerIdAndAnalysed(p.id)])
 
         cheatTensors = [t for t in cheatTensors if t is not None]
         legitTensors = [t for t in legitTensors if t is not None]

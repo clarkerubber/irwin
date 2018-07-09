@@ -114,7 +114,10 @@ def similarChances(c1: Number, c2: Number) -> bool:
 class AnalysisBSONHandler:
     @staticmethod
     def reads(bson: Dict) -> Analysis:
-        return Analysis(bson['uci'], EngineEvalBSONHandler.reads(bson['engineEval']))
+        return Analysis(
+            uci = bson['uci'],
+            engineEval = EngineEvalBSONHandler.reads(bson['score'])
+        )
 
     @staticmethod
     def writes(analysis: Analysis) -> Dict:
@@ -132,7 +135,7 @@ class AnalysedMoveBSONHandler:
             move = bson['move'],
             emt = bson['emt'],
             blur = bson.get('blur', False),
-            engineEval = EngineEvalBSONHandler.reads(bson['engineEval']),
+            engineEval = EngineEvalBSONHandler.reads(bson['score']),
             analyses = [AnalysisBSONHandler.reads(a) for a in bson['analyses']]
             )
 
@@ -143,6 +146,6 @@ class AnalysedMoveBSONHandler:
             'move': analysedMove.move,
             'emt': analysedMove.emt,
             'blur': analysedMove.blur,
-            'engineEval': EngineEvalBSONHandler.writes(analysedMove.engineEval),
+            'score': EngineEvalBSONHandler.writes(analysedMove.engineEval),
             'analyses': [AnalysisBSONHandler.writes(a) for a in analysedMove.analyses]
         }

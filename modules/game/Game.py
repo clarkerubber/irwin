@@ -22,7 +22,7 @@ class Game(NamedTuple('Game', [
         ('id', GameID),
         ('white', PlayerID),
         ('black', PlayerID),
-        ('pgn', str),
+        ('pgn', List[str]),
         ('emts', List[Emt]),
         ('whiteBlurs', Blurs),
         ('blackBlurs', Blurs),
@@ -107,7 +107,7 @@ class GameBSONHandler:
             emts = bson['emts'],
             whiteBlurs = BlursBSONHandler.reads(bson['whiteBlurs']),
             blackBlurs = BlursBSONHandler.reads(bson['blackBlurs']),
-            analysis = EngineEvalBSONHandler.reads(bson.get('analysis', [])))
+            analysis = [EngineEvalBSONHandler.reads(a) for a in bson.get('analysis', [])])
 
     @staticmethod
     def writes(game: Game) -> Dict:
@@ -119,7 +119,7 @@ class GameBSONHandler:
             'emts': game.emts,
             'whiteBlurs': BlursBSONHandler.writes(game.whiteBlurs),
             'blackBlurs': BlursBSONHandler.writes(game.blackBlurs),
-            'analysis': EngineEvalBSONHandler.writes(game.analysis),
+            'analysis': [EngineEvalBSONHandler.writes(a) for a in game.analysis],
             'analysed': len(game.analysis) > 0
         }
 

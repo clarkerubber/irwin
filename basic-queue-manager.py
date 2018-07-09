@@ -9,7 +9,7 @@ from modules.queue.DeepPlayerQueue import DeepPlayerQueue
 
 from modules.game.GameStore import GameStore
 
-from modules.irwin.GameBasicActivation import GameBasicActivation
+from modules.irwin.BasicGameActivation import BasicGameActivation
 
 from Env import Env
 
@@ -54,14 +54,14 @@ while True:
     
     # get analysed (by fishnet/lichess) games from the db
     gameStore = GameStore.new()
-    gameStore.addGames(env.gameDB.byPlayerIdAnalysed(playerId))
+    gameStore.addGames(env.gameDB.byPlayerIdAndAnalysed(playerId))
     gameTensors = gameStore.gameTensors(playerId)
 
     if len(gameTensors) > 0:
         gamePredictions = env.irwin.predictBasicGames(gameTensors)
-        gameActivations = [GameBasicActivation.fromPrediction(gameId, playerId, prediction, False)
+        gameActivations = [BasicGameActivation.fromPrediction(gameId, playerId, prediction, False)
             for gameId, prediction in gamePredictions]
-        env.gameBasicActivationDB.lazyWriteMany(gameActivations)
+        env.basicGameActivationDB.lazyWriteMany(gameActivations)
         deepPlayerQueue = DeepPlayerQueue.new(
             playerId=playerId,
             origin=origin,

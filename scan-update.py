@@ -47,7 +47,7 @@ def updatePlayerData(playerId):
 
 def predictPlayer(playerId):
     gameStore = GameStore.new()
-    gameStore.addGames(env.gameDB.byPlayerIdAnalysed(playerId))
+    gameStore.addGames(env.gameDB.byPlayerIdAndAnalysed(playerId))
     gameTensors = gameStore.gameTensors(playerId)
 
     if len(gameTensors) > 0:
