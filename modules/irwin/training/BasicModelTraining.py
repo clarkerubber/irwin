@@ -2,8 +2,10 @@ from default_imports import *
 
 from modules.game.Game import GameTensor
 
-from modules.irwin.training.Env import Env
 from modules.irwin.BasicGameModel import BasicGameModel
+
+from modules.irwin.Env import Env
+from modules.irwin.training.BasicGameActivation import BasicGameActivation
 
 import numpy as np
 
@@ -42,7 +44,7 @@ class BasicModelTraining(NamedTuple('BasicModelTraining', [
         if filtered:
             legits = self.env.playerDB.byEngine(False)
             shuffle(legits)
-            legits = legits[:self.env.config["irwin model basic training sample_size"]]
+            legits = legits[:self.Env.config["irwin model basic training sample_size"]]
             for p in legits:
                 legitTensors.extend([g.tensor(p.id) for g in self.env.gameDB.byPlayerIdAndAnalysed(p.id)])
             cheatGameActivations = self.env.basicGameActivationDB.byEngineAndPrediction(True, 70)
@@ -56,8 +58,8 @@ class BasicModelTraining(NamedTuple('BasicModelTraining', [
             shuffle(cheats)
             shuffle(legits)
 
-            cheats = cheats[:self.env.config["irwin model basic training sample_size"]]
-            legits = legits[:self.env.config["irwin model basic training sample_size"]]
+            cheats = cheats[:self.Env.config["irwin model basic training sample_size"]]
+            legits = legits[:self.Env.config["irwin model basic training sample_size"]]
 
             for p in legits + cheats:
                 if p.engine:
@@ -76,7 +78,9 @@ class BasicModelTraining(NamedTuple('BasicModelTraining', [
 
     @staticmethod
     def createBatchAndLabels(cheatTensors: List[GameTensor], legitTensors: List[GameTensor]) -> Batch:
-        # group the dataset into batches by the length of the dataset, because numpy needs it that way
+        """
+        group the dataset into batches by the length of the dataset, because numpy needs it that way
+        """
         mlen = min(len(cheatTensors), len(legitTensors))
 
         cheats = cheatTensors[:mlen]
@@ -93,3 +97,26 @@ class BasicModelTraining(NamedTuple('BasicModelTraining', [
             data = np.array([t for t, l in blz]),
             labels = np.array([l for t, l in blz])
         )
+
+    def buildTable(self):
+        """
+        Build table of activations for basic games (analysed by lichess). used for training
+        """
+        logging.debug("Building Basic Activation Table")
+        logging.info("getting players")
+        cheats = self.env.playerDB.byEngine(True)
+
+        lenPlayers = str(len(cheats))
+
+        logging.info("getting games and predicting")
+        for i, p in enumerate(cheats):
+            logging.info("predicting: " + p.id + "  -  " + str(i) + "/" + lenPlayers)
+
+            games = self.env.gameDB.byPlayerIdAndAnalysed(p.id)
+            gamesAndTensors = zip(games,self.basicGameModel.predict(p.id, games))
+
+            self.env.basicGameActivationDB.lazyWriteMany([BasicGameActivation.fromPrediction(
+                gameId=g.id,
+                playerId=p.id,
+                prediction=pr,
+                engine=p.engine) for g, pr in gamesAndTensors if pr is not None])

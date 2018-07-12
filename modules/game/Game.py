@@ -53,7 +53,7 @@ class Game(NamedTuple('Game', [
         return [Game.fromDict(gid, json['user']['id'], g) for gid, g in json['games'].items() \
                  if g.get('initialFen') is None and g.get('variant') is None]
 
-    def tensor(self, playerId: PlayerID) -> GameTensor:
+    def tensor(self, playerId: PlayerID) -> Opt[GameTensor]:
         if self.analysis == [] or self.emts is None and (self.white == playerId or self.black == playerId):
             return None
 

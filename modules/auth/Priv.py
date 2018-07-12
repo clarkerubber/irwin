@@ -1,8 +1,8 @@
-from defaul_imports import *
+from default_imports import *
 
 Permission = NewType('Permission', str)
 
-Priv = NamedTuple('Priv' [
+Priv = NamedTuple('Priv', [
         ('permission', Permission)
     ])
 
@@ -11,12 +11,12 @@ CompleteJob = Priv('complete_job') # client can post results of work
 PostJob = Priv('post_job') # lichess can post a job for analysis
 
 class PrivBSONHandler:
-	@staticmethod
-    	def reads(bson: Dict) -> Priv:
-		return Priv(
-			permission=bson['_id'])
+    @staticmethod
+    def reads(bson: Dict) -> Priv:
+        return Priv(
+            permission=bson['_id'])
 
-	@staticmethod
-    	def writes(priv: Priv) -> Dict:
-		return {
-			'_id': priv.permission}
+    @staticmethod
+    def writes(priv: Priv) -> Dict:
+        return {
+            '_id': priv.permission}

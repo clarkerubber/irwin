@@ -13,7 +13,7 @@ from modules.game.AnalysedPosition import AnalysedPosition
 
 from pymongo.collection import Collection
 
-AnalysedGameID = NewType('AnalysedGameID', str)
+AnalysedGameID = NewType('AnalysedGameID', str) # <GameID>/<white|black>
 
 AnalysedGameTensor = NewType('AnalysedGameTensor', np.ndarray)
 

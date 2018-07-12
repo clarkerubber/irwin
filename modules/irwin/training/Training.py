@@ -2,7 +2,7 @@ from default_imports import *
 
 from conf.ConfigWrapper import ConfigWrapper
 
-from modules.irwin.training.Env import Env
+from modules.irwin.Env import Env
 
 from modules.irwin.training.AnalysedModelTraining import AnalysedModelTraining
 from modules.irwin.training.BasicModelTraining import BasicModelTraining

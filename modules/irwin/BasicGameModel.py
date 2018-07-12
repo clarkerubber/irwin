@@ -10,6 +10,9 @@ from random import shuffle
 
 from collections import namedtuple
 
+from modules.game.Player import PlayerID
+from modules.game.Game import Game
+
 from keras.models import load_model, Model
 from keras.layers import Dropout, Flatten, Dense, LSTM, Input, concatenate, Conv1D
 from keras.optimizers import Adam
@@ -70,6 +73,10 @@ class BasicGameModel:
             loss='binary_crossentropy',
             metrics=['accuracy'])
         return model
+
+    def predict(self, playerId: PlayerID, games: List[Game]) -> Opt[int]:
+        tensors = [game.tensor(playerId) for game in games]
+        return [None if t is None else int(100*self.model.predict(np.array([t]))[0][0]) for t in tensors]
 
     def saveModel(self):
         logging.debug("saving model")

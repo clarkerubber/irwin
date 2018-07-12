@@ -7,6 +7,7 @@ import logging
 import os
 
 from random import shuffle
+from math import ceil
 
 from modules.game.AnalysedGame import AnalysedGame
 
@@ -18,7 +19,40 @@ from keras.engine.training import Model
 
 from numpy import ndarray
 
-from functools import lru_cache
+from pprint import pprint
+
+GamePrediction = NewType('GamePrediction', int)
+MovePrediction = NewType('MovePrediction', int)
+
+WeightedMovePrediction = NewType('WeightedMovePrediction', int)
+WeightedGamePrediction = NewType('WeightedGamePrediction', int)
+
+class AnalysedGamePrediction(NamedTuple('AnalysedGamePrediction', [
+        ('game', GamePrediction),
+        ('lstmMoves', List[MovePrediction]),
+        ('isolatedMoves', List[MovePrediction])
+    ])):
+    @staticmethod
+    def fromTensor(tensor: ndarray, length: int):
+        return AnalysedGamePrediction(
+            game = int(100*tensor[0][0]),
+            lstmMoves = [int(100*i) for i in tensor[1][0][:length]],
+            isolatedMoves = [int(100*i) for i in tensor[2][0][:length]])
+
+    def weightedMovePredictions(self) -> List[WeightedMovePrediction]:
+        return [int(0.5*(l + i)) for l, i in zip(self.lstmMoves, self.isolatedMoves)]
+    
+    def weightedGamePrediction(self) -> WeightedGamePrediction:
+        moveActivations = sorted(self.weightedMovePredictions(), reverse=True)
+        moveActivationsLen = len(moveActivations)
+
+        nanToZero = lambda x: 0 if np.isnan(x) else x
+
+        highest = nanToZero(np.average([i for i in moveActivations if i > 80]))
+        topX = np.average(moveActivations[:ceil(0.3*moveActivationsLen)])
+        topY = np.average(moveActivations[:ceil(0.9*moveActivationsLen)])
+
+        return int(np.average([highest, topX, topY]))
 
 class AnalysedGameModel:
     def __init__(self, config: ConfigWrapper, newmodel: bool = False):
@@ -87,7 +121,7 @@ class AnalysedGameModel:
         return model
 
     def predict(self, analysedGames: List[AnalysedGame]) -> List[ndarray]:
-        return [self.model.predict(np.array([ag.tensor()])) for ag in analysedGames]
+        return [AnalysedGamePrediction.fromTensor(self.model.predict(np.array([ag.tensor()])), ag.length()) for ag in analysedGames]
 
     def saveModel(self):
         self.model.save(self.config["irwin model analysed file"])

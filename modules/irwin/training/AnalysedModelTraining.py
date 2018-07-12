@@ -1,12 +1,17 @@
 from default_imports import *
 
-from modules.irwin.training.Env import Env
 from modules.game.AnalysedGame import AnalysedGameTensor
+
 from modules.irwin.AnalysedGameModel import AnalysedGameModel
+
+from modules.irwin.Env import Env
+from modules.irwin.training.AnalysedGameActivation import AnalysedGameActivation
 
 import numpy as np
 
 from random import shuffle
+
+from pprint import pprint
 
 Batch = NamedTuple('Batch', [
         ('data', np.ndarray),
@@ -77,7 +82,9 @@ class AnalysedModelTraining(NamedTuple('AnalysedModelTraining', [
 
     @staticmethod
     def createBatchAndLabels(cheatTensors: List[AnalysedGameTensor], legitTensors: List[AnalysedGameTensor]) -> Batch:
-        # group the dataset into batches by the length of the dataset, because numpy needs it that way
+        """
+        group the dataset into batches by the length of the dataset, because numpy needs it that way
+        """
         mlen = min(len(cheatTensors), len(legitTensors))
 
         cheats = cheatTensors[:mlen]
@@ -97,3 +104,23 @@ class AnalysedModelTraining(NamedTuple('AnalysedModelTraining', [
                 np.array([[[l]]*(len(t)-13) for t, l in blz]),
                 np.array([[[l]]*(len(t)-4) for t, l in blz])
             ])
+
+    def buildTable(self):
+        """Build table of activations for analysed games. used for training"""
+        logging.warning("Building Analysed Activation Table")
+        logging.debug("getting players")
+        cheats = self.env.playerDB.byEngine(True)
+
+        lenPlayers = str(len(cheats))
+
+        logging.info("gettings games and predicting")
+
+        for i, p in enumerate(cheats):
+            logging.info("predicting: " + p.id + "  -  " + str(i) + '/' + lenPlayers)
+            analysedGames = self.env.analysedGameDB.byPlayerId(p.id)
+            predictions = self.analysedGameModel.predict(analysedGames)
+            analysedGameActivations = [AnalysedGameActivation.fromAnalysedGameAndPrediction(
+                analysedGame = analysedGame,
+                prediction = prediction,
+                engine=p.engine) for analysedGame, prediction in zip(analysedGames, predictions)]
+            self.env.analysedGameActivationDB.lazyWriteMany(analysedGameActivations)
