@@ -1,13 +1,19 @@
 from default_imports import *
 
+from conf.ConfigWrapper import ConfigWrapper
+
 from modules.game.Game import Game
 from modules.game.Colour import Colour
 from modules.game.AnalysedGame import AnalysedGame
 from modules.game.EngineEval import EngineEval
 from modules.game.AnalysedPosition import AnalysedPosition, AnalysedPositionDB
+from modules.game.AnalysedMove import AnalysedMove, Analysis
+
+from modules.fishnet.fishnet import stockfish_command
 
 from chess.pgn import read_game
 
+from chess import uci
 from chess.uci import Engine
 from chess.uci import InfoHandler
 
@@ -16,15 +22,30 @@ try:
 except ImportError:
     from io import StringIO
 
+from pprint import pprint
+
 class EngineTools(NamedTuple('EngineTools', [
         ('engine', Engine),
-        ('infoHandler', InfoHandler),
-        ('analysedPositionDB', AnalysedPositionDB)
+        ('infoHandler', InfoHandler)
     ])):
     @staticmethod
-    def analyseGame(game: Game, colour: Colour, nodes: int) -> Opt[AnalysedGame]:
-        logging.info("analysing: " + game.id)
-        if len(game.pgn) < 40 or len(game.pgn) > 120:
+    def new(conf: ConfigWrapper):
+            engine = uci.popen_engine(stockfish_command(conf['stockfish update']))
+            engine.setoption({'Threads': conf['stockfish threads'], 'Hash': conf['stockfish memory']})
+            engine.uci()
+
+            infoHandler = uci.InfoHandler()
+
+            engine.info_handlers.append(infoHandler)
+
+            return EngineTools(
+                engine=engine,
+                infoHandler=infoHandler)
+
+    def analyseGame(self, game: Game, colour: Colour, nodes: int) -> Opt[AnalysedGame]:
+        gameLen = len(game.pgn)
+        if gameLen < 40 or gameLen > 120:
+            logging.warning(f'game too long/short to analyse ({gameLen} moves)')
             return None
         analysedMoves = []
 
@@ -38,50 +59,42 @@ class EngineTools(NamedTuple('EngineTools', [
         self.engine.ucinewgame()
 
         while not node.is_end():
+            logging.info(f'analysing position\n{node.board()}\n')
             nextNode = node.variation(0)
             if colour == node.board().turn: ## if it is the turn of the player of interest
-                dbCache = self.analysedPositionDB.byBoard(node.board())
-                if dbCache is not None:
-                    analyses = dbCache.analyses
-                else:
-                    self.engine.setoption({'multipv': 5})
-                    self.engine.position(node.board())
-                    self.engine.go(nodes=nodes)
+                self.engine.setoption({'multipv': 5})
+                self.engine.position(node.board())
+                self.engine.go(nodes=nodes)
 
-                    analyses = list([
-                        Analysis(pv[1][0].uci(),
-                            EngineEval(engineEval[1].cp, engineEval[1].mate)) for engineEval, pv in zip(
-                                self.infoHandler.info['engineEval'].items(),
-                                self.infoHandler.info['pv'].items())])
+                analyses = list([
+                    Analysis(
+                        pv[1][0].uci(),
+                        EngineEval(engineEval[1].cp, engineEval[1].mate)) for engineEval, pv in zip(
+                            self.infoHandler.info['score'].items(),
+                            self.infoHandler.info['pv'].items())])
 
-                    # write position to DB as it wasn't there before
-                    self.analysedPositionDB.write(AnalysedPosition.fromBoardAndAnalyses(node.board(), analyses))
+                self.engine.setoption({'multipv': 1})
+                self.engine.position(nextNode.board())
+                self.engine.go(nodes=nodes)
 
-                dbCache = self.analysedPositionDB.byBoard(nextNode.board())
-                if dbCache is not None:
-                    engineEval = dbCache.analyses[0].engineEval.inverse()
-                else:
-                    self.engine.setoption({'multipv': 1})
-                    self.engine.position(nextNode.board())
-                    self.engine.go(nodes=nodes)
-
-                    engineEval = EngineEval(self.infoHandler.info['engineEval'][1].cp,
-                        self.infoHandler.info['engineEval'][1].mate).inverse() # flipped because analysing from other player side
+                engineEval = EngineEval(
+                    self.infoHandler.info['score'][1].cp,
+                    self.infoHandler.info['score'][1].mate).inverse() # flipped because analysing from other player side
 
                 moveNumber = node.board().fullmove_number
 
                 analysedMoves.append(AnalysedMove(
                     uci = node.variation(0).move.uci(),
                     move = moveNumber,
-                    emt = game.emts[AnalysedGame.ply(moveNumber, colour)],
+                    emt = game.emts[EngineTools.ply(moveNumber, colour)],
                     blur = game.getBlur(colour, moveNumber),
                     engineEval = engineEval,
                     analyses = analyses))
 
             node = nextNode
 
-        userId = game.white if white else game.black
-        return AnalysedGame.new(game.id, colour, userId, analysedMoves)
+        playerId = game.white if colour else game.black
+        return AnalysedGame.new(game.id, colour, playerId, analysedMoves)
 
     @staticmethod
     def ply(moveNumber, colour: Colour) -> int:

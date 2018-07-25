@@ -1,6 +1,6 @@
 from default_imports import *
 
-from modules.auth.Priv import Priv, PrivBSONHandler
+from modules.auth.Priv import Priv
 
 from pymongo.collection import Collection
 
@@ -18,13 +18,13 @@ class TokenBSONHandler:
     def reads(bson: Dict) -> Token:
         return Token(
             id = bson['_id'],
-            privs = [PrivBSONHandler.reads(p) for p in bson['privs']])
+            privs = [Priv(p) for p in bson['privs']])
 
     @staticmethod
     def writes(token: Token) -> Dict:
         return {
             '_id': token.id,
-            'privs': [PrivBSONHandler.writes(p) for p in token.privs]}
+            'privs': [p.permission for p in token.privs]}
 
 class TokenDB(NamedTuple('TokenDB', [
         ('coll', Collection)

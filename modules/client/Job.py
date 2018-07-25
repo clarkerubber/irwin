@@ -4,11 +4,20 @@ from modules.game.Player import PlayerID
 from modules.game.Game import Game, GameBSONHandler
 from modules.game.AnalysedPosition import AnalysedPosition, AnalysedPositionBSONHandler
 
-Job = NamedTuple('Job', [
+class Job(NamedTuple('Job', [
         ('playerId', PlayerID),
         ('games', List[Game]),
         ('analysedPositions', List[AnalysedPosition])
-    ])
+    ])):
+    @staticmethod
+    def fromJson(json: Dict):
+        try:
+            return JobBSONHandler.reads(json)
+        except KeyError:
+            return None
+
+    def toJson(self):
+        return JobBSONHandler.writes(self)
 
 class JobBSONHandler:
     @staticmethod

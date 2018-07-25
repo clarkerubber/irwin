@@ -1,6 +1,6 @@
 from default_imports import *
 
-from modules.auth.Priv import Priv, PrivBSONHandler
+from modules.auth.Priv import Priv
 
 from pymongo.collection import Collection
 import hashlib, uuid
@@ -56,7 +56,7 @@ class UserBSONHandler:
             name = bson['name'],
             password = bson['password'],
             salt = bson['salt'],
-            privs = [PrivBSONHandler.reads(p) for p in bson['privs']])
+            privs = [Priv(p) for p in bson['privs']])
 
     @staticmethod
     def writes(user: User) -> Dict:
@@ -65,7 +65,7 @@ class UserBSONHandler:
             'name': user.name,
             'password': user.password,
             'salt': user.salt,
-            'privs': [PrivBSONHandler.writes(p) for p in user.privs]
+            'privs': [p.permission for p in user.privs]
         }
 
 class UserDB(NamedTuple('UserDB', [

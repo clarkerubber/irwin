@@ -19,14 +19,14 @@ Precedence = NewType('Precedence', int)
 class EngineQueue(NamedTuple('EngineQueue', [
         ('id', EngineQueueID),
         ('origin', Origin),
-        ('gameIds', List[GameID])
+        ('gameIds', List[GameID]),
         ('precedence', Precedence),
         ('complete', bool),
         ('owner', AuthID),
         ('date', datetime)
     ])):
     @staticmethod
-    def new(playerId: PlayerID, origin: Origin, gamePredictions) -> EngineQueue:
+    def new(playerId: PlayerID, origin: Origin, gamePredictions):
         if len(gamePredictions) > 0:
             activations = sorted([(a[1]*a[1]) for a in gamePredictions], reverse=True)
             top30avg = ceil(np.average(activations[:ceil(0.3*len(activations))]))
@@ -56,7 +56,7 @@ class EngineQueue(NamedTuple('EngineQueue', [
             'date': "{:%d %b %Y at %H:%M}".format(self.date)
         }
 
-    def complete(self) -> EngineQueue:
+    def complete(self):
         return EngineQueue(
             id=self.id,
             origin=self.origin,
@@ -78,7 +78,6 @@ class EngineQueueBSONHandler:
             date=bson.get('date'))
 
     @staticmethod
-    @validate
     def writes(engineQueue: EngineQueue) -> Dict:
         return {
             '_id': engineQueue.id,

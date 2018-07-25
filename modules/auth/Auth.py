@@ -5,6 +5,11 @@ from modules.auth.User import User, UserID, Username, Password
 from modules.auth.Token import Token, TokenID
 from modules.auth.Priv import Priv
 
+from webapp.DefaultResponse import BadRequest
+
+from flask import request, abort
+from functools import wraps
+
 Authable = TypeVar('Authable', User, Token)
 
 Authorised = NewType('Authorised', bool)
@@ -73,3 +78,20 @@ class Auth(NamedTuple('Auth', [('env', Env)])):
                     return self.authoriseUser(username, password, priv)
 
         return (None, False)
+
+    def authoriseRoute(self, priv: Priv):
+        """
+        Wrap around a flask route and check it is authorised
+        """
+        def decorator(func):
+            @wraps(func)
+            def wrapper(*args, **kwargs):
+                json_obj = request.get_json(silent=True)
+                authable, authorised = self.authoriseRequest(json_obj, priv)
+                if authorised:
+                    args_ = (authable,) + args
+                    return func(*args_, **kwargs)
+                else:
+                    abort(BadRequest)
+            return wrapper
+        return decorator

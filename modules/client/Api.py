@@ -1,23 +1,31 @@
 from default_imports import *
 
-from conf.ConfigWrapper import ConfigWrapper
+import json
+import requests
+import time
 
 from modules.game.Game import GameBSONHandler
+from modules.client.Env import Env
+from modules.client.Job import Job
+
+from pprint import pprint
 
 class Api(NamedTuple('Api', [
-        ('config', ConfigWrapper)
+        ('env', Env)
     ])):
-    def request_job(self) -> Opt[Dict]:
+    def requestJob(self) -> Opt[Dict]:
         for i in range(5):
             try:
-                result = requests.get(f'{self.config.url}/request_job', json=self.request_job_payload)
-                
+                result = requests.get(f'{self.env.url}/api/request_job', json={'auth': self.env.auth})
+                return Job.fromJson(result.json())
+            except (json.decoder.JSONDecodeError, requests.ConnectionError, requests.exceptions.SSLError):
+                logging.warning("Error in request job. Trying again in 10 sec")
+                time.sleep(10)
+        return None
 
-
-    @property
-    def request_job_payload(self) -> Dict:
-        return {
-            'auth': {
-                'token': self.config.token
-            }
-        }
+    def completeJob(self, job: Job) -> Opt[bool]:
+        for i in range(4):
+            try:
+                pass
+            except:
+                pass

@@ -23,7 +23,7 @@ class Game(NamedTuple('Game', [
         ('white', PlayerID),
         ('black', PlayerID),
         ('pgn', List[str]),
-        ('emts', List[Emt]),
+        ('emts', Opt[List[Emt]]),
         ('whiteBlurs', Blurs),
         ('blackBlurs', Blurs),
         ('analysis', Analysis)

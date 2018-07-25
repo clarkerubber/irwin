@@ -10,11 +10,11 @@ from modules.game.AnalysedPosition import AnalysedPositionDB
 from pymongo.database import Database
 
 class Env:
-    	def __init__(self, config: ConfigWrapper, db: Database):
+    def __init__(self, config: ConfigWrapper, db: Database):
         self.config = config
         self.db = db
 
-		self.gameDB = GameDB(self.db[self.config["game coll game"]])
-		self.analysedGameDB = AnalysedGameDB(self.db[self.config["game coll analysed_game"]])
-		self.playerDB = PlayerDB(self.db[self.config["game coll player"]])
-		self.analysedPositionDB = AnalysedPositionDB(self.db[self.config["game coll analysed_position"]])
+        self.gameDB = GameDB(self.db[self.config["game coll game"]])
+        self.analysedGameDB = AnalysedGameDB(self.db[self.config["game coll analysed_game"]])
+        self.playerDB = PlayerDB(self.db[self.config["game coll player"]])
+        self.analysedPositionDB = AnalysedPositionDB(self.db[self.config["game coll analysed_position"]])

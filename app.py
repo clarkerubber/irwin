@@ -1,7 +1,6 @@
-from webapp.Env import Env as WebEnv
+from conf.ConfigWrapper import ConfigWrapper
 
-from modules.auth.Auth import Auth
-from modules.auth.Env import Env as AuthEnv
+from webapp.Env import Env
 
 from modules.db.DBManager import DBManager
 
@@ -9,25 +8,22 @@ from flask import Flask
 
 from webapp.controllers.api.blueprint import buildApiBlueprint
 
-import json
 
-config = {}
-with open('conf/server_config.json') as confFile:
-    config = json.load(confFile)
-if config == {}:
-    raise Exception('Config file empty or does not exist!')
+config = ConfigWrapper.new('conf/server_config.json')
 
 ## Database
 dbManager = DBManager(config)
 
 ## Modules
-auth = Auth(AuthEnv(config, dbManager.db()))
+#auth = Auth(AuthEnv(config, dbManager.db()))
 
-webEnv = WebEnv(config)
+env = Env(config)
 
 app = Flask(__name__)
 
-app.register_blueprint(buildApiBlueprint(webEnv, auth))
+apiBlueprint = buildApiBlueprint(env)
+
+app.register_blueprint(apiBlueprint)
 
 if __name__ == "__main__":
 	app.run(host="0.0.0.0", debug=True)

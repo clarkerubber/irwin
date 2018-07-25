@@ -6,6 +6,9 @@ from modules.auth.Env import Env as AuthEnv
 from modules.game.Env import Env as GameEnv
 from modules.game.Api import Api as GameApi
 
+from modules.queue.Env import Env as QueueEnv
+from modules.queue.Queue import Queue
+
 import logging
 
 class Env:
@@ -13,13 +16,15 @@ class Env:
         self.config = config
         
         ## Database
-        self.dbManager = DBManager(config)
+        self.dbManager = DBManager(self.config)
         self.db = self.dbManager.db()
 
         ## Envs
-        self.authEnv = AuthEnv(self.config.auth, self.db)
-        self.gameEnv = GameEnv(self.config.game, self.db)
+        self.authEnv = AuthEnv(self.config, self.db)
+        self.gameEnv = GameEnv(self.config, self.db)
+        self.queueEnv = QueueEnv(self.config, self.db)
 
         ## Modules
         self.auth = Auth(self.authEnv)
         self.gameApi = GameApi(self.gameEnv)
+        self.queue = Queue(self.queueEnv)
