@@ -189,7 +189,7 @@ class AnalysedGameDB(NamedTuple('AnalysedGameDB', [
             {'$set': AnalysedGameBSONHandler.writes(analysedGame)},
             upsert=True)
 
-    def lazyWriteAnalysedGames(self, analysedGames: List[AnalysedGame]):
+    def lazyWriteMany(self, analysedGames: List[AnalysedGame]):
         [self.write(ga) for ga in analysedGames]
 
     def byPlayerId(self, playerId: PlayerID) -> List[AnalysedGame]:

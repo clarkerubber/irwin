@@ -45,7 +45,10 @@ class EngineTools(NamedTuple('EngineTools', [
     def analyseGame(self, game: Game, colour: Colour, nodes: int) -> Opt[AnalysedGame]:
         gameLen = len(game.pgn)
         if gameLen < 40 or gameLen > 120:
-            logging.warning(f'game too long/short to analyse ({gameLen} moves)')
+            logging.warning(f'game too long/short to analyse ({gameLen} plys)')
+            return None
+        elif game.emts is None:
+            logging.warning(f'game has no emts')
             return None
         analysedMoves = []
 

@@ -29,14 +29,16 @@ def buildApiBlueprint(env):
     def apiCompleteJob(authable):
         req = request.get_json(silent=True)
         try:
-            analysisId = req['id']
-            logging.info(str(authable) + ' requested to complete job ' + analysisId)
-            env.gameApi.insertAnalysedGames(req.get('game_analyses'))
-            env.queue.queueNerualAnalysis(analysisId)
-            env.queue.completeEngineAnalysis(analysisId)
-            return Success
+            job = Job.fromJson(req['job'])
+            logging.info(f'{authable} requested to complete job {job.playerId}')
+            insertRes = env.gameApi.insertAnalysedGames(req['analysedGames'])
+            if insertRes:
+                env.queue.queueNerualAnalysis(job.playerId)
+                env.queue.completeEngineAnalysis(job.playerId)
+                return Success
         except KeyError:
-            return BadRequest
+            ...
+        return BadRequest
 
     @apiBlueprint.route('/post_job', methods=['POST'])
     @env.auth.authoriseRoute(PostJob)
@@ -45,14 +47,14 @@ def buildApiBlueprint(env):
         try:
             games = Game.fromJson(req)
             player = Player.fromJson(req)
-            origin = req.get('origin')
+            origin = req['origin']
 
-            if None not in [player, origin] and len(games) > 0:
+            if player is not None and len(games) > 0:
                 env.playerDB.write(player)
                 env.gameDB.lazyWriteMany(games)
                 return Success
-            return BadRequest
         except KeyError:
-            return BadRequest
+            ...
+        return BadRequest
 
     return apiBlueprint

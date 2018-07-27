@@ -1,3 +1,7 @@
+from default_imports import *
+
+import sys
+
 from conf.ConfigWrapper import ConfigWrapper
 
 from webapp.Env import Env
@@ -10,6 +14,20 @@ from webapp.controllers.api.blueprint import buildApiBlueprint
 
 
 config = ConfigWrapper.new('conf/server_config.json')
+
+loglevels = {
+    'CRITICAL': logging.CRITICAL,
+    'ERROR': logging.ERROR,
+    'WARNING': logging.WARNING,
+    'INFO': logging.INFO,
+    'DEBUG': logging.DEBUG,
+    'NOTSET': logging.NOTSET
+}
+
+logging.basicConfig(format="%(message)s", level=loglevels[config.loglevel], stream=sys.stdout)
+logging.getLogger("requests.packages.urllib3").setLevel(logging.WARNING)
+logging.getLogger("chess.uci").setLevel(logging.WARNING)
+logging.getLogger("modules.fishnet.fishnet").setLevel(logging.INFO)
 
 ## Database
 dbManager = DBManager(config)

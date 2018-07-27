@@ -123,7 +123,7 @@ class AnalysisBSONHandler:
     def writes(analysis: Analysis) -> Dict:
         return {
             'uci': analysis.uci,
-            'engineEval': EngineEvalBSONHandler.writes(analysis.engineEval)
+            'score': EngineEvalBSONHandler.writes(analysis.engineEval)
         }
 
 
