@@ -2,7 +2,6 @@ from default_imports import *
 
 from modules.game.Colour import Colour
 from modules.game.Player import PlayerID
-from modules.game.Blurs import Blurs, BlursBSONHandler
 from modules.game.EngineEval import EngineEval, EngineEvalBSONHandler
 
 from pymongo.collection import Collection

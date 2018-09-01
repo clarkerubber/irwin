@@ -48,7 +48,7 @@ class EngineQueue(NamedTuple('EngineQueue', [
             requiredGameIds=[], # we'll add this as it becomes available
             precedence=precedence,
             owner=None,
-            complete=False,
+            completed=False,
             date=datetime.now())
 
     def complete(self):
@@ -57,7 +57,7 @@ class EngineQueue(NamedTuple('EngineQueue', [
             origin=self.origin,
             requiredGameIds=self.requiredGameIds,
             precedence=self.precedence,
-            complete=True,
+            completed=True,
             owner=self.owner,
             date=self.date)
 
@@ -67,8 +67,10 @@ class EngineQueue(NamedTuple('EngineQueue', [
             id=engineQueueA.id,
             origin=maxOrigin(engineQueueA.origin, engineQueueB.origin),
             requiredGameIds=engineQueueA.requiredGameIds + engineQueueB.requiredGameIds,
+            precedence=max(engineQueueA.precedence, engineQueueB.precedence),
+            completed=min(engineQueueA.completed, engineQueueB.completed),
             owner=engineQueueA.owner if engineQueueA.owner is not None else (engineQueueB.owner if engineQueueB.owner is not None else None),
-            date=min(engineQueueA.datetime, engineQueueB.datetime)) # retain the oldest datetime so the sorting doesn't mess up
+            date=min(engineQueueA.date, engineQueueB.date)) # retain the oldest datetime so the sorting doesn't mess up
 
 class EngineQueueBSONHandler:
     @staticmethod
@@ -147,10 +149,11 @@ class EngineQueueDB(NamedTuple('EngineQueueDB', [
         """find the next job to process against owner's name"""
         incompleteBSON = self.engineQueueColl.find_one({'owner': name, '$or': [{'completed': {'$exists': False}}, {'completed': False}]})
         if incompleteBSON is not None: # owner has unfinished business
+            logging.debug(f'{name} is returning to complete {incompleteBSON}')
             return EngineQueueBSONHandler.reads(incompleteBSON)
 
         engineQueueBSON = self.engineQueueColl.find_one_and_update(
-            filter={'owner': None, 'complete': False},
+            filter={'owner': None, 'completed': False},
             update={'$set': {'owner': name}},
             sort=[("precedence", pymongo.DESCENDING),
                 ("date", pymongo.ASCENDING)])

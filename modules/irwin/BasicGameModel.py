@@ -28,7 +28,9 @@ class BasicGameModel:
     def createModel(self, newmodel: bool = False):
         if os.path.isfile(self.config["irwin model basic file"]) and not newmodel:
             logging.debug("model already exists, opening from file")
-            return load_model(self.config["irwin model basic file"])
+            m = load_model(self.config["irwin model basic file"])
+            m._make_predict_function()
+            return m
         logging.debug('model does not exist, building from scratch')
 
         moveStatsInput = Input(shape=(60, 8), dtype='float32', name='move_input')

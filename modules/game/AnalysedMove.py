@@ -25,7 +25,6 @@ class AnalysedMove(NamedTuple('AnalysedMove', [
         ('uci', UCI),
         ('move', MoveNumber),
         ('emt', Emt),
-        ('blur', bool),
         ('engineEval', EngineEval),
         ('analyses', List[Analysis])
     ])):
@@ -134,7 +133,6 @@ class AnalysedMoveBSONHandler:
             uci = bson['uci'],
             move = bson['move'],
             emt = bson['emt'],
-            blur = bson.get('blur', False),
             engineEval = EngineEvalBSONHandler.reads(bson['score']),
             analyses = [AnalysisBSONHandler.reads(a) for a in bson['analyses']]
             )
@@ -145,7 +143,6 @@ class AnalysedMoveBSONHandler:
             'uci': analysedMove.uci,
             'move': analysedMove.move,
             'emt': analysedMove.emt,
-            'blur': analysedMove.blur,
             'score': EngineEvalBSONHandler.writes(analysedMove.engineEval),
             'analyses': [AnalysisBSONHandler.writes(a) for a in analysedMove.analyses]
         }

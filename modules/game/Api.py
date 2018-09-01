@@ -20,7 +20,7 @@ class Api(NamedTuple('Api', [
             logging.warning('Malformed analysedGamesBSON: ' + str(analysedGamesBSON))
         return False
 
-    def gamesForAnalysis(self, playerId: PlayerID, limit: Opt[int] = None) -> Opt[List[Game]]:
+    def gamesForAnalysis(self, playerId: PlayerID, required: List[str] = []) -> List[Game]:
         """
         Given a playerId and an amount of games. This function will return the games within `limit`
         that should be analysed
@@ -28,11 +28,14 @@ class Api(NamedTuple('Api', [
         games = self.env.gameDB.byPlayerId(playerId)
         analysedGames = self.env.analysedGameDB.byPlayerId(playerId)
 
-        gameIds = {g.id for g in gs}
+        gameIds = {g.id for g in games}
         analysedGameIds = {g.gameId for g in analysedGames}
 
         notAnalysedIds = gameIds - analysedGameIds
-        notAnalysedGames = [g for g in games if g.id in notAnalysedIds]
+
+        games = [g for g in games if g.id in (notAnalysedIds | set(required))]
+
+        return games
 
     def writeGames(self, games: List[Game]):
         """

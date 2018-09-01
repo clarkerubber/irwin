@@ -3,7 +3,7 @@ from default_imports import *
 from modules.auth.Auth import AuthID
 
 from modules.game.Player import Player
-from modules.game.AnalysedGame import AnalysedGame
+from modules.game.AnalysedGame import GameAnalysedGame
 
 from modules.irwin.PlayerReport import PlayerReport
 from modules.irwin.AnalysedGameModel import AnalysedGameModel
@@ -28,8 +28,8 @@ class Irwin:
         self.training = Training(env, newmodel)
         self.evaluation = Evaluation(self, self.env.config)
 
-    def createReport(self, player: Player, analysedGames: List[AnalysedGame], owner: AuthID = 'test'):
-        playerPredictions = self.analysedGameModel.predict(analysedGames)
-        playerReport = PlayerReport.new(player, [(ag, p) for ag, p in zip(analysedGames, playerPredictions) if p is not None], owner)
+    def createReport(self, player: Player, gameAnalysedGames: List[GameAnalysedGame], owner: AuthID = 'test'):
+        predictions = self.analysedGameModel.predict(gameAnalysedGames)
+        playerReport = PlayerReport.new(player, [(ag, p) for ag, p in zip(gameAnalysedGames, predictions) if p is not None], owner)
 
         return playerReport

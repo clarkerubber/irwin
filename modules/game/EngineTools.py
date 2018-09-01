@@ -88,7 +88,6 @@ class EngineTools(NamedTuple('EngineTools', [
                     uci = node.variation(0).move.uci(),
                     move = moveNumber,
                     emt = game.emts[EngineTools.ply(moveNumber, colour)],
-                    blur = game.getBlur(colour, moveNumber),
                     engineEval = engineEval,
                     analyses = analyses))
 

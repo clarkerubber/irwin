@@ -49,6 +49,7 @@ def handleLine(payload: Dict):
     request = Request.fromJson(payload)
     playerId = request.player.id
     if request is not None:
+        logging.info(f'Processing request for {request.player}')
         # store upser
         env.gameApi.writePlayer(request.player)
         # store games
@@ -61,7 +62,7 @@ def handleLine(payload: Dict):
             origin=request.origin,
             gamePredictions=env.irwin.basicGameModel.predict(playerId, request.games))
 
-        if existingEngineQueue is not None:
+        if existingEngineQueue is not None and not existingEngineQueue.completed:
             newEngineQueue = EngineQueue.merge(existingEngineQueue, newEngineQueue)
 
         env.queue.queueEngineAnalysis(newEngineQueue)
@@ -79,7 +80,6 @@ while True:
         for line in r.iter_lines():
             try:
                 payload = json.loads(line.decode("utf-8"))
-                logging.info("Received: " + str(payload))
                 handleLine(payload)
             except json.decoder.JSONDecodeError:
                 logging.warning(f"Failed to decode: {line.text}")

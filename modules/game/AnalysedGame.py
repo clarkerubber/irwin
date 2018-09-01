@@ -47,6 +47,9 @@ class AnalysedGame(NamedTuple('AnalysedGame', [
         ts = ts + (length-len(ts))*[AnalysedMove.nullTensor()]
         return ts
 
+    def toJson(self):
+        return AnalysedGameBSONHandler.writes(self)
+
     def emtAverage(self) -> Number:
         return np.average([m.emt for m in self.analysedMoves])
 
@@ -202,13 +205,14 @@ class AnalysedGameDB(NamedTuple('AnalysedGameDB', [
         ('analysedGameColl', Collection)
     ])):
     def write(self, analysedGame: AnalysedGame):
-        self.analysedGameColl.update_one(
+        return self.analysedGameColl.update_one(
             {'_id': analysedGame.id},
             {'$set': AnalysedGameBSONHandler.writes(analysedGame)},
             upsert=True)
 
     def writeMany(self, analysedGames: List[AnalysedGame]):
-        [self.write(ga) for ga in analysedGames]
+        logging.debug(f'Writing {analysedGames}')
+        return [self.write(ga) for ga in analysedGames]
 
     def byPlayerId(self, playerId: PlayerID) -> List[AnalysedGame]:
         return [AnalysedGameBSONHandler.reads(ga) for ga in self.analysedGameColl.find({'userId': playerId})]

@@ -60,7 +60,9 @@ class AnalysedGameModel:
     def createModel(self, newmodel: bool = False) -> Model:
         if os.path.isfile(self.config["irwin model analysed file"]) and not newmodel:
             logging.debug("model already exists, opening from file")
-            return load_model(self.config["irwin model analysed file"])
+            m = load_model(self.config["irwin model analysed file"])
+            m._make_predict_function()
+            return m
         logging.debug('model does not exist, building from scratch')
         inputGame = Input(shape=(60, 18), dtype='float32', name='game_input')
         pieceType = Input(shape=(60, 1), dtype='float32', name='piece_type')

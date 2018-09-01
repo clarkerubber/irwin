@@ -7,7 +7,7 @@ from modules.game.Player import PlayerID
 from modules.auth.Auth import Authable
 
 class Queue(NamedTuple('Queue', [('env', Env)])):
-    def nextEngineAnalysis(self, id: EngineQueueID) -> EngineQueue:
+    def nextEngineAnalysis(self, id: EngineQueueID) -> Opt[EngineQueue]:
         return self.env.engineQueueDB.nextUnprocessed(id)
 
     def completeEngineAnalysis(self, _id: EngineQueueID):

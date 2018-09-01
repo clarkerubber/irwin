@@ -12,6 +12,8 @@ from modules.queue.Queue import Queue
 from modules.irwin.Env import Env as IrwinEnv
 from modules.irwin.Irwin import Irwin
 
+from modules.lichess.Api import Api as LichessApi
+
 import logging
 
 class Env:
@@ -33,3 +35,4 @@ class Env:
         self.gameApi = GameApi(self.gameEnv)
         self.queue = Queue(self.queueEnv)
         self.irwin = Irwin(self.irwinEnv)
+        self.lichessApi = LichessApi(self.config['api url'], self.config['api token'])

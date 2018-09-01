@@ -28,7 +28,7 @@ class Api(NamedTuple('Api', [
         payload = {
             'auth': self.env.auth,
             'job': job.toJson(),
-            'analysedGames': [AnalysedGameBSONHandler.writes(ag) for ag in analysedGames] 
+            'analysedGames': [ag.toJson() for ag in analysedGames] 
         }
         for i in range(5):
             try:
