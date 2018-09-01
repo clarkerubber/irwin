@@ -22,8 +22,6 @@ try:
 except ImportError:
     from io import StringIO
 
-from pprint import pprint
-
 class EngineTools(NamedTuple('EngineTools', [
         ('engine', Engine),
         ('infoHandler', InfoHandler)

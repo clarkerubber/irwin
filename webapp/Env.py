@@ -9,6 +9,9 @@ from modules.game.Api import Api as GameApi
 from modules.queue.Env import Env as QueueEnv
 from modules.queue.Queue import Queue
 
+from modules.irwin.Env import Env as IrwinEnv
+from modules.irwin.Irwin import Irwin
+
 import logging
 
 class Env:
@@ -23,8 +26,10 @@ class Env:
         self.authEnv = AuthEnv(self.config, self.db)
         self.gameEnv = GameEnv(self.config, self.db)
         self.queueEnv = QueueEnv(self.config, self.db)
+        self.irwinEnv = IrwinEnv(self.config, self.db)
 
         ## Modules
         self.auth = Auth(self.authEnv)
         self.gameApi = GameApi(self.gameEnv)
         self.queue = Queue(self.queueEnv)
+        self.irwin = Irwin(self.irwinEnv)

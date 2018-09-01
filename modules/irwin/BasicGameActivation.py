@@ -63,5 +63,5 @@ class BasicGameActivationDB(NamedTuple('BasicGameActivationDB', [
     def write(self, gba: BasicGameActivation):
         self.basicGameActivationColl.update_one({'_id': gba.id}, {'$set': BasicGameActivationBSONHandler.writes(gba)}, upsert=True)
 
-    def lazyWriteMany(self, gbas: List[BasicGameActivation]):
+    def writeMany(self, gbas: List[BasicGameActivation]):
         [self.write(gba) for gba in gbas]

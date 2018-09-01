@@ -9,12 +9,12 @@ import math
 import json
 
 class GameStore(NamedTuple('GameStore', [
-        ('playerId', PlayerID)
+        ('playerId', PlayerID),
         ('games', List[Game]), 
         ('analysedGames', List[AnalysedGame])
     ])):
     @staticmethod
-    def new(playerId: PlayerID) -> GameStore:
+    def new(playerId: PlayerID):
         return GameStore(playerId, [], [])
 
     def gamesWithoutAnalysis(self, excludeIds: List[GameID] = []) -> List[Game]:

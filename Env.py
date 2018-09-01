@@ -13,19 +13,21 @@ from modules.game.AnalysedGame import AnalysedGameDB
 from modules.game.Player import PlayerDB
 from modules.game.AnalysedPosition import AnalysedPositionDB
 
-from modules.queue.BasicPlayerQueue import BasicPlayerQueueDB
-from modules.queue.DeepPlayerQueue import DeepPlayerQueueDB
-from modules.queue.ModReport import ModReportDB
+from modules.queue.IrwinQueue import IrwinQueueDB
+from modules.queue.EngineQueue import EngineQueueDB
 
 from modules.irwin.AnalysedGameActivation import AnalysedGameActivationDB
 from modules.irwin.BasicGameActivation import BasicGameActivationDB
 
 from modules.irwin.AnalysisReport import PlayerReportDB, GameReportDB
 
+from modules.irwin.Env import Env as IrwinEnv
 from modules.irwin.Irwin import Irwin
 
 class Env:
-    def __init__(self, config, engine=True):
+    def __init__(self, config, engine=True, newmodel: bool = False):
+        logging.debug('newmodel')
+        logging.debug(newmodel)
         self.config = config
         self.engine = engine
 
@@ -46,40 +48,9 @@ class Env:
                 config['db']['authentication']['username'],
                 config['db']['authentication']['password'], mechanism='MONGODB-CR')
 
-        # Colls
-        self.playerColl = self.db.player
-        self.gameColl = self.db.game
-        self.analysedGameColl = self.db.analysedGame
-        self.analysedPositionColl = self.db.analysedPosition
-
-        self.basicPlayerQueueColl = self.db.basicPlayerQueue
-        self.deepPlayerQueueColl = self.db.deepPlayerQueue
-        self.reportColl = self.db.report
-
-        self.analysedGameActivationColl = self.db.analysedGameActivation
-        self.basicGameActivationColl = self.db.basicGameActivation
-
-        self.playerReportColl = self.db.playerReport
-        self.gameReportColl = self.db.gameReport
-
-        # database abstraction
-        self.playerDB = PlayerDB(self.playerColl)
-        self.gameDB = GameDB(self.gameColl)
-        self.analysedGameDB = AnalysedGameDB(self.analysedGameColl)
-        self.analysedPositionDB = AnalysedPositionDB(self.analysedPositionColl)
-
-        self.basicPlayerQueueDB = BasicPlayerQueueDB(self.basicPlayerQueueColl)
-        self.deepPlayerQueueDB = DeepPlayerQueueDB(self.deepPlayerQueueColl)
-        self.modReportDB = ModReportDB(self.reportColl)
-
-        self.analysedGameActivationDB = AnalysedGameActivationDB(self.analysedGameActivationColl)
-        self.basicGameActivationDB = BasicGameActivationDB(self.basicGameActivationColl)
-
-        self.playerReportDB = PlayerReportDB(self.playerReportColl)
-        self.gameReportDB = GameReportDB(self.gameReportColl)
-
         # Irwin
-        self.irwin = Irwin(self)
+        self.irwinEnv = IrwinEnv(config, self.db)
+        self.irwin = Irwin(self.irwinEnv, newmodel)
 
     def restartEngine(self):
         if self.engine:

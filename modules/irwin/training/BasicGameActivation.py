@@ -35,7 +35,7 @@ class BasicGameActivationBSONHandler:
         return BasicGameActivation(
             id = bson['_id'],
             gameId = bson['gameId'],
-            playerId = bson['playerId'],
+            playerId = bson['userId'],
             engine = bson['engine'],
             prediction = bson['prediction'])
 
@@ -44,7 +44,7 @@ class BasicGameActivationBSONHandler:
         return {
             '_id': gba.id,
             'gameId': gba.gameId,
-            'playerId': gba.playerId,
+            'userId': gba.playerId,
             'engine': gba.engine,
             'prediction': gba.prediction
         }
@@ -53,15 +53,14 @@ class BasicGameActivationDB(NamedTuple('BasicGameActivationDB', [
         ('basicGameActivationColl', Collection)
     ])):
     def byPlayerId(self, playerId: PlayerID) -> List[BasicGameActivation]:
-        return [BasicGameActivationBSONHandler.reads(bson) for bson in self.basicGameActivationColl.find({'playerId': playerId})]
+        return [BasicGameActivationBSONHandler.reads(bson) for bson in self.basicGameActivationColl.find({'userId': playerId})]
 
     def byEngineAndPrediction(self, engine: bool, prediction: Prediction) -> List[BasicGameActivation]:
-        if engine:
-            return [BasicGameActivationBSONHandler.reads(bson) for bson in self.basicGameActivationColl.find({'engine': engine, 'prediction': {'$gte': prediction}})]
-        return [BasicGameActivationBSONHandler.reads(bson) for bson in self.basicGameActivationColl.find({'engine': engine, 'prediction': {'$lte': prediction}})]
+        glte = '$gte' if engine else '$lte' 
+        return [BasicGameActivationBSONHandler.reads(bson) for bson in self.basicGameActivationColl.find({'engine': engine, 'prediction': {glte: prediction}})]
 
     def write(self, gba: BasicGameActivation):
         self.basicGameActivationColl.update_one({'_id': gba.id}, {'$set': BasicGameActivationBSONHandler.writes(gba)}, upsert=True)
 
-    def lazyWriteMany(self, gbas: List[BasicGameActivation]):
+    def writeMany(self, gbas: List[BasicGameActivation]):
         [self.write(gba) for gba in gbas]

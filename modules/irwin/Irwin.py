@@ -12,6 +12,7 @@ from modules.irwin.BasicGameModel import BasicGameModel
 from modules.irwin.Env import Env
 
 from modules.irwin.training.Training import Training
+from modules.irwin.training.Evaluation import Evaluation
 
 class Irwin:
     """
@@ -19,14 +20,16 @@ class Irwin:
 
     The main thinking and evalutaion engine of the application.
     """
-    def __init__(self, env: Env):
+    def __init__(self, env: Env, newmodel: bool = False):
+        logging.debug('creating irwin instance')
         self.env = env
         self.basicGameModel = BasicGameModel(env.config)
         self.analysedGameModel = AnalysedGameModel(env.config)
-        self.training = Training(env)
+        self.training = Training(env, newmodel)
+        self.evaluation = Evaluation(self, self.env.config)
 
     def createReport(self, player: Player, analysedGames: List[AnalysedGame], owner: AuthID = 'test'):
         playerPredictions = self.analysedGameModel.predict(analysedGames)
-        playerReport = PlayerReport.new(player, zip(analysedGames, playerPredictions), owner)
+        playerReport = PlayerReport.new(player, [(ag, p) for ag, p in zip(analysedGames, playerPredictions) if p is not None], owner)
 
         return playerReport

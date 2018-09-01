@@ -5,7 +5,7 @@ import logging
 import numpy as np
 import json
 
-from modules.game.Game import GameID, Blur, Emt
+from modules.game.Game import Game, GameID, Emt
 from modules.game.Colour import Colour
 from modules.game.Player import PlayerID
 from modules.game.AnalysedMove import AnalysedMove, AnalysedMoveBSONHandler, EngineEval, Analysis, Rank, TrueRank
@@ -45,7 +45,7 @@ class AnalysedGame(NamedTuple('AnalysedGame', [
         ts = [ma.tensor(emtAvg, wclAvg) for ma in self.analysedMoves]
         ts = ts[:length]
         ts = ts + (length-len(ts))*[AnalysedMove.nullTensor()]
-        return np.array(ts)
+        return ts
 
     def emtAverage(self) -> Number:
         return np.average([m.emt for m in self.analysedMoves])
@@ -55,9 +55,6 @@ class AnalysedGame(NamedTuple('AnalysedGame', [
 
     def gameLength(self) -> int:
         return len(self.analysedMoves)
-
-    def blurs(self) -> List[Blur]:
-        return [move.blur for move in self.analysedMoves]
 
     def emts(self) -> List[Emt]:
         return [m.emt for m in self.analysedMoves]
@@ -162,6 +159,27 @@ def round_sig(x, sig=2):
         return 0
     return round(x, sig-int(floor(log10(abs(x))))-1)
 
+class GameAnalysedGame(NamedTuple('GameAnalysedGame', [
+        ('analysedGame', AnalysedGame),
+        ('game', Game)
+    ])):
+    """
+    Merger of Game and Analysed Game for a merged tensor
+    """
+    def length(self):
+        return self.analysedGame.length()
+
+    def tensor(self):
+        try:
+            gt = self.game.tensor(self.analysedGame.playerId)
+            at = self.analysedGame.tensor()
+            return [
+                [_1 + _2 for _1, _2 in zip(gt[0], at)],
+                gt[1]
+            ]
+        except (TypeError, AttributeError):
+            return None
+
 class AnalysedGameBSONHandler:
     @staticmethod
     def reads(bson: Dict) -> AnalysedGame:
@@ -189,7 +207,7 @@ class AnalysedGameDB(NamedTuple('AnalysedGameDB', [
             {'$set': AnalysedGameBSONHandler.writes(analysedGame)},
             upsert=True)
 
-    def lazyWriteMany(self, analysedGames: List[AnalysedGame]):
+    def writeMany(self, analysedGames: List[AnalysedGame]):
         [self.write(ga) for ga in analysedGames]
 
     def byPlayerId(self, playerId: PlayerID) -> List[AnalysedGame]:

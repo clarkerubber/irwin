@@ -9,9 +9,7 @@ from modules.game.AnalysedGame import AnalysedGameBSONHandler, AnalysedGame
 from modules.client.Env import Env
 from modules.client.Job import Job
 
-from requests.models import Response 
-
-from pprint import pprint
+from requests.models import Response
 
 class Api(NamedTuple('Api', [
         ('env', Env)

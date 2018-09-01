@@ -13,8 +13,6 @@ from modules.auth.Auth import AuthID
 from modules.irwin.AnalysedGameModel import AnalysedGamePrediction
 from modules.irwin.GameReport import GameReport
 
-from pprint import pprint
-
 PlayerReportID = NewType('PlayerReportID', str)
 
 class PlayerReport(NamedTuple('PlayerReport', [
@@ -26,10 +24,11 @@ class PlayerReport(NamedTuple('PlayerReport', [
         ('date', datetime)
     ])):
     @staticmethod
-    def new(player: Player, gamesAndPredictions: Iterable[Tuple[AnalysedGame, AnalysedGamePrediction]], owner: AuthID):
+    def new(player: Player, gamesAndPredictions: Iterable[Tuple[AnalysedGame, AnalysedGamePrediction]], owner: AuthID = 'test'):
         reportId = PlayerReport.makeId()
+        gamesAndPredictions = [(ag, agp) for ag, agp in gamesAndPredictions if agp is not None]
         gameReports = [GameReport.new(analysedGame, analysedGamePrediction, reportId) for analysedGame, analysedGamePrediction in gamesAndPredictions]
-        pprint(gameReports)
+        logging.debug('game reports: ' + str(len(gameReports)))
         return PlayerReport(
             id=reportId,
             userId=player.id,
@@ -44,7 +43,8 @@ class PlayerReport(NamedTuple('PlayerReport', [
 
     @staticmethod
     def playerPrediction(player: Player, analysedGamePredictions: List[AnalysedGamePrediction]) -> int:
-        sortedGameActivations = sorted([gp.weightedGamePrediction() for gp in analysedGamePredictions])
+        sortedGameActivations = sorted([gp.weightedGamePrediction() for gp in analysedGamePredictions], reverse=True)
+        print(sortedGameActivations)
         topGameActivations = sortedGameActivations[:ceil(0.15*len(sortedGameActivations))]
         topGameActivationsAvg = int(np.average(topGameActivations)) if len(topGameActivations) > 0 else 0
 
@@ -57,7 +57,7 @@ class PlayerReport(NamedTuple('PlayerReport', [
             result = min(92, topGameActivationsAvg)
         else:
             result = min(62, topGameActivationsAvg)
-
+        logging.debug(f'{player.id} -> res {result}')
         return result
 
     def reportDict(self) -> Dict:

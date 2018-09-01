@@ -61,7 +61,7 @@ while True:
         gamePredictions = env.irwin.predictBasicGames(gameTensors)
         gameActivations = [BasicGameActivation.fromPrediction(gameId, playerId, prediction, False)
             for gameId, prediction in gamePredictions]
-        env.basicGameActivationDB.lazyWriteMany(gameActivations)
+        env.basicGameActivationDB.writeMany(gameActivations)
         deepPlayerQueue = DeepPlayerQueue.new(
             playerId=playerId,
             origin=origin,

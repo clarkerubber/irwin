@@ -51,7 +51,7 @@ class AnalysedPositionDB(NamedTuple('AnalysedPositionDB', [
         except pymongo.errors.DuplicateKeyError:
             logging.warning("DuplicateKeyError when attempting to write position: " + str(analysedPosition.id))
 
-    def lazyWriteMany(self, analysedPositions: List[AnalysedPosition]):
+    def writeMany(self, analysedPositions: List[AnalysedPosition]):
         [self.write(analysedPosition) for analysedPosition in analysedPositions]
 
     def byBoard(self, board: Board) -> Opt[AnalysedPosition]:

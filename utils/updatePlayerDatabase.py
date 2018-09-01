@@ -13,4 +13,4 @@ def updatePlayerDatabase(env):
         playerData = env.api.getPlayerData(p.id)
         if playerData is not None:
             env.playerDB.write(Player.fromPlayerData(playerData))
-            env.gameDB.lazyWriteMany(Game.fromPlayerData(playerData))
+            env.gameDB.writeMany(Game.fromPlayerData(playerData))

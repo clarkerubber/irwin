@@ -1,19 +1,20 @@
 from default_imports import *
 
+import sys
+import time
+
 from conf.ConfigWrapper import ConfigWrapper
 
 from modules.game.Game import Game, GameDB
 from modules.game.AnalysedPosition import AnalysedPositionDB
 from modules.game.AnalysedGame import AnalysedGameBSONHandler
 from modules.game.EngineTools import EngineTools
+
 from modules.db.DBManager import DBManager
 
 from modules.client.Env import Env
 from modules.client.Api import Api
 
-import sys
-
-from pprint import pprint
 
 conf = ConfigWrapper.new('conf/client_config.json')
 
@@ -47,6 +48,7 @@ while True:
             analysedGame = env.engineTools.analyseGame(game, game.white == job.playerId, conf['stockfish nodes'])
             if analysedGame is not None:
                 analysedGames.append(analysedGame)
+
         response = api.completeJob(job, analysedGames)
 
         if response is not None:
@@ -57,3 +59,6 @@ while True:
                 logging.warning('SOFT FAILURE. Failed to post completed job. Message: {}'.format(resJson.get('message')))
         else:
             logging.warning(f'HARD FAILURE. Failed to post job. No response from server.')
+    else:
+        logging.info('Job is None. Pausing')
+        time.sleep(10)

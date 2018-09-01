@@ -12,21 +12,17 @@ class Player(NamedTuple('Player', [
     ('id', 'PlayerID'),
     ('titled', bool),
     ('engine', bool),
-    ('gamesPlayed', int),
-    ('relatedCheaters', List['PlayerID'])])):
+    ('gamesPlayed', int)])):
     @staticmethod
-    def fromJson(data: Dict):
-        user = data.get('user')
-        assessment = data.get('assessment', {})
+    def fromJson(userData: Dict):
         try:
             return Player(
-                id=user.get('id'),
-                titled=user.get('title') is not None,
-                engine=user.get('engine', False),
-                gamesPlayed=assessment.get('user', {}).get('games', 0),
-                relatedCheaters=assessment.get('relatedCheaters', []))
+                id=userData['id'],
+                titled=userData['titled'],
+                engine=userData['engine'],
+                gamesPlayed=userData['games'])
         except (RuntimeTypeError, AttributeError):
-            return None
+            logging.debug("something's fucked")
         return None
 
 class PlayerBSONHandler:
@@ -36,8 +32,7 @@ class PlayerBSONHandler:
                 id = bson['_id'],
                 titled = bson.get('titled', False),
                 engine = bson['engine'],
-                gamesPlayed = bson['gamesPlayed'],
-                relatedCheaters = bson.get('relatedCheaters', [])
+                gamesPlayed = bson['gamesPlayed']
             )
 
     def writes(player: Player) -> Dict:
@@ -46,7 +41,6 @@ class PlayerBSONHandler:
             'titled': player.titled,
             'engine': player.engine,
             'gamesPlayed': player.gamesPlayed,
-            'relatedCheaters': player.relatedCheaters,
             'date': datetime.now()
         }
 
@@ -64,17 +58,12 @@ class PlayerDB(NamedTuple('PlayerDB', [
         return [(None if bson is None else PlayerBSONHandler.reads(bson))
             for bson in [self.playerColl.find_one({'_id': playerId, 'engine': False}) for playerId in playerIds]]
 
-    def balancedSample(self, size: int) -> List[Player]:
-        pipelines = [[
-                {"$match": {"engine": True}},
-                {"$sample": {"size": int(size/2)}}
-            ],[
-                {"$match": {"engine": False}},
-                {"$sample": {"size": int(size/2)}}
-            ]]
-        engines = [PlayerBSONHandler.reads(p) for p in self.playerColl.aggregate(pipelines[0])]
-        legits = [PlayerBSONHandler.reads(p) for p in self.playerColl.aggregate(pipelines[1])]
-        return engines + legits
+    def engineSample(self, engine: bool, size: int) -> List[Player]:
+        pipeline = [
+                {"$match": {"engine": engine}},
+                {"$sample": {"size": int(size)}}
+            ]
+        return [PlayerBSONHandler.reads(p) for p in self.playerColl.aggregate(pipeline)]
 
     def oldestNonEngine(self) -> Opt[Player]:
         playerBSON = self.playerColl.find_one_and_update(

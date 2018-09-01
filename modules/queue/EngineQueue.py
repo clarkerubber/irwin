@@ -3,7 +3,7 @@ from default_imports import *
 
 from modules.auth.Auth import AuthID
 from modules.game.Game import PlayerID, GameID
-from modules.queue.Origin import Origin, OriginReport, OriginModerator, OriginRandom
+from modules.queue.Origin import Origin, OriginReport, OriginModerator, OriginRandom, maxOrigin
 
 from datetime import datetime, timedelta
 
@@ -17,53 +17,58 @@ EngineQueueID = NewType('EngineQueueID', str)
 Precedence = NewType('Precedence', int)
 
 class EngineQueue(NamedTuple('EngineQueue', [
-        ('id', EngineQueueID),
+        ('id', EngineQueueID), # same as player ID
         ('origin', Origin),
-        ('gameIds', List[GameID]),
+        ('requiredGameIds', List[GameID]), # games that must be analysed
         ('precedence', Precedence),
-        ('complete', bool),
+        ('completed', bool),
         ('owner', AuthID),
         ('date', datetime)
     ])):
     @staticmethod
     def new(playerId: PlayerID, origin: Origin, gamePredictions):
         if len(gamePredictions) > 0:
-            activations = sorted([(a[1]*a[1]) for a in gamePredictions], reverse=True)
+            activations = sorted([(a**2) for a in gamePredictions], reverse=True)
             top30avg = ceil(np.average(activations[:ceil(0.3*len(activations))]))
         else:
             top30avg = 0
+        
+        # set the precedence to the top30avg
         precedence = top30avg
+
+        # then modify it depending on where it came from
         if origin == OriginReport:
             precedence += 5000
         elif origin == OriginModerator:
             precedence = 100000
+
         return EngineQueue(
             id=playerId,
             origin=origin,
+            requiredGameIds=[], # we'll add this as it becomes available
             precedence=precedence,
             owner=None,
             complete=False,
             date=datetime.now())
 
-    def json(self) -> Dict:
-        return {
-            'id': self.id,
-            'origin': self.origin,
-            'precedence': self.precedence,
-            'progress': self.progress,
-            'complete': self.complete,
-            'owner': self.owner,
-            'date': "{:%d %b %Y at %H:%M}".format(self.date)
-        }
-
     def complete(self):
         return EngineQueue(
             id=self.id,
             origin=self.origin,
+            requiredGameIds=self.requiredGameIds,
             precedence=self.precedence,
             complete=True,
             owner=self.owner,
             date=self.date)
+
+    @staticmethod
+    def merge(engineQueueA, engineQueueB):
+        return EngineQueue(
+            id=engineQueueA.id,
+            origin=maxOrigin(engineQueueA.origin, engineQueueB.origin),
+            requiredGameIds=engineQueueA.requiredGameIds + engineQueueB.requiredGameIds,
+            owner=engineQueueA.owner if engineQueueA.owner is not None else (engineQueueB.owner if engineQueueB.owner is not None else None),
+            date=min(engineQueueA.datetime, engineQueueB.datetime)) # retain the oldest datetime so the sorting doesn't mess up
 
 class EngineQueueBSONHandler:
     @staticmethod
@@ -72,8 +77,8 @@ class EngineQueueBSONHandler:
             id=bson['_id'],
             origin=bson['origin'],
             precedence=bson['precedence'],
-            gameIds=bson.get('gameIds'),
-            complete=bson.get('complete', False),
+            requiredGameIds=bson.get('requiredGameIds', []),
+            completed=bson.get('complete', False),
             owner=bson.get('owner'),
             date=bson.get('date'))
 
@@ -83,8 +88,8 @@ class EngineQueueBSONHandler:
             '_id': engineQueue.id,
             'origin': engineQueue.origin,
             'precedence': engineQueue.precedence,
-            'gameIds': engineQueue.gameIds,
-            'complete': engineQueue.complete,
+            'requiredGameIds': engineQueue.requiredGameIds,
+            'completed': engineQueue.completed,
             'owner': engineQueue.owner,
             'date': datetime.now()
         }
@@ -98,11 +103,14 @@ class EngineQueueDB(NamedTuple('EngineQueueDB', [
             {'$set': EngineQueueBSONHandler.writes(engineQueue)}, upsert=True)
 
     def inProgress(self) -> List[EngineQueue]:
-        return [EngineQueueBSONHandler.reads(bson) for bson in self.engineQueueColl.find({'owner': {'$ne': None}, 'complete': False})]
+        return [EngineQueueBSONHandler.reads(bson) for bson in self.engineQueueColl.find({'owner': {'$ne': None}, 'completed': False})]
 
     def byId(self, _id: EngineQueueID) -> Opt[EngineQueue]:
         bson = self.engineQueueColl.find_one({'_id': _id})
         return None if bson is None else EngineQueueBSONHandler.reads(bson)
+
+    def byPlayerId(self, playerId: str) -> Opt[EngineQueue]:
+        return self.byId(playerId)
 
     def complete(self, engineQueue: EngineQueue):
         """remove a complete job from the queue"""
@@ -111,7 +119,7 @@ class EngineQueueDB(NamedTuple('EngineQueueDB', [
     def updateComplete(self, _id: EngineQueueID, complete: bool):
         self.engineQueueColl.update_one(
             {'_id': _id},
-            {'$set': {'complete': complete}})
+            {'$set': {'completed': complete}})
 
     def removePlayerId(self, playerId: PlayerID):
         """remove all jobs related to playerId"""
@@ -137,7 +145,7 @@ class EngineQueueDB(NamedTuple('EngineQueueDB', [
 
     def nextUnprocessed(self, name: AuthID) -> Opt[EngineQueue]:
         """find the next job to process against owner's name"""
-        incompleteBSON = self.engineQueueColl.find_one({'owner': name, '$or': [{'complete': {'$exists': False}}, {'complete': False}]})
+        incompleteBSON = self.engineQueueColl.find_one({'owner': name, '$or': [{'completed': {'$exists': False}}, {'completed': False}]})
         if incompleteBSON is not None: # owner has unfinished business
             return EngineQueueBSONHandler.reads(incompleteBSON)
 

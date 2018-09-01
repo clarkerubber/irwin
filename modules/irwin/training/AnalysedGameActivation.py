@@ -62,5 +62,5 @@ class AnalysedGameActivationDB(NamedTuple('AnalysedGameActivationDB', [
     def write(self, analysedGameActivation: AnalysedGameActivation):
         self.confidentAnalysedGamePivotColl.update_one({'_id': analysedGameActivation.id}, {'$set': AnalysedGameActivationBSONHandler.writes(analysedGameActivation)}, upsert=True)
 
-    def lazyWriteMany(self, analysedGameActivations: List[AnalysedGameActivation]):
+    def writeMany(self, analysedGameActivations: List[AnalysedGameActivation]):
         [self.write(analysedGameActivation) for analysedGameActivation in analysedGameActivations]

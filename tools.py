@@ -1,4 +1,7 @@
 """Main interface for Irwin"""
+from default_imports import *
+
+from conf.ConfigWrapper import ConfigWrapper
 
 import argparse
 import sys
@@ -13,11 +16,7 @@ from utils.buildAverageReport import buildAverageReport
 
 from Env import Env
 
-config = {}
-with open('conf/config.json') as confFile:
-    config = json.load(confFile)
-if config == {}:
-    raise Exception('Config file empty or does not exist!')
+config = ConfigWrapper.new('conf/server_config.json')
 
 parser = argparse.ArgumentParser(description=__doc__)
 ## Training
@@ -60,41 +59,41 @@ parser.add_argument("--discover", dest="discover", nargs="?",
 parser.add_argument("--quiet", dest="loglevel",
                 default=logging.DEBUG, action="store_const", const=logging.INFO,
                     help="reduce the number of logged messages")
-config = parser.parse_args()
+args = parser.parse_args()
 
-logging.basicConfig(format="%(message)s", level=config.loglevel, stream=sys.stdout)
+logging.basicConfig(format="%(message)s", level=args.loglevel, stream=sys.stdout)
 logging.getLogger("requests.packages.urllib3").setLevel(logging.WARNING)
 logging.getLogger("chess.uci").setLevel(logging.WARNING)
 logging.getLogger("modules.fishnet.fishnet").setLevel(logging.INFO)
 
-env = Env(config)
+logging.debug(args.newmodel)
+env = Env(config, newmodel=args.newmodel)
 
-if config.updatedatabase:
+if args.updatedatabase:
     updatePlayerDatabase()
 
 # train on a single batch
-if config.trainbasic:
-    env.irwin.basicGameModel.train(
-        config['irwin']['train']['epochs'],
-        config.filtered,
-        config.newmodel)
+if args.trainbasic:
+    env.irwin.training.basicModelTraining.train(
+        config['irwin model basic training epochs'],
+        args.filtered)
 
-if config.buildbasictable:
-    env.irwin.buildBasicTable()
+if args.buildbasictable:
+    env.irwin.training.basicModelTraining.buildTable()
 
-if config.buildanalysedtable:
-    env.irwin.buildAnalysedTable()
+if args.buildanalysedtable:
+    env.irwin.training.analysedModelTraining.buildTable()
 
-if config.buildpositiontable:
+if args.buildpositiontable:
     buildAnalysedPositionTable(env)
 
-if config.trainanalysed:
-    env.irwin.analysedGameModel.train(
-        config['irwin']['train']['epochs'],
-        config.filtered, config.newmodel)
+if args.trainanalysed:
+    env.irwin.training.analysedModelTraining.train(
+        config['irwin model analysed training epochs'],
+        args.filtered)
 
 # test on a single user in the DB
-if config.test:
+if args.test:
     for userId in ['ralph27_velasco']:
         player = env.playerDB.byPlayerId(userId)
         gameStore = GameStore.new()
@@ -104,11 +103,11 @@ if config.test:
         logging.debug("posted")
 
 # how good is the network?
-if config.eval:
-    env.irwin.evaluate()
+if args.eval:
+    env.irwin.evaluation.evaluate()
 
-if config.discover:
+if args.discover:
     env.irwin.discover()
 
-if config.buildaveragereport:
+if args.buildaveragereport:
     buildAverageReport(env)

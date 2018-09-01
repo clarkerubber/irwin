@@ -14,7 +14,7 @@ from modules.game.Player import PlayerID
 from modules.game.Game import Game
 
 from keras.models import load_model, Model
-from keras.layers import Dropout, Flatten, Dense, LSTM, Input, concatenate, Conv1D
+from keras.layers import Dropout, Embedding, Reshape, Flatten, Dense, LSTM, Input, concatenate, Conv1D
 from keras.optimizers import Adam
 from keras.callbacks import TensorBoard
 
@@ -31,10 +31,16 @@ class BasicGameModel:
             return load_model(self.config["irwin model basic file"])
         logging.debug('model does not exist, building from scratch')
 
-        moveStatsInput = Input(shape=(100, 6), dtype='float32', name='move_input')
+        moveStatsInput = Input(shape=(60, 8), dtype='float32', name='move_input')
+        pieceType = Input(shape=(60, 1), dtype='float32', name='piece_type')
+
+        pieceEmbed = Embedding(input_dim=7, output_dim=8)(pieceType)
+        rshape = Reshape((60,8))(pieceEmbed)
+
+        concats = concatenate(inputs=[moveStatsInput, rshape])
 
         ### Conv Net Block of Siamese Network
-        conv1 = Conv1D(filters=64, kernel_size=3, activation='relu')(moveStatsInput)
+        conv1 = Conv1D(filters=64, kernel_size=3, activation='relu')(concats)
         dense1 = Dense(32, activation='relu')(conv1)
         conv2 = Conv1D(filters=64, kernel_size=5, activation='relu')(dense1)
         dense2 = Dense(32, activation='sigmoid')(conv2)
@@ -47,7 +53,7 @@ class BasicGameModel:
         convNetOutput = Dense(16, activation='sigmoid')(dense5)
 
         ### LSTM Block of Siamese Network
-        mv1 = Dense(32, activation='relu')(moveStatsInput)
+        mv1 = Dense(32, activation='relu')(concats)
         d1 = Dropout(0.3)(mv1)
         mv2 = Dense(16, activation='relu')(d1)
 
@@ -67,7 +73,7 @@ class BasicGameModel:
         denseOut1 = Dense(16, activation='sigmoid')(mergeLSTMandConv)
         mainOutput = Dense(1, activation='sigmoid', name='main_output')(denseOut1)
 
-        model = Model(inputs=moveStatsInput, outputs=mainOutput)
+        model = Model(inputs=[moveStatsInput, pieceType], outputs=mainOutput)
 
         model.compile(optimizer=Adam(lr=0.0001),
             loss='binary_crossentropy',
@@ -76,8 +82,8 @@ class BasicGameModel:
 
     def predict(self, playerId: PlayerID, games: List[Game]) -> Opt[int]:
         tensors = [game.tensor(playerId) for game in games]
-        return [None if t is None else int(100*self.model.predict(np.array([t]))[0][0]) for t in tensors]
+        return [None if t is None else int(100*self.model.predict([np.array([t[0]]),np.array([t[1]])])[0][0]) for t in tensors]
 
     def saveModel(self):
         logging.debug("saving model")
-        self.model.save(config["irwin model basic file"])
+        self.model.save(self.config["irwin model basic file"])

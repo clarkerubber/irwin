@@ -1,6 +1,6 @@
 from default_imports import *
 
-from modules.game.AnalysedGame import AnalysedGameTensor
+from modules.game.AnalysedGame import AnalysedGameTensor, GameAnalysedGame
 
 from modules.irwin.AnalysedGameModel import AnalysedGameModel
 
@@ -10,8 +10,6 @@ from modules.irwin.training.AnalysedGameActivation import AnalysedGameActivation
 import numpy as np
 
 from random import shuffle
-
-from pprint import pprint
 
 Batch = NamedTuple('Batch', [
         ('data', np.ndarray),
@@ -27,9 +25,9 @@ class AnalysedModelTraining(NamedTuple('AnalysedModelTraining', [
         batch = self.getTrainingDataset(filtered)
 
         logging.debug("training")
-        logging.debug("Batch Info: Games: {}".format(len(batch.data)))
+        logging.debug("Batch Info: Games: {}".format(len(batch.data[0])))
 
-        logging.debug("Game Len: {}".format(len(batch.data[0])))
+        logging.debug("Game Len: {}".format(len(batch.data[0][0])))
 
         self.analysedGameModel.model.fit(
             batch.data, batch.labels,
@@ -39,26 +37,39 @@ class AnalysedModelTraining(NamedTuple('AnalysedModelTraining', [
         logging.debug("complete")
 
     def getTrainingDataset(self, filtered: bool):
+        cheatAnalysedGames = []
+        legitAnalysedGames = []
+
         if filtered:
             logging.debug("gettings game IDs from DB")
             cheatPivotEntries = self.env.analysedGameActivationDB.byEngineAndPrediction(True, 80)
             legits = self.env.playerDB.byEngine(False)
 
+            logging.debug('cpes: ' + str(len(cheatPivotEntries)))
+            logging.debug('legits: ' + str(len(legits)))
+
             shuffle(cheatPivotEntries)
             shuffle(legits)
 
+            #cheatPivotEntries = cheatPivotEntries[:self.env.config["irwin model analysed training sample_size"]]
             legits = legits[:self.env.config["irwin model analysed training sample_size"]]
+
+            logging.debug('legits: ' + str(len(legits)))
 
             logging.debug("Getting game analyses from DB")
 
-            legitAnalysedGames = []
-
-            cheatAnalysedGames = self.env.analysedGameDB.byIds([cpe.id for cpe in cheatPivotEntries])
             [legitAnalysedGames.extend(ga) for ga in self.env.analysedGameDB.byPlayerIds([u.id for u in legits])]
+            cheatAnalysedGames = self.env.analysedGameDB.byIds([cpe.id for cpe in cheatPivotEntries][:len(legitAnalysedGames)])
+
+            logging.debug('cags: ' + str(len(cheatAnalysedGames)))
+            logging.debug('lags: ' + str(len(legitAnalysedGames)))
         else:
             logging.debug("getting players by engine")
             cheats = self.env.playerDB.byEngine(True)
             legits = self.env.playerDB.byEngine(False)
+
+            logging.debug('cheats: ' + str(len(cheats)))
+            logging.debug('legits: ' + str(len(legits)))
 
             shuffle(cheats)
             shuffle(legits)
@@ -66,16 +77,29 @@ class AnalysedModelTraining(NamedTuple('AnalysedModelTraining', [
             cheats = cheats[:self.env.config["irwin model analysed training sample_size"]]
             legits = legits[:self.env.config["irwin model analysed training sample_size"]]
 
-            cheatAnalysedGames = []
-            legitAnalysedGames = []
+            logging.debug('cheats: ' + str(len(cheats)))
+            logging.debug('legits: ' + str(len(legits)))
 
             logging.debug("getting game analyses from DB")
             [cheatAnalysedGames.extend(ga) for ga in self.env.analysedGameDB.byPlayerIds([u.id for u in cheats])]
             [legitAnalysedGames.extend(ga) for ga in self.env.analysedGameDB.byPlayerIds([u.id for u in legits])]
 
+            logging.debug('cags: ' + str(len(cheatAnalysedGames)))
+            logging.debug('lags: ' + str(len(legitAnalysedGames)))
+
+        logging.debug('getting games from DB')
+        cheatGames = self.env.gameDB.byIds([ag.gameId for ag in cheatAnalysedGames])
+        legitGames = self.env.gameDB.byIds([ag.gameId for ag in legitAnalysedGames])
+
+        logging.debug('cgs: ' + str(len(cheatGames)))
+        logging.debug('lgs: ' + str(len(legitGames)))
+
         logging.debug("building tensor")
-        cheatGameTensors = [tga.tensor() for tga in cheatAnalysedGames if tga.gameLength() <= 60]
-        legitGameTensors = [tga.tensor() for tga in legitAnalysedGames if tga.gameLength() <= 60]
+        cheatGameTensors = list(filter(None, [GameAnalysedGame(ag, g).tensor() for ag, g in zip(cheatAnalysedGames, cheatGames) if ag.gameLength() <= 60]))
+        legitGameTensors = list(filter(None, [GameAnalysedGame(ag, g).tensor() for ag, g in zip(legitAnalysedGames, legitGames) if ag.gameLength() <= 60]))
+
+        logging.debug('cgts: ' + str(len(cheatGameTensors)))
+        logging.debug('lgts: ' + str(len(legitGameTensors)))
 
         logging.debug("batching tensors")
         return self.createBatchAndLabels(cheatGameTensors, legitGameTensors)
@@ -97,13 +121,20 @@ class AnalysedModelTraining(NamedTuple('AnalysedModelTraining', [
         blz = list(zip(cheats+legits, labels))
         shuffle(blz)
 
-        return Batch(
-            data=np.array([t for t, l in blz]),
+        r =  Batch(
+            data = [
+                np.array([t[0] for t, l in blz]),
+                np.array([t[1] for t, l in blz])
+            ],
             labels=[
                 np.array([l for t, l in blz]), 
-                np.array([[[l]]*(len(t)-13) for t, l in blz]),
-                np.array([[[l]]*(len(t)-4) for t, l in blz])
+                np.array([ [[l]]*(60-13) for t, l in blz]),
+                np.array([ [[l]]*(60-4) for t, l in blz])
             ])
+        logging.debug(r.labels[0])
+        logging.debug(r.labels[1])
+        logging.debug(r.labels[2])
+        return r
 
     def buildTable(self):
         """Build table of activations for analysed games. used for training"""
@@ -118,9 +149,12 @@ class AnalysedModelTraining(NamedTuple('AnalysedModelTraining', [
         for i, p in enumerate(cheats):
             logging.info("predicting: " + p.id + "  -  " + str(i) + '/' + lenPlayers)
             analysedGames = self.env.analysedGameDB.byPlayerId(p.id)
-            predictions = self.analysedGameModel.predict(analysedGames)
+            games = self.env.gameDB.byIds([ag.gameId for ag in analysedGames])
+
+            predictions = self.analysedGameModel.predict([GameAnalysedGame(ag, g) for ag, g in zip(analysedGames, games)])
+
             analysedGameActivations = [AnalysedGameActivation.fromAnalysedGameAndPrediction(
                 analysedGame = analysedGame,
                 prediction = prediction,
-                engine=p.engine) for analysedGame, prediction in zip(analysedGames, predictions)]
-            self.env.analysedGameActivationDB.lazyWriteMany(analysedGameActivations)
+                engine=p.engine) for analysedGame, prediction in zip(analysedGames, predictions) if prediction is not None]
+            self.env.analysedGameActivationDB.writeMany(analysedGameActivations)

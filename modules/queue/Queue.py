@@ -19,3 +19,9 @@ class Queue(NamedTuple('Queue', [('env', Env)])):
 
     def queueNerualAnalysis(self, playerId: PlayerID):
         ...
+
+    def queueEngineAnalysis(self, engineQueue: EngineQueue):
+        return self.env.engineQueueDB.write(engineQueue)
+
+    def engineQueueById(self, playerId: PlayerID):
+        return self.env.engineQueueDB.byPlayerId(playerId)

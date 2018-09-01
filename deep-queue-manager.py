@@ -70,7 +70,7 @@ while True:
         env.deepPlayerQueueDB.complete(deepPlayerQueue)
         continue # if this doesn't gather any useful data, skip
 
-    env.gameDB.lazyWriteMany(gameStore.games)
+    env.gameDB.writeMany(gameStore.games)
 
     logging.info("Already Analysed: " + str(len(gameStore.analysedGames)))
 
@@ -107,7 +107,7 @@ while True:
         # update progress for logging
         env.deepPlayerQueueDB.updateProgress(deepPlayerQueue.id, int(100*i/sumGamestoAnalyse))
 
-    env.analysedGameDB.lazyWriteMany(gameStore.analysedGames)
+    env.analysedGameDB.writeMany(gameStore.analysedGames)
 
     logging.info('Posting report for ' + playerId)
     env.api.postReport(env.irwin.report(

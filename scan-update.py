@@ -41,7 +41,7 @@ def updatePlayerData(playerId):
 
     player = Player.fromPlayerData(playerData)
     env.playerDB.write(player)
-    env.gameDB.lazyWriteMany(Game.fromPlayerData(playerData))
+    env.gameDB.writeMany(Game.fromPlayerData(playerData))
 
     return player
 

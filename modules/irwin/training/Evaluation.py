@@ -1,34 +1,45 @@
-import logging
-from pprint import pprint
+from default_imports import *
 
+from conf.ConfigWrapper import ConfigWrapper
+
+from modules.game.Player import Player
 from modules.game.GameStore import GameStore
+from modules.game.AnalysedGame import GameAnalysedGame
 
-class Evaluation:
-    def getEvaluationDataset(self, batchSize):
-        print("getting players", end="...", flush=True)
-        players = self.env.playerDB.balancedSample(batchSize)
-        print(" %d" % len(players))
-        print("getting game analyses")
-        analysesByPlayer = [(player, GameStore([], [ga for ga in self.env.analysedGameDB.byPlayerId(player.id)])) for player in players]
-        return analysesByPlayer
+from modules.irwin.PlayerReport import PlayerReport
+
+class Evaluation(NamedTuple('Evaluation', [
+        ('irwin', 'Irwin'),
+        ('config', ConfigWrapper)
+    ])):
+    def getPlayerOutcomes(self, engine: bool, batchSize: int) -> Opt[int]: # returns a generator for activations, player by player.
+        for player in self.irwin.env.playerDB.engineSample(engine, batchSize):
+            analysedGames = self.irwin.env.analysedGameDB.byPlayerId(player.id)
+            games = self.irwin.env.gameDB.byIds([ag.gameId for ag in analysedGames])
+            predictions = self.irwin.analysedGameModel.predict([GameAnalysedGame(ag, g) for ag, g in zip(analysedGames, games) if ag.gameLength() <= 60])
+            playerReport = PlayerReport.new(player, zip(analysedGames, predictions))
+            if len(playerReport.gameReports) > 0:
+                yield Evaluation.outcome(
+                    playerReport.activation,
+                    92, 64, engine)
+            else:
+                yield None
 
     def evaluate(self):
-        logging.warning("Evaluating Model")
-        logging.debug("Getting Dataset")
-        analysisStoreByPlayer = self.getEvaluationDataset(self.env.config['irwin']['evalSize'])
-        activations = [self.activation(player, [self.gameActivation(gp, l) for gp, l in self.predictAnalysed(gameStore.analysedGameTensors())]) for player, gameStore in analysisStoreByPlayer]
-        outcomes = list([(ap, Evaluation.outcome(a, 92, 64, ap[0].engine)) for ap, a in zip(analysisStoreByPlayer, activations)])
-        tp = len([a for a in outcomes if a[1] == 1])
-        fn = len([a for a in outcomes if a[1] == 2])
-        tn = len([a for a in outcomes if a[1] == 3])
-        fp = len([a for a in outcomes if a[1] == 4])
-        tr = len([a for a in outcomes if a[1] == 5])
-        fr = len([a for a in outcomes if a[1] == 6])
+        outcomes = []
+        [[((outcomes.append(o) if o is not None else ...), Evaluation.performance(outcomes)) for o in self.getPlayerOutcomes(engine, self.config['irwin testing eval_size'])] for engine in (True, False)]
 
-        fpnames = [a[0][0].id for a in outcomes if a[1] == 4]
+    @staticmethod
+    def performance(outcomes):
+        tp = len([a for a in outcomes if a == 1])
+        fn = len([a for a in outcomes if a == 2])
+        tn = len([a for a in outcomes if a == 3])
+        fp = len([a for a in outcomes if a == 4])
+        tr = len([a for a in outcomes if a == 5])
+        fr = len([a for a in outcomes if a == 6])
 
-        cheatsLen = tp + fn + tr
-        legitsLen = fp + tn + fr 
+        cheatsLen = max(1, tp + fn + tr)
+        legitsLen = max(1, fp + tn + fr)
 
         logging.warning("True positive: " + str(tp) + " (" + str(int(100*tp/cheatsLen)) + "%)")
         logging.warning("False negative: " + str(fn) + " (" + str(int(100*fn/cheatsLen)) + "%)")
@@ -39,10 +50,9 @@ class Evaluation:
         logging.warning("Cheats coverage: " + str(int(100*(tp+tr)/cheatsLen)) + "%")
         logging.warning("Legits coverage: " + str(int(100*(tn)/legitsLen)) + "%")
 
-        pprint(fpnames)
-
     @staticmethod
-    def outcome(a, tm, tr, e): # activation, threshold, expected value
+    def outcome(a: int, tm: int, tr: int, e: bool) -> int: # activation, threshold mark, threshold report, expected value
+        logging.debug(a)
         true_positive = 1
         false_negative = 2
         true_negative = 3

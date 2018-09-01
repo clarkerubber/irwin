@@ -316,5 +316,5 @@ class GameReportDB(namedtuple('GameReportDB', ['gameReportColl'])):
             {'$set': GameReportBSONHandler.writes(gameReport)},
             upsert=True)
 
-    def lazyWriteMany(self, gameReports):
+    def writeMany(self, gameReports):
         [self.write(gameReport) for gameReport in gameReports]
