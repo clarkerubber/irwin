@@ -8,8 +8,6 @@ import sys
 import logging
 import json
 
-from modules.game.GameStore import GameStore
-
 from utils.updatePlayerDatabase import updatePlayerDatabase
 from utils.buildAnalysedPositionTable import buildAnalysedPositionTable
 from utils.buildAverageReport import buildAverageReport
