@@ -220,6 +220,10 @@ class AnalysedGameDB(NamedTuple('AnalysedGameDB', [
     def byPlayerIds(self, playerIds: List[PlayerID]) -> List[AnalysedGame]:
         return [self.byPlayerId(playerId) for playerId in playerIds]
 
+    def byId(self, _id: AnalysedGameID) -> Opt[AnalysedGame]:
+        bson = self.analysedGameColl.find_one({"_id": _id})
+        return None if bson is None else AnalysedGameBSONHandler.reads(bson)
+
     def byIds(self, ids: List[AnalysedGameID]) -> List[AnalysedGame]:
         return [AnalysedGameBSONHandler.reads(ga) for ga in self.analysedGameColl.find({"_id": {"$in": ids}})]
 

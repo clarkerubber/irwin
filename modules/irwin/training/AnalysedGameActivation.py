@@ -54,10 +54,14 @@ class AnalysedGameActivationDB(NamedTuple('AnalysedGameActivationDB', [
     def byPlayerId(self, playerId: PlayerID) -> List[AnalysedGameActivation]:
         return [AnalysedGameActivationBSONHandler.reads(bson) for bson in self.confidentAnalysedGamePivotColl.find({'userId': playerId})]
 
-    def byEngineAndPrediction(self, engine: bool, prediction: Prediction) -> List[AnalysedGameActivation]:
-        if engine:
-            return [AnalysedGameActivationBSONHandler.reads(bson) for bson in self.confidentAnalysedGamePivotColl.find({'engine': engine, 'prediction': {'$gte': prediction}})]
-        return [AnalysedGameActivationBSONHandler.reads(bson) for bson in self.confidentAnalysedGamePivotColl.find({'engine': engine, 'prediction': {'$lte': prediction}})]
+    def byEngineAndPrediction(self, engine: bool, prediction: Prediction, limit = None) -> List[AnalysedGameActivation]:
+        gtlt = '$gte' if engine else '$lte'
+        pipeline = [{'$match': {'engine': engine, 'prediction': {gtlt: prediction}}}]
+
+        if limit is not None:
+            pipeline.append({'$sample': {'size': limit}})
+
+        return [AnalysedGameActivationBSONHandler.reads(bson) for bson in self.confidentAnalysedGamePivotColl.aggregate(pipeline)]
 
     def write(self, analysedGameActivation: AnalysedGameActivation):
         self.confidentAnalysedGamePivotColl.update_one({'_id': analysedGameActivation.id}, {'$set': AnalysedGameActivationBSONHandler.writes(analysedGameActivation)}, upsert=True)

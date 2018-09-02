@@ -16,8 +16,8 @@ from modules.game.AnalysedPosition import AnalysedPositionDB
 from modules.queue.IrwinQueue import IrwinQueueDB
 from modules.queue.EngineQueue import EngineQueueDB
 
-from modules.irwin.AnalysedGameActivation import AnalysedGameActivationDB
-from modules.irwin.BasicGameActivation import BasicGameActivationDB
+from modules.irwin.training.AnalysedGameActivation import AnalysedGameActivationDB
+from modules.irwin.training.BasicGameActivation import BasicGameActivationDB
 
 from modules.irwin.AnalysisReport import PlayerReportDB, GameReportDB
 

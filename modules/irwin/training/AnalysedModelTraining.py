@@ -36,73 +36,64 @@ class AnalysedModelTraining(NamedTuple('AnalysedModelTraining', [
         self.analysedGameModel.saveModel()
         logging.debug("complete")
 
+    def getPlayerTensors(self, playerId: str):
+        analysedGames = self.env.analysedGameDB.byPlayerId(playerId)
+        games = self.env.gameDB.byIds([ag.gameId for ag in analysedGames])
+
+        return list(filter(None, [GameAnalysedGame(ag, g).tensor() for ag, g in zip(analysedGames, games) if ag.gameLength() <= 60]))
+
+    def getTensorsByEngine(self, engine: bool, limit: int):
+        players = self.env.playerDB.byEngine(engine)
+        shuffle(players)
+
+        tensors = []
+        
+        for player in players:
+            logging.info(f'getting tensors for {player.id}')
+
+            tensors.extend(self.getPlayerTensors(player.id))
+            l = len(tensors)
+            
+            logging.info(f'loaded {l} / {limit} tensors')
+
+            if len(tensors) >= limit:
+                logging.info('reached limit')
+                break
+        return tensors
+
+    def getTensorByCPE(self, cpe):
+        analysedGame = self.env.analysedGameDB.byId(cpe.id)
+        if analysedGame is not None and analysedGame.gameLength() <= 60:
+            game = self.env.gameDB.byId(analysedGame.gameId)
+            return GameAnalysedGame(analysedGame, game).tensor()
+        return None
+
+    def getFilteredEngineTensors(self, limit: int):
+        logging.info(f'getting {limit} filtered tensors')
+
+        cheatPivotEntries = self.env.analysedGameActivationDB.byEngineAndPrediction(engine = True, prediction = 80, limit = limit)
+
+        return list(filter(None, [self.getTensorByCPE(cpe) for cpe in cheatPivotEntries]))
+
     def getTrainingDataset(self, filtered: bool):
-        cheatAnalysedGames = []
-        legitAnalysedGames = []
+        limit = self.env.config["irwin model analysed training sample_size"]
+
+        legitTensors = self.getTensorsByEngine(
+            engine = False,
+            limit = limit)
 
         if filtered:
-            logging.debug("gettings game IDs from DB")
-            cheatPivotEntries = self.env.analysedGameActivationDB.byEngineAndPrediction(True, 80)
-            legits = self.env.playerDB.byEngine(False)
-
-            logging.debug('cpes: ' + str(len(cheatPivotEntries)))
-            logging.debug('legits: ' + str(len(legits)))
-
-            shuffle(cheatPivotEntries)
-            shuffle(legits)
-
-            #cheatPivotEntries = cheatPivotEntries[:self.env.config["irwin model analysed training sample_size"]]
-            legits = legits[:self.env.config["irwin model analysed training sample_size"]]
-
-            logging.debug('legits: ' + str(len(legits)))
-
-            logging.debug("Getting game analyses from DB")
-
-            [legitAnalysedGames.extend(ga) for ga in self.env.analysedGameDB.byPlayerIds([u.id for u in legits])]
-            cheatAnalysedGames = self.env.analysedGameDB.byIds([cpe.id for cpe in cheatPivotEntries][:len(legitAnalysedGames)])
-
-            logging.debug('cags: ' + str(len(cheatAnalysedGames)))
-            logging.debug('lags: ' + str(len(legitAnalysedGames)))
+            cheatTensors = self.getFilteredEngineTensors(limit = limit)
         else:
-            logging.debug("getting players by engine")
-            cheats = self.env.playerDB.byEngine(True)
-            legits = self.env.playerDB.byEngine(False)
+            cheatTensors = self.getTensorsByEngine(
+                engien = True,
+                limit = limit)
 
-            logging.debug('cheats: ' + str(len(cheats)))
-            logging.debug('legits: ' + str(len(legits)))
-
-            shuffle(cheats)
-            shuffle(legits)
-
-            cheats = cheats[:self.env.config["irwin model analysed training sample_size"]]
-            legits = legits[:self.env.config["irwin model analysed training sample_size"]]
-
-            logging.debug('cheats: ' + str(len(cheats)))
-            logging.debug('legits: ' + str(len(legits)))
-
-            logging.debug("getting game analyses from DB")
-            [cheatAnalysedGames.extend(ga) for ga in self.env.analysedGameDB.byPlayerIds([u.id for u in cheats])]
-            [legitAnalysedGames.extend(ga) for ga in self.env.analysedGameDB.byPlayerIds([u.id for u in legits])]
-
-            logging.debug('cags: ' + str(len(cheatAnalysedGames)))
-            logging.debug('lags: ' + str(len(legitAnalysedGames)))
-
-        logging.debug('getting games from DB')
-        cheatGames = self.env.gameDB.byIds([ag.gameId for ag in cheatAnalysedGames])
-        legitGames = self.env.gameDB.byIds([ag.gameId for ag in legitAnalysedGames])
-
-        logging.debug('cgs: ' + str(len(cheatGames)))
-        logging.debug('lgs: ' + str(len(legitGames)))
-
-        logging.debug("building tensor")
-        cheatGameTensors = list(filter(None, [GameAnalysedGame(ag, g).tensor() for ag, g in zip(cheatAnalysedGames, cheatGames) if ag.gameLength() <= 60]))
-        legitGameTensors = list(filter(None, [GameAnalysedGame(ag, g).tensor() for ag, g in zip(legitAnalysedGames, legitGames) if ag.gameLength() <= 60]))
-
-        logging.debug('cgts: ' + str(len(cheatGameTensors)))
-        logging.debug('lgts: ' + str(len(legitGameTensors)))
+        logging.debug('cgts: ' + str(len(cheatTensors)))
+        logging.debug('lgts: ' + str(len(legitTensors)))
 
         logging.debug("batching tensors")
-        return self.createBatchAndLabels(cheatGameTensors, legitGameTensors)
+        return self.createBatchAndLabels(cheatTensors, legitTensors)
 
     @staticmethod
     def createBatchAndLabels(cheatTensors: List[AnalysedGameTensor], legitTensors: List[AnalysedGameTensor]) -> Batch:
