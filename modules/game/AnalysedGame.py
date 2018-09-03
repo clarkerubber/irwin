@@ -174,7 +174,7 @@ class GameAnalysedGame(NamedTuple('GameAnalysedGame', [
 
     def tensor(self):
         try:
-            gt = self.game.boardTensorsByPlayerId(self.analysedGame.playerId)
+            gt = self.game.boardTensorsByPlayerId(self.analysedGame.playerId, safe = False)
             at = self.analysedGame.tensor()
             return [
                 [_1 + _2 for _1, _2 in zip(gt[0], at)],
