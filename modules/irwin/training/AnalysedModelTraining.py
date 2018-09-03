@@ -1,5 +1,7 @@
 from default_imports import *
 
+from multiprocessing import Pool
+
 from modules.game.AnalysedGame import AnalysedGameTensor, GameAnalysedGame
 
 from modules.irwin.AnalysedGameModel import AnalysedGameModel
@@ -71,7 +73,10 @@ class AnalysedModelTraining(NamedTuple('AnalysedModelTraining', [
     def getFilteredEngineTensors(self, limit: int):
         logging.info(f'getting {limit} filtered tensors')
 
-        cheatPivotEntries = self.env.analysedGameActivationDB.byEngineAndPrediction(engine = True, prediction = 80, limit = limit)
+        cheatPivotEntries = self.env.analysedGameActivationDB.byEngineAndPrediction(
+            engine = True,
+            prediction = 80,
+            limit = limit)
 
         return list(filter(None, [self.getTensorByCPE(cpe) for cpe in cheatPivotEntries]))
 

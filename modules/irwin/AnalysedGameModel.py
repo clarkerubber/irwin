@@ -64,7 +64,7 @@ class AnalysedGameModel:
             m._make_predict_function()
             return m
         logging.debug('model does not exist, building from scratch')
-        inputGame = Input(shape=(60, 18), dtype='float32', name='game_input')
+        inputGame = Input(shape=(60, 13), dtype='float32', name='game_input')
         pieceType = Input(shape=(60, 1), dtype='float32', name='piece_type')
 
         pieceEmbed = Embedding(input_dim=7, output_dim=8)(pieceType)

@@ -51,8 +51,8 @@ class Game(NamedTuple('Game', [
 
         return read_game(StringIO(" ".join(self.pgn)))
 
-    def boardTensor(self, colour):
-        # replay the game for more tensors
+    def boardTensors(self, colour):
+        # replay the game for move tensors
         playable = self.playable()
         node = playable.variation(0)
 
@@ -76,6 +76,20 @@ class Game(NamedTuple('Game', [
 
             node = nextNode
 
+    def boardTensorsByPlayerId(self, playerId: PlayerID, length: int = 60):
+        if self.white != playerId and self.black != playerId:
+            logging.warning(f'{playerId} is not a player in game {self.id}')
+            return None
+
+        colour = (self.white == playerId)
+        tensors = list(self.boardTensors(colour))
+        remaining = max(0, length-len(tensors))
+        output = [
+            [remaining*[Game.nullBoardTensor()] + [t[0] for t in tensors]][0][:length],
+            [remaining*[[0]] + [[t[1]] for t in tensors]][0][:length]
+        ]
+
+        return output
 
     def tensor(self, playerId: PlayerID, length: int = 60, noisey=False) -> Opt[GameTensor]:
         if self.analysis == [] or (self.white != playerId and self.black != playerId):
@@ -93,7 +107,7 @@ class Game(NamedTuple('Game', [
 
         emts = self.emtsByColour(colour, [-1 for _ in self.analysis] if self.emts is None else self.emts)
         avgEmt = np.average(emts)
-        boardTensors = list(self.boardTensor(colour))
+        boardTensors = list(self.boardTensors(colour))
         pieceTypes = [[b[1]] for b in boardTensors]
         tensors = [Game.moveTensor(a, e, b, avgEmt, colour) for a, e, b in zip(analysis, emts, [b[0] for b in boardTensors])]
         remaining = (max(0, length-len(tensors)))
@@ -118,6 +132,10 @@ class Game(NamedTuple('Game', [
             emt - avgEmt,
             100*((emt - avgEmt)/(avgEmt + 1e-8)),
         ] + boardTensor
+
+    @staticmethod
+    def nullBoardTensor():
+        return [0, 0, 0]
 
     @staticmethod
     def nullMoveTensor() -> MoveTensor:
