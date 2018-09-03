@@ -78,7 +78,7 @@ class Game(NamedTuple('Game', [
 
     def boardTensorsByPlayerId(self, playerId: PlayerID, length: int = 60):
         if self.white != playerId and self.black != playerId:
-            logging.warning(f'{playerId} is not a player in game {self.id}')
+            logging.warning(f'{playerId} is not a player in game {self.id} - ({self.white}, {self.black})')
             return None
 
         colour = (self.white == playerId)
