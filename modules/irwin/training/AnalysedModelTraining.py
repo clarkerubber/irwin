@@ -91,7 +91,7 @@ class AnalysedModelTraining(NamedTuple('AnalysedModelTraining', [
             cheatTensors = self.getFilteredEngineTensors(limit = limit)
         else:
             cheatTensors = self.getTensorsByEngine(
-                engien = True,
+                engine = True,
                 limit = limit)
 
         logging.debug('cgts: ' + str(len(cheatTensors)))
