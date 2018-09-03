@@ -6,19 +6,24 @@ from collections import namedtuple
 
 class Api(namedtuple('Api', ['url', 'token'])):
     def postReport(self, report):
-        success = False
-        attempts = 0
-        while not success and attempts < 5:
-            attempts += 1
+        reportDict = report.reportDict()
+        for _ in range(5):
             try:
-                response = requests.post(self.url + 'irwin/report?api_key=' + self.token, json=report)
+                response = requests.post(
+                    self.url + 'irwin/report',
+                    headers = {
+                        'User-Agent': 'Irwin',
+                        'Authorization': f'Bearer {self.token}'
+                    },
+                    json = reportDict
+                )
                 if response.status_code == 200:
-                    success = True
+                    return True
                 else:
                     logging.warning(str(response.status_code) + ': Failed to post player report')
-                    logging.warning(json.dumps(report))
+                    logging.warning(json.dumps(reportDict))
                     if response.status_code == 413:
-                        return
+                        return False
                     logging.debug('Trying again in 60 sec')
                     time.sleep(60)
             except requests.exceptions.ChunkedEncodingError:
@@ -39,21 +44,22 @@ class Api(namedtuple('Api', ['url', 'token'])):
                 time.sleep(30)
 
     def getPlayerData(self, userId):
-        success = False
-        attempts = 0
-        output = None
-        while not success and attempts < 5:
-            attempts += 1
+        for _ in range(5):
             try:
-                response = requests.get(self.url+'irwin/'+userId+'/assessment?api_key='+self.token)
+                response = requests.get(
+                    self.url+'irwin/'+userId+'/assessment',
+                    headers = {
+                        'User-Agent': 'Irwin',
+                        'Authorization': f'Bearer {self.token}'
+                    }
+                )
                 try:
-                    output = response.json()
+                    return response.json()
                 except json.decoder.JSONDecodeError:
                     logging.warning('Error: JSONDecodeError in getPlayerData for user: ' + str(userId))
                     logging.warning('Status Code ' + str(response.status_code))
                     logging.warning('Text: ' + response.text[:200])
                     return None
-                success = True
             except requests.ConnectionError:
                 logging.warning('CONNECTION ERROR: Failed to pull assessment data')
                 logging.debug('Trying again in 30 sec')
@@ -62,4 +68,4 @@ class Api(namedtuple('Api', ['url', 'token'])):
                 logging.warning('SSL ERROR: Failed to pull assessment data')
                 logging.debug('Trying again in 30 sec')
                 time.sleep(30)
-        return output
+        return False

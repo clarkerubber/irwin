@@ -3,7 +3,7 @@ import logging
 
 from modules.game.Player import Player
 from modules.game.Game import Game
-from modules.game.GameAnalysisStore import GameAnalysisStore
+from modules.game.GameStore import GameStore
 
 def updatePlayerDatabase(env):
     players= env.playerDB.all()
@@ -13,4 +13,4 @@ def updatePlayerDatabase(env):
         playerData = env.api.getPlayerData(p.id)
         if playerData is not None:
             env.playerDB.write(Player.fromPlayerData(playerData))
-            env.gameDB.lazyWriteGames(Game.fromPlayerData(playerData))
+            env.gameDB.writeMany(Game.fromPlayerData(playerData))

@@ -9,83 +9,54 @@ from modules.fishnet.fishnet import stockfish_command
 from modules.lichess.Api import Api
 
 from modules.game.Game import GameDB
-from modules.game.GameAnalysis import GameAnalysisDB
+from modules.game.AnalysedGame import AnalysedGameDB
 from modules.game.Player import PlayerDB
-from modules.game.PositionAnalysis import PositionAnalysisDB
+from modules.game.AnalysedPosition import AnalysedPositionDB
 
-from modules.queue.BasicPlayerQueue import BasicPlayerQueueDB
-from modules.queue.DeepPlayerQueue import DeepPlayerQueueDB
-from modules.queue.ModReport import ModReportDB
+from modules.queue.IrwinQueue import IrwinQueueDB
+from modules.queue.EngineQueue import EngineQueueDB
 
-from modules.irwin.GameAnalysisActivation import GameAnalysisActivationDB
-from modules.irwin.GameBasicActivation import GameBasicActivationDB
+from modules.irwin.training.AnalysedGameActivation import AnalysedGameActivationDB
+from modules.irwin.training.BasicGameActivation import BasicGameActivationDB
 
 from modules.irwin.AnalysisReport import PlayerReportDB, GameReportDB
 
+from modules.irwin.Env import Env as IrwinEnv
 from modules.irwin.Irwin import Irwin
 
 class Env:
-    def __init__(self, settings, engine=True):
-        self.settings = settings
+    def __init__(self, config, engine=True, newmodel: bool = False):
+        logging.debug('newmodel')
+        logging.debug(newmodel)
+        self.config = config
         self.engine = engine
 
         if self.engine:
-            self.engine = uci.popen_engine(stockfish_command(settings['stockfish']['update']))
-            self.engine.setoption({'Threads': settings['stockfish']['threads'], 'Hash': settings['stockfish']['memory']})
+            self.engine = uci.popen_engine(stockfish_command(config['stockfish']['update']))
+            self.engine.setoption({'Threads': config['stockfish']['threads'], 'Hash': config['stockfish']['memory']})
             self.engine.uci()
             self.infoHandler = uci.InfoHandler()
             self.engine.info_handlers.append(self.infoHandler)
 
-        self.api = Api(settings['api']['url'], settings['api']['token'])
+        self.api = Api(config['api']['url'], config['api']['token'])
 
         # Set up mongodb
-        self.client = MongoClient(settings['db']['host'])
+        self.client = MongoClient(config['db']['host'])
         self.db = self.client.irwin
-        if settings['db']['authenticate']:
+        if config['db']['authenticate']:
             self.db.authenticate(
-                settings['db']['authentication']['username'],
-                settings['db']['authentication']['password'], mechanism='MONGODB-CR')
-
-        # Colls
-        self.playerColl = self.db.player
-        self.gameColl = self.db.game
-        self.gameAnalysisColl = self.db.gameAnalysis
-        self.positionAnalysisColl = self.db.positionAnalysis
-
-        self.basicPlayerQueueColl = self.db.basicPlayerQueue
-        self.deepPlayerQueueColl = self.db.deepPlayerQueue
-        self.reportColl = self.db.report
-
-        self.gameAnalysisActivationColl = self.db.gameAnalysisActivation
-        self.gameBasicActivationColl = self.db.gameBasicActivation
-
-        self.playerReportColl = self.db.playerReport
-        self.gameReportColl = self.db.gameReport
-
-        # database abstraction
-        self.playerDB = PlayerDB(self.playerColl)
-        self.gameDB = GameDB(self.gameColl)
-        self.gameAnalysisDB = GameAnalysisDB(self.gameAnalysisColl)
-        self.positionAnalysisDB = PositionAnalysisDB(self.positionAnalysisColl)
-
-        self.basicPlayerQueueDB = BasicPlayerQueueDB(self.basicPlayerQueueColl)
-        self.deepPlayerQueueDB = DeepPlayerQueueDB(self.deepPlayerQueueColl)
-        self.modReportDB = ModReportDB(self.reportColl)
-
-        self.gameAnalysisActivationDB = GameAnalysisActivationDB(self.gameAnalysisActivationColl)
-        self.gameBasicActivationDB = GameBasicActivationDB(self.gameBasicActivationColl)
-
-        self.playerReportDB = PlayerReportDB(self.playerReportColl)
-        self.gameReportDB = GameReportDB(self.gameReportColl)
+                config['db']['authentication']['username'],
+                config['db']['authentication']['password'], mechanism='MONGODB-CR')
 
         # Irwin
-        self.irwin = Irwin(self)
+        self.irwinEnv = IrwinEnv(config, self.db)
+        self.irwin = Irwin(self.irwinEnv, newmodel)
 
     def restartEngine(self):
         if self.engine:
             self.engine.kill()
-            self.engine = uci.popen_engine(stockfish_command(self.settings['stockfish']['update']))
-            self.engine.setoption({'Threads': self.settings['stockfish']['threads'], 'Hash': self.settings['stockfish']['memory']})
+            self.engine = uci.popen_engine(stockfish_command(self.config['stockfish']['update']))
+            self.engine.setoption({'Threads': self.config['stockfish']['threads'], 'Hash': self.config['stockfish']['memory']})
             self.engine.uci()
             self.infoHandler = uci.InfoHandler()
             self.engine.info_handlers.append(self.infoHandler)

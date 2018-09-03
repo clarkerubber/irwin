@@ -1,164 +1,192 @@
-from collections import namedtuple
+from default_imports import *
+
+from modules.game.Colour import Colour
+from modules.game.Player import PlayerID
+from modules.game.EngineEval import EngineEval, EngineEvalBSONHandler
+
+from pymongo.collection import Collection
+
+from multiprocessing import Pool
+
 import math
+import chess
+from chess.pgn import read_game
 import numpy as np
 
-class Blurs(namedtuple('Blurs', ['nb', 'moves'])):
+GameID = NewType('GameID', str)
+Emt = NewType('Emt', int)
+Analysis = NewType('Analysis', Opt[List[EngineEval]])
+
+MoveTensor = NewType('MoveTensor', List[Number])
+GameTensor = NewType('GameTensor', List[MoveTensor])
+
+class Game(NamedTuple('Game', [
+        ('id', GameID),
+        ('white', PlayerID),
+        ('black', PlayerID),
+        ('pgn', List[str]),
+        ('emts', Opt[List[Emt]]),
+        ('analysis', Analysis)
+    ])):
     @staticmethod
-    def fromDict(d, l):
-        moves = [i == '1' for i in list(d.get('bits', ''))]
-        moves += [False] * (l - len(moves))
-        return Blurs(
-            nb = d.get('nb', 0),
-            moves = moves
-        )
-
-class Score(namedtuple('Score', ['cp', 'mate'])):
-    @staticmethod
-    def fromDict(d):
-        return Score(d.get('cp', None), d.get('mate', None))
-
-    def toDict(self):
-        return {'cp': self.cp} if self.cp is not None else {'mate': self.mate}
-
-    def winningChances(self, white):
-        if self.mate is not None:
-            base = (1 if self.mate > 0 else 0)
-        else:
-            base = 1 / (1 + math.exp(-0.004 * self.cp))
-        return 100*(base if white else (1-base))
-
-class Game(namedtuple('Game', ['id', 'white', 'black', 'pgn', 'emts', 'whiteBlurs', 'blackBlurs', 'analysis'])):
-    @staticmethod
-    def fromDict(gid, userId, d):
-        pgn = d['pgn'].split(" ")
-        white, black = None, None
-        if d['color'] == 'white':
-            white = userId
-        else:
-            black = userId
+    def fromDict(d: Dict):
         return Game(
-            id = gid,
-            white = white,
-            black = black,
-            pgn = pgn,
-            emts = d.get('emts'),
-            whiteBlurs = Blurs.fromDict(d['blurs']['white'], math.ceil(len(pgn)/2)),
-            blackBlurs = Blurs.fromDict(d['blurs']['black'], math.floor(len(pgn)/2)),
-            analysis = [Score.fromDict(a) for a in d.get('analysis', []) if a is not None]
-        )
+            id=d['id'],
+            white=d['white'],
+            black=d['black'],
+            pgn=d['pgn'].split(' '),
+            emts=d['emts'],
+            analysis=None if d.get('analysis') is None else [EngineEval.fromDict(a) for a in d['analysis']]
+            )
 
     @staticmethod
-    def fromPlayerData(playerData):
-        """Returns a list of Game items from playerData json object from lichess api"""
-        return [Game.fromDict(gid, playerData['user']['id'], g) for gid, g in playerData['games'].items() \
-                 if g.get('initialFen') is None and g.get('variant') is None]
+    def fromJson(json: Dict):
+        return Game.fromDict(json)
 
-    def tensor(self, userId):
-        if self.analysis == [] or self.emts is None and (self.white == userId or self.black == userId):
+    def playable(self):
+        try:
+            from StringIO import StringIO
+        except ImportError:
+            from io import StringIO
+
+        return read_game(StringIO(" ".join(self.pgn)))
+
+    def boardTensors(self, colour):
+        # replay the game for move tensors
+        playable = self.playable()
+        node = playable.variation(0)
+
+        advancement = lambda rank: rank if colour else (7 - rank)
+
+        while not node.is_end():
+            nextNode = node.variation(0)
+
+            board = node.board()
+            move = node.move
+
+            if board.turn == colour:
+                yield (
+                    [
+                        advancement(chess.square_rank(move.to_square)),
+                        board.pseudo_legal_moves.count(),
+                        int(board.is_capture(move))
+                    ],
+                    board.piece_at(move.to_square).piece_type
+                )
+
+            node = nextNode
+
+    def boardTensorsByPlayerId(self, playerId: PlayerID, length: int = 60):
+        if self.white != playerId and self.black != playerId:
+            logging.warning(f'{playerId} is not a player in game {self.id}')
             return None
 
-        white = (self.white == userId)
-        blurs = self.whiteBlurs.moves if white else self.blackBlurs.moves
+        colour = (self.white == playerId)
+        tensors = list(self.boardTensors(colour))
+        remaining = max(0, length-len(tensors))
+        output = [
+            [remaining*[Game.nullBoardTensor()] + [t[0] for t in tensors]][0][:length],
+            [remaining*[[0]] + [[t[1]] for t in tensors]][0][:length]
+        ]
 
-        analysis = self.analysis[1:] if white else self.analysis
-        analysis = list(zip(analysis[0::2],analysis[1::2]))
+        return output
 
-        emts = self.emtsByColour(white)
+    def tensor(self, playerId: PlayerID, length: int = 60, noisey=False) -> Opt[GameTensor]:
+        if self.analysis == [] or (self.white != playerId and self.black != playerId):
+            if noisey:
+                logging.debug(f'playerId: "{playerId}"')
+                logging.debug(f'gameId: "{self.id}"')
+                logging.debug(f'white: "{self.white}"')
+                logging.debug(f'black: "{self.black}"')
+            return None
+
+        colour = (self.white == playerId)
+
+        analysis = self.analysis[1:] if colour else self.analysis
+        analysis = list(zip(analysis[0::2],analysis[1::2])) # grouping analyses pairwise
+
+        emts = self.emtsByColour(colour, [-1 for _ in self.analysis] if self.emts is None else self.emts)
         avgEmt = np.average(emts)
-        tensors = [Game.moveTensor(a, b, e, avgEmt, white) for a, b, e in zip(analysis, blurs, emts)]
-        tensors = (max(0, 100-len(tensors)))*[Game.nullTensor()] + tensors
-        return tensors[:100]
+        boardTensors = list(self.boardTensors(colour))
+        pieceTypes = [[b[1]] for b in boardTensors]
+        tensors = [Game.moveTensor(a, e, b, avgEmt, colour) for a, e, b in zip(analysis, emts, [b[0] for b in boardTensors])]
+        remaining = (max(0, length-len(tensors)))
+        tensors = [
+                #np.array([remaining*[Game.nullMoveTensor()] + tensors][0][:length]),
+                [remaining*[Game.nullMoveTensor()] + tensors][0][:length],
+                #np.array([remaining*[[0]] + pieceTypes][0][:length])
+                [remaining*[[0]] + pieceTypes][0][:length]
+            ] # pad to `length` tensors in length
+        return tensors
 
-    def emtsByColour(self, white):
-        return self.emts[(0 if white else 1)::2]
+    def emtsByColour(self, colour: Colour, emts: Opt[List[int]] = None) -> List[Emt]:
+        emts = self.emts if emts is None else emts
+        return emts[(0 if colour else 1)::2]
 
     @staticmethod
-    def moveTensor(analysis, blur, emt, avgEmt, white):
+    def moveTensor(analysis: Analysis, emt: Emt, boardTensor: List[int], avgEmt: Number, colour: Colour) -> MoveTensor:
         return [
-            analysis[1].winningChances(white),
-            (analysis[0].winningChances(white) - analysis[1].winningChances(white)),
-            int(blur),
+            analysis[1].winningChances(colour),
+            (analysis[0].winningChances(colour) - analysis[1].winningChances(colour)),
             emt,
             emt - avgEmt,
             100*((emt - avgEmt)/(avgEmt + 1e-8)),
-        ]
+        ] + boardTensor
 
     @staticmethod
-    def nullTensor():
-        return [0, 0, 0, 0, 0, 0]
+    def nullBoardTensor():
+        return [0, 0, 0]
 
     @staticmethod
-    def ply(moveNumber, white):
-        return (2*(moveNumber-1)) + (0 if white else 1)
+    def nullMoveTensor() -> MoveTensor:
+        return [0, 0, 0, 0, 0, 0, 0, 0]
 
-    def getBlur(self, white, moveNumber):
-        if white:
-            return self.whiteBlurs.moves[moveNumber-1]
-        return self.blackBlurs.moves[moveNumber-1]
-
-class BlursBSONHandler:
     @staticmethod
-    def reads(bson):
-        return Blurs(
-            nb = bson['nb'],
-            moves = [i == 1 for i in list(bson['bits'])]
-            )
-    def writes(blurs):
-        return {
-            'nb': blurs.nb,
-            'bits': ''.join(['1' if i else '0' for i in blurs.moves])
-        }
-
-class ScoreBSONHandler:
-    @staticmethod
-    def reads(bson):
-        return [Score.fromDict(s) for s in bson]
-
-    def writes(scores):
-        return [s.toDict() for s in scores]
+    def ply(moveNumber: int, colour: Colour) -> int:
+        return (2*(moveNumber-1)) + (0 if colour else 1)
 
 class GameBSONHandler:
     @staticmethod
-    def reads(bson):
+    def reads(bson: Dict) -> Game:
         return Game(
             id = bson['_id'],
             white = bson.get('white'),
             black = bson.get('black'),
             pgn = bson['pgn'],
             emts = bson['emts'],
-            whiteBlurs = BlursBSONHandler.reads(bson['whiteBlurs']),
-            blackBlurs = BlursBSONHandler.reads(bson['blackBlurs']),
-            analysis = ScoreBSONHandler.reads(bson.get('analysis', [])))
+            analysis = [EngineEvalBSONHandler.reads(a) for a in bson.get('analysis', [])])
 
     @staticmethod
-    def writes(game):
+    def writes(game: Game) -> Dict:
         return {
             '_id': game.id,
             'white': game.white,
             'black': game.black,
             'pgn': game.pgn,
             'emts': game.emts,
-            'whiteBlurs': BlursBSONHandler.writes(game.whiteBlurs),
-            'blackBlurs': BlursBSONHandler.writes(game.blackBlurs),
-            'analysis': ScoreBSONHandler.writes(game.analysis),
+            'analysis': [EngineEvalBSONHandler.writes(a) for a in game.analysis],
             'analysed': len(game.analysis) > 0
         }
 
-class GameDB(namedtuple('GameDB', ['gameColl'])):
-    def byId(self, _id):
-        return GameBSONHandler.reads(self.gameColl.find_one({'_id': _id}))
+class GameDB(NamedTuple('GameDB', [
+        ('gameColl', Collection)
+    ])):
+    def byId(self, _id: GameID) -> Opt[Game]:
+        bson = self.gameColl.find_one({'_id': _id})
+        return None if bson is None else GameBSONHandler.reads(bson)
 
-    def byIds(self, ids): # List[Ids]
-        return list([GameBSONHandler.reads(g) for g in self.gameColl.find({'_id': {'$in': [i for i in ids]}})])
+    def byIds(self, ids: List[GameID]) -> List[Game]:
+        return [self.byId(gid) for gid in ids]
+        #return [GameBSONHandler.reads(g) for g in self.gameColl.find({'_id': {'$in': [i for i in ids]}})]
 
-    def byUserId(self, uid):
-        return list([GameBSONHandler.reads(g) for g in self.gameColl.find({"$or": [{"white": uid}, {"black": uid}]})])
+    def byPlayerId(self, playerId: PlayerID) -> List[Game]:
+        return [GameBSONHandler.reads(g) for g in self.gameColl.find({"$or": [{"white": playerId}, {"black": playerId}]})]
 
-    def byUserIdAnalysed(self, uid):
-        return list([GameBSONHandler.reads(g) for g in self.gameColl.find({"analysed": True, "$or": [{"white": uid}, {"black": uid}]})])
+    def byPlayerIdAndAnalysed(self, playerId: PlayerID, analysed: bool = True) -> List[Game]:
+        return [GameBSONHandler.reads(g) for g in self.gameColl.find({"analysed": analysed, "$or": [{"white": playerId}, {"black": playerId}]})]
 
-    def write(self, game): # Game
+    def write(self, game: Game):
         self.gameColl.update_one({'_id': game.id}, {'$set': GameBSONHandler.writes(game)}, upsert=True)
 
-    def lazyWriteGames(self, games):
+    def writeMany(self, games: List[Game]):
         [self.write(g) for g in games]

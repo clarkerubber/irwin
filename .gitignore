@@ -51,7 +51,7 @@ coverage.xml
 
 # Django stuff:
 *.log
-local_settings.py
+local_config.py
 
 # Flask stuff:
 instance/
@@ -82,10 +82,10 @@ celerybeat-schedule
 venv/
 ENV/
 
-# Spyder project settings
+# Spyder project config
 .spyderproject
 
-# Rope project settings
+# Rope project config
 .ropeproject
 
 # Data Files
@@ -100,7 +100,7 @@ model-*
 stockfish*
 
 # Config
-conf/
+conf/*.json
 
 # Deployment Scripts
 deploymodels.sh

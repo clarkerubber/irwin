@@ -1,3 +1,7 @@
+from default_imports import *
+
+from conf.ConfigWrapper import ConfigWrapper
+
 import numpy as np
 import logging
 import os
@@ -6,25 +10,39 @@ from random import shuffle
 
 from collections import namedtuple
 
+from modules.game.Player import PlayerID
+from modules.game.Game import Game
+
 from keras.models import load_model, Model
-from keras.layers import Dropout, Flatten, Dense, LSTM, Input, concatenate, Conv1D
+from keras.layers import Dropout, Embedding, Reshape, Flatten, Dense, LSTM, Input, concatenate, Conv1D
 from keras.optimizers import Adam
 from keras.callbacks import TensorBoard
 
 from functools import lru_cache
 
-class BasicGameModel(namedtuple('BasicGameModel', ['env'])):
-    @lru_cache(maxsize=2)
-    def model(self, newmodel=False):
-        if os.path.isfile('modules/irwin/models/basicGame.h5') and not newmodel:
+class BasicGameModel:
+    def __init__(self, config: ConfigWrapper, newmodel: bool = False):
+        self.config = config
+        self.model = self.createModel(newmodel)
+
+    def createModel(self, newmodel: bool = False):
+        if os.path.isfile(self.config["irwin model basic file"]) and not newmodel:
             logging.debug("model already exists, opening from file")
-            return load_model('modules/irwin/models/basicGame.h5')
+            m = load_model(self.config["irwin model basic file"])
+            m._make_predict_function()
+            return m
         logging.debug('model does not exist, building from scratch')
 
-        moveStatsInput = Input(shape=(100, 6), dtype='float32', name='move_input')
+        moveStatsInput = Input(shape=(60, 8), dtype='float32', name='move_input')
+        pieceType = Input(shape=(60, 1), dtype='float32', name='piece_type')
+
+        pieceEmbed = Embedding(input_dim=7, output_dim=8)(pieceType)
+        rshape = Reshape((60,8))(pieceEmbed)
+
+        concats = concatenate(inputs=[moveStatsInput, rshape])
 
         ### Conv Net Block of Siamese Network
-        conv1 = Conv1D(filters=64, kernel_size=3, activation='relu')(moveStatsInput)
+        conv1 = Conv1D(filters=64, kernel_size=3, activation='relu')(concats)
         dense1 = Dense(32, activation='relu')(conv1)
         conv2 = Conv1D(filters=64, kernel_size=5, activation='relu')(dense1)
         dense2 = Dense(32, activation='sigmoid')(conv2)
@@ -37,7 +55,7 @@ class BasicGameModel(namedtuple('BasicGameModel', ['env'])):
         convNetOutput = Dense(16, activation='sigmoid')(dense5)
 
         ### LSTM Block of Siamese Network
-        mv1 = Dense(32, activation='relu')(moveStatsInput)
+        mv1 = Dense(32, activation='relu')(concats)
         d1 = Dropout(0.3)(mv1)
         mv2 = Dense(16, activation='relu')(d1)
 
@@ -57,97 +75,17 @@ class BasicGameModel(namedtuple('BasicGameModel', ['env'])):
         denseOut1 = Dense(16, activation='sigmoid')(mergeLSTMandConv)
         mainOutput = Dense(1, activation='sigmoid', name='main_output')(denseOut1)
 
-        model = Model(inputs=moveStatsInput, outputs=mainOutput)
+        model = Model(inputs=[moveStatsInput, pieceType], outputs=mainOutput)
 
         model.compile(optimizer=Adam(lr=0.0001),
             loss='binary_crossentropy',
             metrics=['accuracy'])
         return model
 
-    def train(self, epochs, filtered=True, newmodel=False):
-        # get player sample
-        logging.debug("getting model")
-        model = self.model(newmodel)
-        logging.debug("getting dataset")
-        batch = self.getTrainingDataset(filtered)
+    def predict(self, playerId: PlayerID, games: List[Game]) -> Opt[int]:
+        tensors = [game.tensor(playerId) for game in games]
+        return [None if t is None else int(100*self.model.predict([np.array([t[0]]),np.array([t[1]])])[0][0]) for t in tensors]
 
-        logging.debug("training")
-        logging.debug("Batch Info: Games: " + str(len(batch['data'])))
-
-        tensorBoard = TensorBoard(
-            log_dir='./logs/basicGameModel', 
-            histogram_freq=10,
-            batch_size=32, write_graph=True)
-
-        model.fit(
-            batch['data'], batch['labels'],
-            epochs=epochs, batch_size=32, validation_split=0.2,
-            callbacks=[tensorBoard])
-
-        self.saveModel(model)
-        logging.debug("complete")
-
-    def saveModel(self, model):
+    def saveModel(self):
         logging.debug("saving model")
-        model.save('modules/irwin/models/basicGame.h5')
-
-    def getTrainingDataset(self, filtered):
-        logging.debug("Getting players from DB")
-
-        cheatTensors = []
-        legitTensors = []
-
-        logging.debug("Getting games from DB")
-        if filtered:
-            legits = self.env.playerDB.byEngine(False)
-            shuffle(legits)
-            legits = legits[:10000]
-            for p in legits:
-                legitTensors.extend([g.tensor(p.id) for g in self.env.gameDB.byUserIdAnalysed(p.id)])
-            cheatGameActivations = self.env.gameBasicActivationDB.byEngineAndPrediction(True, 70)
-            cheatGames = self.env.gameDB.byIds([ga.gameId for ga in cheatGameActivations])
-            cheatTensors.extend([g.tensor(ga.userId) for g, ga in zip(cheatGames, cheatGameActivations)])
-        else:
-            cheats = self.env.playerDB.byEngine(True)
-            legits = self.env.playerDB.byEngine(False)
-
-            shuffle(cheats)
-            shuffle(legits)
-
-            cheats = cheats[:10000]
-            legits = legits[:10000]
-
-            for p in legits + cheats:
-                if p.engine:
-                    cheatTensors.extend([g.tensor(p.id) for g in self.env.gameDB.byUserIdAnalysed(p.id)])
-                else:
-                    legitTensors.extend([g.tensor(p.id) for g in self.env.gameDB.byUserIdAnalysed(p.id)])
-
-        cheatTensors = [t for t in cheatTensors if t is not None]
-        legitTensors = [t for t in legitTensors if t is not None]
-
-        shuffle(cheatTensors)
-        shuffle(legitTensors)
-
-        logging.debug("batching tensors")
-        return self.createBatchAndLabels(cheatTensors, legitTensors)
-
-    @staticmethod
-    def createBatchAndLabels(cheatBatch, legitBatch):
-        # group the dataset into batches by the length of the dataset, because numpy needs it that way
-        mlen = min(len(cheatBatch), len(legitBatch))
-
-        cheats = cheatBatch[:mlen]
-        legits = legitBatch[:mlen]
-
-        logging.debug("batch size " + str(len(cheats + legits)))
-
-        labels = [1]*len(cheats) + [0]*len(legits)
-
-        blz = list(zip(cheats+legits, labels))
-        shuffle(blz)
-
-        return {
-            'data': np.array([t for t, l in blz]),
-            'labels': np.array([l for t, l in blz])
-        }
+        self.model.save(self.config["irwin model basic file"])

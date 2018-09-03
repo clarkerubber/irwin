@@ -1,14 +1,13 @@
 """ build and average player report and game report """
 import logging
 from random import shuffle
-from pprint import pprint
 from modules.irwin.AnalysisReport import GameReportStore
 
 def gameReportStoreByPlayers(env, players):
-    print('getting player reports against players')
+    logging.debug('getting player reports against players')
     playerReports = [env.playerReportDB.newestByUserId(player.id) for player in players]
     gameReports = []
-    print('getting game reports against player reports')
+    logging.debug('getting game reports against player reports')
     [gameReports.extend(env.gameReportDB.byReportId(report.id)) for report in playerReports if report is not None]
     return GameReportStore(gameReports)
 
@@ -20,23 +19,23 @@ def getAverages(gameReportStore):
 
 
 def buildAverageReport(env):
-    print('getting legit players')
+    logging.debug('getting legit players')
     legitPlayers = env.playerDB.byEngine(False)
     titledPlayers = [player for player in legitPlayers if player.titled]
 
-    print('---calculating legit averages---')
+    logging.debug('---calculating legit averages---')
     legitReportStore = gameReportStoreByPlayers(env, legitPlayers)
     legitAvgs = getAverages(legitReportStore)
     del legitReportStore
     del legitPlayers
 
-    print('---calculating titled averages---')
+    logging.debug('---calculating titled averages---')
     titledReportStore = gameReportStoreByPlayers(env, titledPlayers)
     titledAvgs = getAverages(titledReportStore)
     del titledReportStore
     del titledPlayers
 
-    print('---calculating engine averages---')
+    logging.debug('---calculating engine averages---')
     engineReportStore = gameReportStoreByPlayers(env, env.playerDB.byEngine(True))
     engineAvgs = getAverages(engineReportStore)
     del engineReportStore
@@ -47,4 +46,4 @@ def buildAverageReport(env):
         'engine': engineAvgs
     }
 
-    pprint(averages)
+    logging.debug(averages)

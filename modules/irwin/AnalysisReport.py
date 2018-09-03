@@ -92,8 +92,10 @@ class GameReportStore(namedtuple('GameReportStore', ['gameReports'])):
         
     @staticmethod
     def zipLOL(lol):
-        # List of Lists (can be different length)
-        # assumes the input isn't : []
+        """
+        lol: List[List[A]]
+        assumes the input isn't : []
+        """
         longest = max([len(l) for l in lol])
         bins = [[] for i in range(longest)]
         for l in lol:
@@ -105,14 +107,18 @@ class GameReportStore(namedtuple('GameReportStore', ['gameReports'])):
 
     @staticmethod
     def zipAvgLOL(lol):
-        # List of Lists (can be different length)
-        # assumes the input isn't : []
+        """
+        lol: List[List[A]]
+        assumes the input isn't : []
+        """
         return [np.average(b) for b in GameReportStore.zipLOL(lol)]
 
     @staticmethod
     def zipStdLOL(lol):
-        # List of Lists (can be different length)
-        # assumts the input isn't : []
+        """
+        lol: List[List[A]]
+        assumes the input isn't : []
+        """
         return [np.std(b) for b in GameReportStore.zipLOL(lol)]
 
     @staticmethod
@@ -126,14 +132,14 @@ class GameReportStore(namedtuple('GameReportStore', ['gameReports'])):
 
 class GameReport(namedtuple('GameReport', ['id', 'reportId', 'gameId', 'activation', 'moves'])):
     @staticmethod
-    def new(gameAnalysis, gameActivation, gamePredictions, reportId, userId):
-        gameId = gameAnalysis.gameId
+    def new(analysedGame, gameActivation, gamePredictions, reportId, userId):
+        gameId = analysedGame.gameId
         return GameReport(
             id=gameId + '/' + reportId,
             reportId=reportId,
             gameId=gameId,
             activation=gameActivation,
-            moves=[MoveReport.new(am, p) for am, p in zip(gameAnalysis.moveAnalyses, movePredictions(gamePredictions[0]))])
+            moves=[MoveReport.new(am, p) for am, p in zip(analysedGame.analysedMoves, movePredictions(gamePredictions[0]))])
 
     def reportDict(self):
         return {
@@ -257,7 +263,7 @@ class MoveReportBSONHandler:
         }
 
 class PlayerReportDB(namedtuple('PlayerReportDB', ['playerReportColl'])):
-    def byUserId(self, userId):
+    def byPlayerId(self, userId):
         return [PlayerReportBSONHandler.reads(bson)
             for bson
             in self.playerReportColl.find(
@@ -270,7 +276,7 @@ class PlayerReportDB(namedtuple('PlayerReportDB', ['playerReportColl'])):
             sort=[('date', pymongo.DESCENDING)])
         return None if bson is None else PlayerReportBSONHandler.reads(bson)
 
-    def byUserIds(self, userIds):
+    def byPlayerIds(self, userIds):
         return [self.newestByUserId(userId) for userId in userIds]
 
     def newest(self, amount=50):
@@ -310,5 +316,5 @@ class GameReportDB(namedtuple('GameReportDB', ['gameReportColl'])):
             {'$set': GameReportBSONHandler.writes(gameReport)},
             upsert=True)
 
-    def lazyWriteMany(self, gameReports):
+    def writeMany(self, gameReports):
         [self.write(gameReport) for gameReport in gameReports]

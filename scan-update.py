@@ -1,4 +1,4 @@
-"""Basic Queue manager. Gets next item in BasicPlayerQueue and creates entry for DeepPlayerQueue"""
+"""Goes through the database and finds players to update with new data from lichess"""
 import argparse
 import logging
 import json
@@ -9,18 +9,18 @@ from modules.queue.DeepPlayerQueue import DeepPlayerQueue
 
 from modules.game.Player import Player
 from modules.game.Game import Game
-from modules.game.GameAnalysisStore import GameAnalysisStore
+from modules.game.GameStore import GameStore
 
 from Env import Env
 
 parser = argparse.ArgumentParser(description=__doc__)
 
 parser.add_argument("--quiet", dest="loglevel",
-                    default=logging.DEBUG, action="store_const", const=logging.INFO,
+                default=logging.DEBUG, action="store_const", const=logging.INFO,
                     help="reduce the number of logged messages")
-settings = parser.parse_args()
+config = parser.parse_args()
 
-logging.basicConfig(format="%(message)s", level=settings.loglevel, stream=sys.stdout)
+logging.basicConfig(format="%(message)s", level=config.loglevel, stream=sys.stdout)
 logging.getLogger("requests.packages.urllib3").setLevel(logging.WARNING)
 logging.getLogger("chess.uci").setLevel(logging.WARNING)
 logging.getLogger("modules.fishnet.fishnet").setLevel(logging.INFO)
@@ -33,22 +33,22 @@ if config == {}:
 
 env = Env(config, engine=False)
 
-def updatePlayerData(userId):
-    playerData = env.api.getPlayerData(userId)
+def updatePlayerData(playerId):
+    playerData = env.api.getPlayerData(playerId)
     if playerData is None:
-        logging.warning("getPlayerData returned None for " + userId)
+        logging.warning("getPlayerData returned None for " + playerId)
         return None
 
     player = Player.fromPlayerData(playerData)
     env.playerDB.write(player)
-    env.gameDB.lazyWriteGames(Game.fromPlayerData(playerData))
+    env.gameDB.writeMany(Game.fromPlayerData(playerData))
 
     return player
 
-def predictPlayer(userId):
-    gameAnalysisStore = GameAnalysisStore.new()
-    gameAnalysisStore.addGames(env.gameDB.byUserIdAnalysed(userId))
-    gameTensors = gameAnalysisStore.gameTensors(userId)
+def predictPlayer(playerId):
+    gameStore = GameStore.new()
+    gameStore.addGames(env.gameDB.byPlayerIdAndAnalysed(playerId))
+    gameTensors = gameStore.gameTensors(playerId)
 
     if len(gameTensors) > 0:
         return env.irwin.predictBasicGames(gameTensors)
@@ -61,8 +61,8 @@ def updateOldestPlayerQueue():
 
     if deepPlayerQueue is not None:
         if deepPlayerQueue.owner is None:
-            userId = deepPlayerQueue.id
-            player = updatePlayerData(userId)
+            playerId = deepPlayerQueue.id
+            player = updatePlayerData(playerId)
 
             if player is None:
                 logging.info("No player data")
@@ -70,20 +70,20 @@ def updateOldestPlayerQueue():
 
             if player.engine:
                 logging.info("Player is now engine. Closing all reports.")
-                env.modReportDB.close(userId)
+                env.modReportDB.close(playerId)
                 if deepPlayerQueue.origin != 'moderator':
                     logging.info("And not requested by a moderator. Closing analysis")
-                    env.deepPlayerQueueDB.removeUserId(userId)
+                    env.deepPlayerQueueDB.removePlayerId(playerId)
                     return
 
-            predictions = predictPlayer(userId)
+            predictions = predictPlayer(playerId)
             if predictions is None:
                 logging.info("No predictions to process. Removing Queue Item")
-                env.deepPlayerQueueDB.removeUserId(player.id)
+                env.deepPlayerQueueDB.removePlayerId(player.id)
                 return
 
             deepPlayerQueue = DeepPlayerQueue.new(
-                userId=userId,
+                playerId=playerId,
                 origin=deepPlayerQueue.origin,
                 gamePredictions=predictions)
 
@@ -95,15 +95,15 @@ def updateOldestPlayerQueue():
                 env.deepPlayerQueueDB.write(deepPlayerQueue)
             else:
                 logging.info("DeepPlayerQueue is insignificant. Removing")
-                env.deepPlayerQueueDB.removeUserId(userId)
+                env.deepPlayerQueueDB.removePlayerId(playerId)
 
 def spotCheck():
     logging.info("--Spot check on player DB--")
     randomPlayer = env.playerDB.oldestNonEngine()
     logging.info("Player: " + str(randomPlayer))
     if randomPlayer is not None:
-        userId = randomPlayer.id
-        player = updatePlayerData(userId)
+        playerId = randomPlayer.id
+        player = updatePlayerData(playerId)
 
         if player is None:
             logging.info("No player data")
@@ -113,14 +113,14 @@ def spotCheck():
             logging.info("Diced didn't roll lucky. Player is engine. Not proceeding")
             return
 
-        predictions = predictPlayer(userId)
+        predictions = predictPlayer(playerId)
 
         if predictions is None:
             logging.info("No predictions to process")
             return
 
         deepPlayerQueue = DeepPlayerQueue.new(
-            userId=userId,
+            playerId=playerId,
             origin='random',
             gamePredictions=predictions)
 
@@ -135,13 +135,13 @@ def updateOldestReport():
     report = env.modReportDB.oldestUnprocessed()
     logging.info("Report: " + str(report))
     if report is not None:
-        userId = report.id
+        playerId = report.id
 
-        if env.deepPlayerQueueDB.owned(userId):
+        if env.deepPlayerQueueDB.owned(playerId):
             logging.info("DeepPlayerQueue object exists and has owner")
             return
 
-        player = updatePlayerData(userId)
+        player = updatePlayerData(playerId)
 
         if player is None:
             logging.info("No player data")
@@ -149,10 +149,10 @@ def updateOldestReport():
 
         if player.engine:
             logging.info("Player is now engine")
-            env.modReportDB.close(userId)
+            env.modReportDB.close(playerId)
             return
 
-        predictions = predictPlayer(userId)
+        predictions = predictPlayer(playerId)
 
         if predictions is None:
             logging.info("No predictions to process")
@@ -160,10 +160,10 @@ def updateOldestReport():
 
         if player.reportScore is None:
             env.modReportDB.close(player.id)
-            env.deepPlayerQueueDB.removeUserId(player.id)
+            env.deepPlayerQueueDB.removePlayerId(player.id)
         else:
             deepPlayerQueue = DeepPlayerQueue.new(
-                userId=userId,
+                playerId=playerId,
                 origin='reportupdate',
                 gamePredictions=predictions)
 

@@ -1,84 +1,82 @@
-from collections import namedtuple
+from default_imports import *
+
 from datetime import datetime, timedelta
 import pymongo
+from pymongo.collection import Collection
 
-class Player(namedtuple('Player', ['id', 'titled', 'engine', 'gamesPlayed', 'relatedCheaters', 'reportScore', 'mustAnalyse'])):
+from typing import NewType
+
+PlayerID = NewType('PlayerID', str)
+
+class Player(NamedTuple('Player', [
+    ('id', 'PlayerID'),
+    ('titled', bool),
+    ('engine', bool),
+    ('gamesPlayed', int)])):
     @staticmethod
-    def fromPlayerData(data):
-        user = data.get('user')
-        assessment = data.get('assessment', {})
-        if user is not None:
+    def fromJson(userData: Dict):
+        try:
             return Player(
-                id=user.get('id'),
-                titled=user.get('title') is not None,
-                engine=user.get('engine', False),
-                gamesPlayed=assessment.get('user', {}).get('games', 0),
-                relatedCheaters=assessment.get('relatedCheaters', []),
-                reportScore=data.get('reportScore', None),
-                mustAnalyse=[])
+                id=userData['id'],
+                titled=userData['titled'],
+                engine=userData['engine'],
+                gamesPlayed=userData['games'])
+        except (RuntimeTypeError, AttributeError):
+            logging.debug("something's fucked")
         return None
 
 class PlayerBSONHandler:
     @staticmethod
-    def reads(bson):
+    def reads(bson: Dict) -> Player:
         return Player(
                 id = bson['_id'],
                 titled = bson.get('titled', False),
                 engine = bson['engine'],
-                gamesPlayed = bson['gamesPlayed'],
-                relatedCheaters = bson.get('relatedCheaters', []),
-                reportScore = bson.get('reportScore', None),
-                mustAnalyse = bson.get('mustAnalyse', [])
+                gamesPlayed = bson['gamesPlayed']
             )
 
-    def writes(player):
+    def writes(player: Player) -> Dict:
         return {
             '_id': player.id,
             'titled': player.titled,
             'engine': player.engine,
             'gamesPlayed': player.gamesPlayed,
-            'relatedCheaters': player.relatedCheaters,
-            'reportScore': player.reportScore,
-            'mustAnalyse': player.mustAnalyse,
             'date': datetime.now()
         }
 
-class PlayerDB(namedtuple('PlayerDB', ['playerColl'])):
-    def byId(self, userId):
-        playerBSON = self.playerColl.find_one({'_id': userId})
+class PlayerDB(NamedTuple('PlayerDB', [
+        ('playerColl', 'Collection')
+    ])):
+    def byId(self, playerId: PlayerID) -> Opt[Player]:
+        playerBSON = self.playerColl.find_one({'_id': playerId})
         return None if playerBSON is None else PlayerBSONHandler.reads(playerBSON)
 
-    def byUserId(self, userId):
-        return self.byId(userId)
+    def byPlayerId(self, playerId: PlayerID) -> Opt[Player]:
+        return self.byId(playerId)
 
-    def unmarkedByUserIds(self, userIds):
+    def unmarkedByUserIds(self, playerIds: List[PlayerID]) -> List[Player]:
         return [(None if bson is None else PlayerBSONHandler.reads(bson))
-            for bson in [self.playerColl.find_one({'_id': userId, 'engine': False}) for userId in userIds]]
+            for bson in [self.playerColl.find_one({'_id': playerId, 'engine': False}) for playerId in playerIds]]
 
-    def balancedSample(self, size):
-        pipelines = [[
-                {"$match": {"engine": True}},
-                {"$sample": {"size": int(size/2)}}
-            ],[
-                {"$match": {"engine": False}},
-                {"$sample": {"size": int(size/2)}}
-            ]]
-        engines = [PlayerBSONHandler.reads(p) for p in self.playerColl.aggregate(pipelines[0])]
-        legits = [PlayerBSONHandler.reads(p) for p in self.playerColl.aggregate(pipelines[1])]
-        return engines + legits
+    def engineSample(self, engine: bool, size: int) -> List[Player]:
+        pipeline = [
+                {"$match": {"engine": engine}},
+                {"$sample": {"size": int(size)}}
+            ]
+        return [PlayerBSONHandler.reads(p) for p in self.playerColl.aggregate(pipeline)]
 
-    def oldestNonEngine(self):
+    def oldestNonEngine(self) -> Opt[Player]:
         playerBSON = self.playerColl.find_one_and_update(
             filter={'$or': [{'engine': False}, {'engine': None}], 'date': {'$lt': datetime.now() - timedelta(days=30)}},
             update={'$set': {'date': datetime.now()}},
             sort=[('date', pymongo.ASCENDING)])
         return None if playerBSON is None else PlayerBSONHandler.reads(playerBSON)
 
-    def byEngine(self, engine):
+    def byEngine(self, engine: bool = True) -> List[Player]:
         return [PlayerBSONHandler.reads(p) for p in self.playerColl.find({'engine': engine})]
 
-    def all(self):
+    def all(self) -> List[Player]:
         return [PlayerBSONHandler.reads(p) for p in self.playerColl.find({})]
 
-    def write(self, player):
+    def write(self, player: Player):
         self.playerColl.update_one({'_id': player.id}, {'$set': PlayerBSONHandler.writes(player)}, upsert=True)

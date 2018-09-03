@@ -7,20 +7,20 @@ from time import sleep
 
 from modules.queue.DeepPlayerQueue import DeepPlayerQueue
 
-from modules.game.GameAnalysisStore import GameAnalysisStore
+from modules.game.GameStore import GameStore
 
-from modules.irwin.GameBasicActivation import GameBasicActivation
+from modules.irwin.BasicGameActivation import BasicGameActivation
 
 from Env import Env
 
 parser = argparse.ArgumentParser(description=__doc__)
 
 parser.add_argument("--quiet", dest="loglevel",
-                    default=logging.DEBUG, action="store_const", const=logging.INFO,
+                default=logging.DEBUG, action="store_const", const=logging.INFO,
                     help="reduce the number of logged messages")
-settings = parser.parse_args()
+config = parser.parse_args()
 
-logging.basicConfig(format="%(message)s", level=settings.loglevel, stream=sys.stdout)
+logging.basicConfig(format="%(message)s", level=config.loglevel, stream=sys.stdout)
 logging.getLogger("requests.packages.urllib3").setLevel(logging.WARNING)
 logging.getLogger("chess.uci").setLevel(logging.WARNING)
 logging.getLogger("modules.fishnet.fishnet").setLevel(logging.INFO)
@@ -39,7 +39,7 @@ while True:
     basicPlayerQueue = env.basicPlayerQueueDB.nextUnprocessed()
     if basicPlayerQueue is not None:
         logging.info("Basic Queue: " + str(basicPlayerQueue))
-        userId = basicPlayerQueue.id
+        playerId = basicPlayerQueue.id
         origin = basicPlayerQueue.origin
     else:
         logging.info("Basic Queue empty. Pausing")
@@ -49,21 +49,21 @@ while True:
     # if there is already a deep queue item open
     # don't update. This will push the request
     # down the queue
-    if env.deepPlayerQueueDB.exists(userId):
+    if env.deepPlayerQueueDB.exists(playerId):
         continue
     
     # get analysed (by fishnet/lichess) games from the db
-    gameAnalysisStore = GameAnalysisStore.new()
-    gameAnalysisStore.addGames(env.gameDB.byUserIdAnalysed(userId))
-    gameTensors = gameAnalysisStore.gameTensors(userId)
+    gameStore = GameStore.new()
+    gameStore.addGames(env.gameDB.byPlayerIdAndAnalysed(playerId))
+    gameTensors = gameStore.gameTensors(playerId)
 
     if len(gameTensors) > 0:
         gamePredictions = env.irwin.predictBasicGames(gameTensors)
-        gameActivations = [GameBasicActivation.fromPrediction(gameId, userId, prediction, False)
+        gameActivations = [BasicGameActivation.fromPrediction(gameId, playerId, prediction, False)
             for gameId, prediction in gamePredictions]
-        env.gameBasicActivationDB.lazyWriteMany(gameActivations)
+        env.basicGameActivationDB.writeMany(gameActivations)
         deepPlayerQueue = DeepPlayerQueue.new(
-            userId=userId,
+            playerId=playerId,
             origin=origin,
             gamePredictions=gamePredictions)
         logging.info("Writing DeepPlayerQueue: " + str(deepPlayerQueue))
@@ -71,7 +71,7 @@ while True:
     else:
         logging.info("No gameTensors")
         deepPlayerQueue = DeepPlayerQueue.new(
-            userId=userId,
+            playerId=playerId,
             origin=origin,
             gamePredictions=[])
         logging.info("Writing DeepPlayerQueue: " + str(deepPlayerQueue))
