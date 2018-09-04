@@ -34,61 +34,60 @@ class BasicModelTraining(NamedTuple('BasicModelTraining', [
         self.basicGameModel.saveModel()
         logging.debug("complete")
 
+    def getPlayerTensors(self, playerId: str):
+        games = self.env.gameDB.byPlayerIdAndAnalysed(playerId)
+        return list(filter(None, [g.tensor(playerId) for g in games]))
+
+    def getTensorsByEngine(self, engine: bool, limit: int):
+        players = self.env.playerDB.byEngine(engine)
+        shuffle(players)
+
+        tensors = []
+
+        for player in players:
+            logging.info(f'getting tensors for {player.id}')
+
+            tensors.extend(self.getPlayerTensors(player.id))
+            l = len(tensors)
+
+            logging.info(f'loaded {l} / {limit} tensors')
+
+            if l >= limit:
+                logging.info('reached limit')
+                break
+
+        return tensors
+
+    def getTensorByCPE(self, cpe):
+        game = self.env.gameDB.byId(cpe.gameId)
+        return game.tensor(cpe.playerId)
+
+
+    def getFilteredEngineTensors(self, limit: int):
+        logging.info(f'getting {limit} filtered tensors')
+
+        cheatPivotEntries = self.env.basicGameActivationDB.byEngineAndPrediction(
+            engine = True,
+            prediction = 70,
+            limit = limit)
+
+        return list(filter(None, [self.getTensorByCPE(cpe) for cpe in cheatPivotEntries]))
+
     def getTrainingDataset(self, filtered: bool = False):
         logging.debug("Getting players from DB")
 
-        cheatTensors = []
-        legitTensors = []
+        limit = self.env.config['irwin model basic training sample_size']
 
-        logging.debug("Getting games from DB")
+        legitTensors = self.getTensorsByEngine(
+            engine = False,
+            limit = limit)
+
         if filtered:
-            legits = self.env.playerDB.byEngine(False)
-            shuffle(legits)
-            legits = legits[:self.env.config["irwin model basic training sample_size"]]
-            for p in legits:
-                legitTensors.extend([g.tensor(p.id) for g in self.env.gameDB.byPlayerIdAndAnalysed(p.id)])
-
-            logging.debug('legit tensors: ' + str(len(legitTensors)))
-
-            cheatGameActivations = self.env.basicGameActivationDB.byEngineAndPrediction(True, 70)[:len(legitTensors)]
-
-            logging.debug('cheat game activations: '  + str(len(cheatGameActivations)))
-
-            cheatGames = self.env.gameDB.byIds([ga.gameId for ga in cheatGameActivations])
-
-            logging.debug('cheat games: ' + str(len(cheatGames)))
-            logging.debug("getting cheat tensors")
-            
-            cheatTensors.extend([g.tensor(ga.playerId, noisey=True) for g, ga in zip(cheatGames, cheatGameActivations)])
-            #logging.debug(cheatTensors)
-            logging.debug('cheat tensors: ' + str(len(cheatTensors)))
-
+            cheatTensors = self.getFilteredEngineTensors(limit = limit)
         else:
-            cheats = self.env.playerDB.byEngine(True)
-            legits = self.env.playerDB.byEngine(False)
-
-            shuffle(cheats)
-            shuffle(legits)
-
-            cheats = cheats[:self.env.config["irwin model basic training sample_size"]]
-            legits = legits[:self.env.config["irwin model basic training sample_size"]]
-
-            for p in legits + cheats:
-                if p.engine:
-                    cheatTensors.extend([g.tensor(p.id) for g in self.env.gameDB.byPlayerIdAndAnalysed(p.id)])
-                else:
-                    legitTensors.extend([g.tensor(p.id) for g in self.env.gameDB.byPlayerIdAndAnalysed(p.id)])
-
-                logging.debug(len(cheatTensors))
-                logging.debug(len(legitTensors))
-
-        cheatTensors = [t for t in cheatTensors if t is not None]
-        legitTensors = [t for t in legitTensors if t is not None]
-        logging.debug(len(cheatTensors))
-        logging.debug(len(legitTensors))
-
-        shuffle(cheatTensors)
-        shuffle(legitTensors)
+            cheatTensors = self.getTensorsByEngine(
+                engine = True,
+                limit = limit)
 
         logging.debug("batching tensors")
         return self.createBatchAndLabels(cheatTensors, legitTensors)

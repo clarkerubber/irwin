@@ -58,7 +58,7 @@ class AnalysedModelTraining(NamedTuple('AnalysedModelTraining', [
             
             logging.info(f'loaded {l} / {limit} tensors')
 
-            if len(tensors) >= limit:
+            if l >= limit:
                 logging.info('reached limit')
                 break
         return tensors

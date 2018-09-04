@@ -91,8 +91,8 @@ class Game(NamedTuple('Game', [
 
         return output
 
-    def tensor(self, playerId: PlayerID, length: int = 60, noisey=False) -> Opt[GameTensor]:
-        if self.analysis == [] or (self.white != playerId and self.black != playerId):
+    def tensor(self, playerId: PlayerID, length: int = 60, noisey: bool = False, safe: bool = True) -> Opt[GameTensor]:
+        if self.analysis == [] or (safe and self.white != playerId and self.black != playerId):
             if noisey:
                 logging.debug(f'playerId: "{playerId}"')
                 logging.debug(f'gameId: "{self.id}"')

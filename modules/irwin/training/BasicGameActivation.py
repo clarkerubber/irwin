@@ -55,9 +55,14 @@ class BasicGameActivationDB(NamedTuple('BasicGameActivationDB', [
     def byPlayerId(self, playerId: PlayerID) -> List[BasicGameActivation]:
         return [BasicGameActivationBSONHandler.reads(bson) for bson in self.basicGameActivationColl.find({'userId': playerId})]
 
-    def byEngineAndPrediction(self, engine: bool, prediction: Prediction) -> List[BasicGameActivation]:
-        glte = '$gte' if engine else '$lte' 
-        return [BasicGameActivationBSONHandler.reads(bson) for bson in self.basicGameActivationColl.find({'engine': engine, 'prediction': {glte: prediction}})]
+    def byEngineAndPrediction(self, engine: bool, prediction: Prediction, limit: Opt[int] = None) -> List[BasicGameActivation]:
+        gtlt = '$gte' if engine else '$lte'
+        pipeline = [{'$match': {'engine': engine, 'prediction': {gtlt: prediction}}}]
+
+        if limit is not None:
+            pipeline.append({'$sample': {'size': limit}})
+
+        return [BasicGameActivationBSONHandler.reads(bson) for bson in self.basicGameActivationColl.aggregate(pipeline)]
 
     def write(self, gba: BasicGameActivation):
         self.basicGameActivationColl.update_one({'_id': gba.id}, {'$set': BasicGameActivationBSONHandler.writes(gba)}, upsert=True)
