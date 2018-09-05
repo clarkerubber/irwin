@@ -7,6 +7,7 @@ from collections import namedtuple
 class Api(namedtuple('Api', ['url', 'token'])):
     def postReport(self, report):
         reportDict = report.reportDict()
+        logging.debug(f'Sending player report: {reportDict}')
         for _ in range(5):
             try:
                 response = requests.post(
