@@ -18,7 +18,7 @@ class Api(namedtuple('Api', ['url', 'token'])):
                     json = reportDict
                 )
                 if response.status_code == 200:
-                    logging.debug(response.text)
+                    logging.debug(f'Lichess responded with: {response.text}')
                     return True
                 else:
                     logging.warning(str(response.status_code) + ': Failed to post player report')
