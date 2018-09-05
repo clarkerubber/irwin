@@ -33,7 +33,6 @@ logging.getLogger("modules.fishnet.fishnet").setLevel(logging.INFO)
 dbManager = DBManager(config)
 
 ## Modules
-#auth = Auth(AuthEnv(config, dbManager.db()))
 
 env = Env(config)
 
@@ -44,4 +43,4 @@ apiBlueprint = buildApiBlueprint(env)
 app.register_blueprint(apiBlueprint)
 
 if __name__ == "__main__":
-	app.run(host="0.0.0.0", debug=True)
+	app.run(host="0.0.0.0", threaded=True)
