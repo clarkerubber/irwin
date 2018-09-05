@@ -7,7 +7,8 @@ from pymongo.collection import Collection
 TokenID = NewType('TokenID', str)
 
 class Token(NamedTuple('Token', [
-        ('id', TokenID), 
+        ('id', TokenID),
+        ('name', str),
         ('privs', List[Priv])
     ])):
     def hasPriv(self, priv: Priv) -> bool:
@@ -18,12 +19,14 @@ class TokenBSONHandler:
     def reads(bson: Dict) -> Token:
         return Token(
             id = bson['_id'],
+            name = bson['name'],
             privs = [Priv(p) for p in bson['privs']])
 
     @staticmethod
     def writes(token: Token) -> Dict:
         return {
             '_id': token.id,
+            'name': token.name,
             'privs': [p.permission for p in token.privs]}
 
 class TokenDB(NamedTuple('TokenDB', [
