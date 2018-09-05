@@ -1,5 +1,6 @@
 from default_imports import *
 
+import argparse
 import itertools
 import sys
 import time
@@ -20,6 +21,11 @@ from modules.client.Api import Api
 
 conf = ConfigWrapper.new('conf/client_config.json')
 
+parser = argparse.ArgumentParser(description=__doc__)
+## Training
+parser.add_argument("--token", dest="token", nargs="?",
+                default=None, help="token to use with webserver")
+
 loglevels = {
     'CRITICAL': logging.CRITICAL,
     'ERROR': logging.ERROR,
@@ -34,7 +40,9 @@ logging.getLogger("requests.packages.urllib3").setLevel(logging.WARNING)
 logging.getLogger("chess.uci").setLevel(logging.WARNING)
 logging.getLogger("modules.fishnet.fishnet").setLevel(logging.WARNING)
 
-env = Env(conf)
+args = parser.parse_args()
+
+env = Env(conf, token = args.token)
 api = Api(env)
 
 def analyseGames(games: List[Game], playerId: str) -> Iterable[AnalysedGame]:
