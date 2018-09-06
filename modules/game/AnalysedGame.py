@@ -1,7 +1,6 @@
 from default_imports import *
 
 from math import log10, floor
-import logging
 import numpy as np
 import json
 
@@ -211,7 +210,6 @@ class AnalysedGameDB(NamedTuple('AnalysedGameDB', [
             upsert=True)
 
     def writeMany(self, analysedGames: List[AnalysedGame]):
-        logging.debug(f'Writing {analysedGames}')
         return [self.write(ga) for ga in analysedGames]
 
     def byPlayerId(self, playerId: PlayerID) -> List[AnalysedGame]:
