@@ -39,7 +39,7 @@ def buildApiBlueprint(env):
 
             gameIds = [g.id for g in gamesToAnalyse]
 
-            logging.info(f'Requesting {authable.id} analyses {gameIds} for {engineQueue.id}')
+            logging.info(f'Requesting {authable.name} analyses {gameIds} for {engineQueue.id}')
 
             job = Job(
                 playerId = engineQueue.id,

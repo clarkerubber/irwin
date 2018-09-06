@@ -89,11 +89,11 @@ class Auth(NamedTuple('Auth', [('env', Env)])):
                 json_obj = request.get_json(silent=True)
                 authable, authorised = self.authoriseRequest(json_obj, priv)
                 if authorised:
-                    logging.info(f'{authable.id} has been authorised to {priv.permission}')
+                    logging.info(f'{authable.name} has been authorised to {priv.permission}')
                     args_ = (authable,) + args
                     return func(*args_, **kwargs)
                 if authable is not None:
-                    logging.warning(f'UNAUTHORISED: {authable.id} has tried to perform an action requiring {priv.permission}')
+                    logging.warning(f'UNAUTHORISED: {authable.name} has tried to perform an action requiring {priv.permission}')
                 abort(BadRequest)
             return wrapper
         return decorator
