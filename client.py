@@ -1,7 +1,6 @@
 from default_imports import *
 
 import argparse
-import itertools
 import sys
 import time
 import json
@@ -62,7 +61,7 @@ while True:
     if job is not None:
         logging.warning(f'Analysing Player: {job.playerId}')
 
-        analysedGames = list(itertools.islice(analyseGames(job.games, job.playerId), 1))
+        analysedGames = list(analyseGames(job.games, job.playerId))
 
         response = api.completeJob(job, analysedGames)
 
