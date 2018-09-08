@@ -20,7 +20,7 @@ class Api(NamedTuple('Api', [
                 result = requests.get(f'{self.env.url}/api/request_job', json={'auth': self.env.auth})
                 return Job.fromJson(result.json())
             except (json.decoder.JSONDecodeError, requests.ConnectionError, requests.exceptions.SSLError):
-                logging.warning("Error in request job. Trying again in 10 sec")
+                logging.warning(f"Error in request job. Trying again in 10 sec. Received: {result.text}")
                 time.sleep(10)
         return None
 
