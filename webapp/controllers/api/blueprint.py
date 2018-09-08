@@ -22,7 +22,7 @@ def buildApiBlueprint(env):
                 required = engineQueue.requiredGameIds)
 
             basicGamePredictions = env.irwin.basicGameModel.predict(
-                playerId = engineQueue.id ,
+                playerId = engineQueue.id,
                 games = games)
 
             logging.debug(str(basicGamePredictions))
