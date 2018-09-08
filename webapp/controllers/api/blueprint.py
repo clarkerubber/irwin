@@ -17,33 +17,13 @@ def buildApiBlueprint(env):
         engineQueue = env.queue.nextEngineAnalysis(authable.id)
         logging.debug(f'EngineQueue for req {engineQueue}')
         if engineQueue is not None:
-            games = env.gameApi.gamesForAnalysis(
-                playerId = engineQueue.id,
-                required = engineQueue.requiredGameIds)
+            games = env.gameApi.gamesByIds(engineQueue.requiredGameIds)
 
-            basicGamePredictions = env.irwin.basicGameModel.predict(
-                playerId = engineQueue.id ,
-                games = games)
-
-            logging.debug(str(basicGamePredictions))
-
-            topGames = sorted(
-                [(g, p) for g, p in zip(games, basicGamePredictions) if p is not None],
-                key=lambda x: x[1],
-                reverse=True)[:10]
-
-            topGames = [g for g, p in topGames]
-            requiredGames = [g for g in games if g.id in engineQueue.requiredGameIds]
-
-            gamesToAnalyse = topGames + requiredGames
-
-            gameIds = [g.id for g in gamesToAnalyse]
-
-            logging.info(f'Requesting {authable.name} analyses {gameIds} for {engineQueue.id}')
+            logging.info(f'Requesting {authable.name} analyses {engineQueue.requiredGameIds} for {engineQueue.id}')
 
             job = Job(
                 playerId = engineQueue.id,
-                games = gamesToAnalyse,
+                games = games,
                 analysedPositions = [])
 
             return  Response(

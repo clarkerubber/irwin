@@ -2,7 +2,7 @@
 from default_imports import *
 
 from modules.auth.Auth import AuthID
-from modules.game.Game import PlayerID, GameID
+from modules.game.Game import Game, PlayerID, GameID
 from modules.queue.Origin import Origin, OriginReport, OriginModerator, OriginRandom, maxOrigin
 
 from datetime import datetime, timedelta
@@ -26,9 +26,11 @@ class EngineQueue(NamedTuple('EngineQueue', [
         ('date', datetime)
     ])):
     @staticmethod
-    def new(playerId: PlayerID, origin: Origin, gamePredictions):
-        if len(gamePredictions) > 0:
-            activations = sorted([(a**2) for a in gamePredictions], reverse=True)
+    def new(playerId: PlayerID, origin: Origin, gamesAndPredictions: List[Tuple[Game, int]]):
+        if len(gamesAndPredictions) > 0:
+            gamesAndPredictions = sorted(gamesAndPredictions, key=lambda gap: gap[1], reverse=True)
+            required = [gap[0].id for gap in gamesAndPredictions][:10]
+            activations = [gap[1]**2 for gap in gamesAndPredictions]
             top30avg = ceil(np.average(activations[:ceil(0.3*len(activations))]))
         else:
             top30avg = 0
@@ -45,7 +47,7 @@ class EngineQueue(NamedTuple('EngineQueue', [
         return EngineQueue(
             id=playerId,
             origin=origin,
-            requiredGameIds=[], # we'll add this as it becomes available
+            requiredGameIds=required,
             precedence=precedence,
             owner=None,
             completed=False,
