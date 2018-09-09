@@ -45,7 +45,7 @@ class Game(NamedTuple('Game', [
 
     def toJson(self):
         return {
-            '_id'; self.id,
+            '_id': self.id,
             'white': self.white,
             'black': self.black,
             'pgn': self.pgn,
