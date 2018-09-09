@@ -82,7 +82,7 @@ class EngineQueueBSONHandler:
             id=bson['_id'],
             origin=bson['origin'],
             precedence=bson['precedence'],
-            requiredGameIds=bson.get('requiredGameIds', []),
+            requiredGameIds=list(set(bson.get('requiredGameIds', []))),
             completed=bson.get('complete', False),
             owner=bson.get('owner'),
             date=bson.get('date'))
@@ -93,7 +93,7 @@ class EngineQueueBSONHandler:
             '_id': engineQueue.id,
             'origin': engineQueue.origin,
             'precedence': engineQueue.precedence,
-            'requiredGameIds': engineQueue.requiredGameIds,
+            'requiredGameIds': list(set(engineQueue.requiredGameIds)),
             'completed': engineQueue.completed,
             'owner': engineQueue.owner,
             'date': datetime.now()
