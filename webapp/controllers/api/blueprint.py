@@ -50,7 +50,7 @@ def buildApiBlueprint(env):
                 predictions = env.irwin.analysedGameModel.predict([GameAnalysedGame(ag, g) for ag, g in zip(analysedGames, games) if ag.gameLength() <= 60])
                 
                 playerReport = PlayerReport.new(player, zip(analysedGames, predictions), owner = authable.name)
-
+                logging.warning(f'Sending player report for {playerReport.playerId}, activation {playerReport.activation}%')
                 env.lichessApi.postReport(playerReport)
 
                 return Success
