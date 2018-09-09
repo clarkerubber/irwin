@@ -19,7 +19,7 @@ def buildApiBlueprint(env):
         if engineQueue is not None:
             games = env.gameApi.gamesByIds(engineQueue.requiredGameIds)
 
-            logging.info(f'Requesting {authable.name} analyses {engineQueue.requiredGameIds} for {engineQueue.id}')
+            logging.warning(f'Requesting {authable.name} analyses {engineQueue.requiredGameIds} for {engineQueue.id}')
 
             job = Job(
                 playerId = engineQueue.id,

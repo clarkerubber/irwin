@@ -69,7 +69,7 @@ class EngineQueue(NamedTuple('EngineQueue', [
         return EngineQueue(
             id=engineQueueA.id,
             origin=maxOrigin(engineQueueA.origin, engineQueueB.origin),
-            requiredGameIds=engineQueueA.requiredGameIds + engineQueueB.requiredGameIds,
+            requiredGameIds=list(set(engineQueueA.requiredGameIds) | set(engineQueueB.requiredGameIds)),
             precedence=max(engineQueueA.precedence, engineQueueB.precedence),
             completed=min(engineQueueA.completed, engineQueueB.completed),
             owner=engineQueueA.owner if engineQueueA.owner is not None else (engineQueueB.owner if engineQueueB.owner is not None else None),
