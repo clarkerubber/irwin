@@ -159,7 +159,6 @@ class GameBSONHandler:
     @staticmethod
     def writes(game: Game) -> Dict:
         return {
-            '_id': game.id,
             'white': game.white,
             'black': game.black,
             'pgn': game.pgn,
