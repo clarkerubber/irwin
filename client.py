@@ -77,5 +77,5 @@ while True:
             except json.decoder.JSONDecodeError:
                 logging.warning(f'HARD FAILURE. Failed to post job. Bad response from server.')
     else:
-        logging.info('Job is None. Pausing')
+        logging.warning('Job is None. Pausing')
         time.sleep(10)
