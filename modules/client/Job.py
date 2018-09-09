@@ -32,6 +32,6 @@ class JobBSONHandler:
     def writes(job: Job) -> Dict:
         return {
             'playerId': job.playerId,
-            'games': [GameBSONHandler.writes(g) for g in job.games],
+            'games': [g.toJson() for g in job.games],
             'analysedPositions': [AnalysedPositionBSONHandler.writes(ap) for ap in job.analysedPositions]
         }
