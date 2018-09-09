@@ -60,7 +60,7 @@ def handleLine(payload: Dict):
         newEngineQueue = EngineQueue.new(
             playerId=playerId,
             origin=request.origin,
-            gamePredictions=env.irwin.basicGameModel.predict(playerId, request.games))
+            gamesAndPredictions=zip(request.games, env.irwin.basicGameModel.predict(playerId, request.games)))
 
         if existingEngineQueue is not None and not existingEngineQueue.completed:
             newEngineQueue = EngineQueue.merge(existingEngineQueue, newEngineQueue)
