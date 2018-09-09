@@ -33,6 +33,7 @@ class EngineQueue(NamedTuple('EngineQueue', [
             activations = [gap[1]**2 for gap in gamesAndPredictions]
             top30avg = ceil(np.average(activations[:ceil(0.3*len(activations))]))
         else:
+            required = []
             top30avg = 0
         
         # set the precedence to the top30avg
