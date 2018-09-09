@@ -26,6 +26,8 @@ def buildApiBlueprint(env):
                 games = games,
                 analysedPositions = [])
 
+            logging.info(f'Job: {job}')
+
             return  Response(
                 response = json.dumps(job.toJson()),
                 status = 200,
