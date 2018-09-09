@@ -13,8 +13,8 @@ class Job(NamedTuple('Job', [
     def fromJson(json: Dict):
         try:
             return JobBSONHandler.reads(json)
-        except KeyError:
-            logging.warning(f'Failed convert {json} to Job')
+        except KeyError as e:
+            logging.warning(f'Failed convert {json} to Job: {e}')
             return None
 
     def toJson(self):
