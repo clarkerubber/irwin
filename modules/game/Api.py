@@ -37,7 +37,7 @@ class Api(NamedTuple('Api', [
 
         return games
 
-    def gamesbyIds(self, gameIds: List[GameID]):
+    def gamesByIds(self, gameIds: List[GameID]):
         return self.gameDB.byIds(gameIds)
 
     def writeGames(self, games: List[Game]):
