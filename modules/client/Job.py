@@ -14,6 +14,7 @@ class Job(NamedTuple('Job', [
         try:
             return JobBSONHandler.reads(json)
         except KeyError:
+            logging.warning(f'Failed convert {json} to Job')
             return None
 
     def toJson(self):
