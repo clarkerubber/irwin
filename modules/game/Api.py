@@ -6,7 +6,7 @@ from modules.game.Env import Env
 
 from modules.game.Player import Player
 from modules.game.Player import PlayerID
-from modules.game.Game import Game
+from modules.game.Game import Game, GameID
 
 class Api(NamedTuple('Api', [
         ('env', Env)
@@ -36,6 +36,9 @@ class Api(NamedTuple('Api', [
         games = [g for g in games if g.id in (notAnalysedIds | set(required))]
 
         return games
+
+    def gamesByIds(self, gameIds: List[GameID]):
+        return self.env.gameDB.byIds(gameIds)
 
     def writeGames(self, games: List[Game]):
         """

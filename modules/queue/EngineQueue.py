@@ -2,7 +2,7 @@
 from default_imports import *
 
 from modules.auth.Auth import AuthID
-from modules.game.Game import PlayerID, GameID
+from modules.game.Game import Game, PlayerID, GameID
 from modules.queue.Origin import Origin, OriginReport, OriginModerator, OriginRandom, maxOrigin
 
 from datetime import datetime, timedelta
@@ -26,11 +26,14 @@ class EngineQueue(NamedTuple('EngineQueue', [
         ('date', datetime)
     ])):
     @staticmethod
-    def new(playerId: PlayerID, origin: Origin, gamePredictions):
-        if len(gamePredictions) > 0:
-            activations = sorted([(a**2) for a in gamePredictions], reverse=True)
+    def new(playerId: PlayerID, origin: Origin, gamesAndPredictions: List[Tuple[Game, int]]):
+        if len(gamesAndPredictions) > 0:
+            gamesAndPredictions = sorted(gamesAndPredictions, key=lambda gap: gap[1], reverse=True)
+            required = [gap[0].id for gap in gamesAndPredictions][:10]
+            activations = [gap[1]**2 for gap in gamesAndPredictions]
             top30avg = ceil(np.average(activations[:ceil(0.3*len(activations))]))
         else:
+            required = []
             top30avg = 0
         
         # set the precedence to the top30avg
@@ -45,7 +48,7 @@ class EngineQueue(NamedTuple('EngineQueue', [
         return EngineQueue(
             id=playerId,
             origin=origin,
-            requiredGameIds=[], # we'll add this as it becomes available
+            requiredGameIds=required,
             precedence=precedence,
             owner=None,
             completed=False,
@@ -70,7 +73,7 @@ class EngineQueue(NamedTuple('EngineQueue', [
         return EngineQueue(
             id=engineQueueA.id,
             origin=maxOrigin(engineQueueA.origin, engineQueueB.origin),
-            requiredGameIds=engineQueueA.requiredGameIds + engineQueueB.requiredGameIds,
+            requiredGameIds=list(set(engineQueueA.requiredGameIds) | set(engineQueueB.requiredGameIds)),
             precedence=max(engineQueueA.precedence, engineQueueB.precedence),
             completed=min(engineQueueA.completed, engineQueueB.completed),
             owner=engineQueueA.owner if engineQueueA.owner is not None else (engineQueueB.owner if engineQueueB.owner is not None else None),
@@ -83,7 +86,7 @@ class EngineQueueBSONHandler:
             id=bson['_id'],
             origin=bson['origin'],
             precedence=bson['precedence'],
-            requiredGameIds=bson.get('requiredGameIds', []),
+            requiredGameIds=list(set(bson.get('requiredGameIds', []))),
             completed=bson.get('complete', False),
             owner=bson.get('owner'),
             date=bson.get('date'))
@@ -94,7 +97,7 @@ class EngineQueueBSONHandler:
             '_id': engineQueue.id,
             'origin': engineQueue.origin,
             'precedence': engineQueue.precedence,
-            'requiredGameIds': engineQueue.requiredGameIds,
+            'requiredGameIds': list(set(engineQueue.requiredGameIds)),
             'completed': engineQueue.completed,
             'owner': engineQueue.owner,
             'date': datetime.now()

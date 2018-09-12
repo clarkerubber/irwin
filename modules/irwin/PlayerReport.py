@@ -23,6 +23,10 @@ class PlayerReport(NamedTuple('PlayerReport', [
         ('gameReports', List[GameReport]),
         ('date', datetime)
     ])):
+    @property
+    def playerId(self):
+        return self.userId
+
     @staticmethod
     def new(player: Player, gamesAndPredictions: Iterable[Tuple[AnalysedGame, AnalysedGamePrediction]], owner: AuthID = 'test'):
         reportId = PlayerReport.makeId()
@@ -43,7 +47,6 @@ class PlayerReport(NamedTuple('PlayerReport', [
     @staticmethod
     def playerPrediction(player: Player, analysedGamePredictions: List[AnalysedGamePrediction]) -> int:
         sortedGameActivations = sorted([gp.weightedGamePrediction() for gp in analysedGamePredictions], reverse=True)
-        print(sortedGameActivations)
         topGameActivations = sortedGameActivations[:ceil(0.15*len(sortedGameActivations))]
         topGameActivationsAvg = int(np.average(topGameActivations)) if len(topGameActivations) > 0 else 0
 

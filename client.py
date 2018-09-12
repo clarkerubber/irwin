@@ -49,7 +49,7 @@ def analyseGames(games: List[Game], playerId: str) -> Iterable[AnalysedGame]:
     Iterate through list of games and return analysed games
     """
     for game in games:
-        logging.debug(f'Analysing Game: {game.id}')
+        logging.warning(f'Analysing Game: {game.id}')
         analysedGame = env.engineTools.analyseGame(game, game.white == playerId, conf['stockfish nodes'])
         if analysedGame is not None:
             yield analysedGame
@@ -60,6 +60,8 @@ while True:
 
     if job is not None:
         logging.warning(f'Analysing Player: {job.playerId}')
+        gameIds = [g.id for g in job.games]
+        logging.warning(f'Analysing Games: {gameIds}')
 
         analysedGames = list(analyseGames(job.games, job.playerId))
 
@@ -75,5 +77,5 @@ while True:
             except json.decoder.JSONDecodeError:
                 logging.warning(f'HARD FAILURE. Failed to post job. Bad response from server.')
     else:
-        logging.info('Job is None. Pausing')
+        logging.warning('Job is None. Pausing')
         time.sleep(10)

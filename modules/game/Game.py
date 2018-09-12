@@ -43,6 +43,18 @@ class Game(NamedTuple('Game', [
     def fromJson(json: Dict):
         return Game.fromDict(json)
 
+    def toJson(self):
+        return {
+            '_id': self.id,
+            'white': self.white,
+            'black': self.black,
+            'pgn': self.pgn,
+            'emts': self.emts,
+            'analysis': [EngineEvalBSONHandler.writes(a) for a in self.analysis],
+            'analysed': len(self.analysis) > 0
+        }
+
+
     def playable(self):
         try:
             from StringIO import StringIO
@@ -159,7 +171,6 @@ class GameBSONHandler:
     @staticmethod
     def writes(game: Game) -> Dict:
         return {
-            '_id': game.id,
             'white': game.white,
             'black': game.black,
             'pgn': game.pgn,
