@@ -63,6 +63,10 @@ class EngineQueue(NamedTuple('EngineQueue', [
 
     @staticmethod
     def merge(engineQueueA, engineQueueB):
+        if engineQueueA.completed:
+            return engineQueueB
+        elif engineQueueB.completed:
+            return engineQueueA
         return EngineQueue(
             id=engineQueueA.id,
             origin=maxOrigin(engineQueueA.origin, engineQueueB.origin),
