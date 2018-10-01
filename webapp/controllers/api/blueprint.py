@@ -38,27 +38,35 @@ def buildApiBlueprint(env):
     @apiBlueprint.route('/complete_job', methods=['POST'])
     @env.auth.authoriseRoute(CompleteJob)
     def apiCompleteJob(authable):
-        req = request.get_json(silent=True)
+        logging.debug('apiCompleteJob starting ...')
         try:
-            job = Job.fromJson(req['job'])
-            insertRes = env.gameApi.writeAnalysedGames(req['analysedGames'])
-            if insertRes:
-                env.queue.completeEngineAnalysis(job.playerId)
+            req = request.get_json(silent=True)
+            try:
+                job = Job.fromJson(req['job'])
+                insertRes = env.gameApi.writeAnalysedGames(req['analysedGames'])
+                if insertRes:
+                    env.queue.completeEngineAnalysis(job.playerId)
 
-                player = env.irwin.env.playerDB.byId(job.playerId)
-                analysedGames = env.irwin.env.analysedGameDB.byPlayerId(job.playerId)
-                games = env.irwin.env.gameDB.byIds([ag.gameId for ag in analysedGames])
-                predictions = env.irwin.analysedGameModel.predict([GameAnalysedGame(ag, g) for ag, g in zip(analysedGames, games) if ag.gameLength() <= 60])
+                    player = env.irwin.env.playerDB.byId(job.playerId)
+                    analysedGames = env.irwin.env.analysedGameDB.byPlayerId(job.playerId)
+                    games = env.irwin.env.gameDB.byIds([ag.gameId for ag in analysedGames])
+                    predictions = env.irwin.analysedGameModel.predict([GameAnalysedGame(ag, g) for ag, g in zip(analysedGames, games) if ag.gameLength() <= 60])
 
-                playerReport = PlayerReport.new(player, zip(analysedGames, predictions), owner = authable.name)
-                logging.warning(f'Sending player report for {playerReport.playerId}, activation {playerReport.activation}%')
-                env.lichessApi.postReport(playerReport)
+                    playerReport = PlayerReport.new(player, zip(analysedGames, predictions), owner = authable.name)
+                    logging.warning(f'Sending player report for {playerReport.playerId}, activation {playerReport.activation}%')
+                    env.lichessApi.postReport(playerReport)
 
-                return Success
-        except KeyError as e:
+                    return Success
+            except KeyError as e:
+                tb = traceback.format_exc()
+                logging.warning(f'Error completing job: {tb}')
+
+            return BadRequest
+        except:
             tb = traceback.format_exc()
             logging.warning(f'Error completing job: {tb}')
-
-        return BadRequest
+            raise
+        finally:
+            logging.debug('... apiCompleteJob finished')
 
     return apiBlueprint
