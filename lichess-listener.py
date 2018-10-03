@@ -66,10 +66,8 @@ def handleLine(payload: Dict):
             newEngineQueue = EngineQueue.merge(existingEngineQueue, newEngineQueue)
 
         requiredGames = env.gameApi.gamesForAnalysis(playerId, newEngineQueue.requiredGameIds)
-        if len(requiredGames) == 0:
-            newEngineQueue.completed = True
-
-        env.queue.queueEngineAnalysis(newEngineQueue)
+        if len(requiredGames) > 0:
+            env.queue.queueEngineAnalysis(newEngineQueue)
 
 while True:
     try:
