@@ -28,13 +28,11 @@ class Api(NamedTuple('Api', [
         """
         games = self.env.gameDB.byPlayerId(playerId)
         analysedGames = self.env.analysedGameDB.byPlayerId(playerId)
-        logging.warning(f"{len(games)} games / {len(analysedGames)} analysedGames")
 
         gameIds = {g.id for g in games}
         analysedGameIds = {g.gameId for g in analysedGames}
 
         notAnalysedButRequiredIds = set(required) - analysedGameIds
-        logging.warning(f"{len(notAnalysedButRequiredIds)} notAnalysedButRequiredIds")
 
         correct_length = lambda g: len(g.pgn) >= 40 and len(g.pgn) <= 120
         games = [g for g in games if g.id in notAnalysedButRequiredIds and correct_length(g)]
