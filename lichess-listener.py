@@ -7,7 +7,7 @@ import requests
 from requests.exceptions import ChunkedEncodingError, ConnectionError
 from requests.packages.urllib3.exceptions import NewConnectionError, ProtocolError, MaxRetryError
 from http.client import IncompleteRead
-from socket import gaierror 
+from socket import gaierror
 
 from webapp.Env import Env
 
@@ -50,7 +50,7 @@ def handleLine(payload: Dict):
     playerId = request.player.id
     if request is not None:
         logging.info(f'Processing request for {request.player}')
-        # store upser
+        # store user
         env.gameApi.writePlayer(request.player)
         # store games
         env.gameApi.writeGames(request.games)

@@ -28,17 +28,17 @@ class EngineTools(NamedTuple('EngineTools', [
     ])):
     @staticmethod
     def new(conf: ConfigWrapper):
-            engine = uci.popen_engine(stockfish_command(conf['stockfish update']))
-            engine.setoption({'Threads': conf['stockfish threads'], 'Hash': conf['stockfish memory']})
-            engine.uci()
+        engine = uci.popen_engine(stockfish_command(conf['stockfish update']))
+        engine.setoption({'Threads': conf['stockfish threads'], 'Hash': conf['stockfish memory']})
+        engine.uci()
 
-            infoHandler = uci.InfoHandler()
+        infoHandler = uci.InfoHandler()
 
-            engine.info_handlers.append(infoHandler)
+        engine.info_handlers.append(infoHandler)
 
-            return EngineTools(
-                engine=engine,
-                infoHandler=infoHandler)
+        return EngineTools(
+            engine=engine,
+            infoHandler=infoHandler)
 
     def analyseGame(self, game: Game, colour: Colour, nodes: int) -> Opt[AnalysedGame]:
         gameLen = len(game.pgn)
