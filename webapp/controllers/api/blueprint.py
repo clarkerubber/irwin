@@ -18,13 +18,14 @@ def buildApiBlueprint(env):
         engineQueue = env.queue.nextEngineAnalysis(authable.id)
         logging.debug(f'EngineQueue for req {engineQueue}')
         if engineQueue is not None:
-            games = env.gameApi.gamesByIds(engineQueue.requiredGameIds)
+            requiredGames = env.gameApi.gamesForAnalysis(engineQueue.playerId)
+            requiredGameIds = [g.id for g in requiredGames]
 
-            logging.warning(f'Requesting {authable.name} analyses {engineQueue.requiredGameIds} for {engineQueue.id}')
+            logging.warning(f'Requesting {authable.name} analyses {requiredGameIds} for {engineQueue.id}')
 
             job = Job(
                 playerId = engineQueue.id,
-                games = games,
+                games = requiredGames,
                 analysedPositions = [])
 
             logging.info(f'Job: {job}')
