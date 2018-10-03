@@ -51,6 +51,7 @@ def analyseGames(games: List[Game], playerId: str) -> Iterable[AnalysedGame]:
 
     count = len(games)
     for i, game in enumerate(games):
+        i = i + 1
         logging.warning(f'{playerId}: Analysing Game #{i} / {count}: {game.id}')
         analysedGame = env.engineTools.analyseGame(game, game.white == playerId, conf['stockfish nodes'])
         if analysedGame is not None:
