@@ -65,6 +65,10 @@ def handleLine(payload: Dict):
         if existingEngineQueue is not None and not existingEngineQueue.completed:
             newEngineQueue = EngineQueue.merge(existingEngineQueue, newEngineQueue)
 
+        requiredGames = env.gameApi.gamesForAnalysis(playerId, newEngineQueue.requiredGameIds)
+        if len(requiredGames) == 0:
+            newEngineQueue.completed = True
+
         env.queue.queueEngineAnalysis(newEngineQueue)
 
 while True:
