@@ -35,7 +35,7 @@ class EngineQueue(NamedTuple('EngineQueue', [
         else:
             required = []
             top30avg = 0
-        
+
         # set the precedence to the top30avg
         precedence = top30avg
 
@@ -154,7 +154,7 @@ class EngineQueueDB(NamedTuple('EngineQueueDB', [
 
     def nextUnprocessed(self, name: AuthID) -> Opt[EngineQueue]:
         """find the next job to process against owner's name"""
-        incompleteBSON = self.engineQueueColl.find_one({'owner': name, '$or': [{'completed': {'$exists': False}}, {'completed': False}]})
+        incompleteBSON = self.engineQueueColl.find_one({'owner': name, {'completed': { '$ne': True}}})
         if incompleteBSON is not None: # owner has unfinished business
             logging.debug(f'{name} is returning to complete {incompleteBSON}')
             return EngineQueueBSONHandler.reads(incompleteBSON)
