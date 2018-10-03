@@ -1,4 +1,5 @@
 from default_imports import *
+import logging
 
 from modules.game.AnalysedGame import AnalysedGameBSONHandler
 
@@ -27,11 +28,13 @@ class Api(NamedTuple('Api', [
         """
         games = self.env.gameDB.byPlayerId(playerId)
         analysedGames = self.env.analysedGameDB.byPlayerId(playerId)
+        logging.warning(f"{len(games)} games / {len(analysedGames)} analysedGames")
 
         gameIds = {g.id for g in games}
         analysedGameIds = {g.gameId for g in analysedGames}
 
         notAnalysedIds = gameIds - analysedGameIds
+        logging.warning(f"{len(notAnalysedIds)} notAnalysedIds")
 
         games = [g for g in games if g.id in (notAnalysedIds | set(required))]
 
