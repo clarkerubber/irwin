@@ -33,10 +33,10 @@ class Api(NamedTuple('Api', [
         gameIds = {g.id for g in games}
         analysedGameIds = {g.gameId for g in analysedGames}
 
-        notAnalysedIds = gameIds - analysedGameIds
-        logging.warning(f"{len(notAnalysedIds)} notAnalysedIds")
+        notAnalysedButRequiredIds = required - analysedGameIds
+        logging.warning(f"{len(notAnalysedButRequiredIds)} notAnalysedButRequiredIds")
 
-        games = [g for g in games if g.id in (notAnalysedIds | set(required))]
+        games = [g for g in games if g.id in notAnalysedButRequiredIds]
 
         return games
 
