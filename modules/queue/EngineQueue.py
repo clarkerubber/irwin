@@ -128,7 +128,7 @@ class EngineQueueDB(NamedTuple('EngineQueueDB', [
     def updateComplete(self, _id: EngineQueueID, complete: bool):
         self.engineQueueColl.update_one(
             {'_id': _id},
-            {'$set': {'completed': complete}})
+            {'$set': {'completed': complete, 'owner': None}})
 
     def removePlayerId(self, playerId: PlayerID):
         """remove all jobs related to playerId"""
