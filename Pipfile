@@ -9,6 +9,8 @@ numpy = "*"
 pymongo = "*"
 python-chess = "*"
 keras = "*"
+requests = "*"
+tensorflow = "*"
 
 [dev-packages]
 

@@ -11,8 +11,8 @@ from socket import gaierror
 
 from webapp.Env import Env
 
+from modules import http
 from modules.lichess.Request import Request
-
 from modules.queue.EngineQueue import EngineQueue
 
 import json
@@ -69,9 +69,11 @@ def handleLine(payload: Dict):
         if len(requiredGames) > 0:
             env.queue.queueEngineAnalysis(newEngineQueue)
 
+
+session = http.get_requests_session_with_keepalive()
 while True:
     try:
-        r = requests.get(
+        r = session.get(
             config.api.url + 'api/stream/irwin',
             headers = {
                 'User-Agent': 'Irwin',
