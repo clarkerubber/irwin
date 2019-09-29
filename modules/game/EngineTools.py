@@ -56,6 +56,9 @@ class EngineTools(NamedTuple('EngineTools', [
             return None
 
         node = playableGame
+        if len(game.emts) != len(node.mainline_moves()):
+            logging.warning(f"Not enough emts. len(emts): {len(game.emts)} vs len(node.mainline_moves()): {len(node.mainline_moves())}")
+            return None
 
         self.engine.ucinewgame()
 
