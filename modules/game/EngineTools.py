@@ -57,7 +57,7 @@ class EngineTools(NamedTuple('EngineTools', [
 
         node = playableGame
         mainline_moves = [x for x in node.main_line()]
-        if len(game.emts) != len(mainline_moves):
+        if len(game.emts) < len(mainline_moves):
             logging.warning(f"Not enough emts. len(emts): {len(game.emts)} vs len(node.main_line()): {len(mainline_moves)}")
             return None
 
