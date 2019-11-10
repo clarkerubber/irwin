@@ -7,12 +7,12 @@ import requests
 from requests.exceptions import ChunkedEncodingError, ConnectionError
 from requests.packages.urllib3.exceptions import NewConnectionError, ProtocolError, MaxRetryError
 from http.client import IncompleteRead
-from socket import gaierror 
+from socket import gaierror
 
 from webapp.Env import Env
 
+from modules import http
 from modules.lichess.Request import Request
-
 from modules.queue.EngineQueue import EngineQueue
 
 import json
@@ -50,7 +50,7 @@ def handleLine(payload: Dict):
     playerId = request.player.id
     if request is not None:
         logging.info(f'Processing request for {request.player}')
-        # store upser
+        # store user
         env.gameApi.writePlayer(request.player)
         # store games
         env.gameApi.writeGames(request.games)
@@ -65,11 +65,15 @@ def handleLine(payload: Dict):
         if existingEngineQueue is not None and not existingEngineQueue.completed:
             newEngineQueue = EngineQueue.merge(existingEngineQueue, newEngineQueue)
 
-        env.queue.queueEngineAnalysis(newEngineQueue)
+        requiredGames = env.gameApi.gamesForAnalysis(playerId, newEngineQueue.requiredGameIds)
+        if len(requiredGames) > 0:
+            env.queue.queueEngineAnalysis(newEngineQueue)
 
+
+session = http.get_requests_session_with_keepalive()
 while True:
     try:
-        r = requests.get(
+        r = session.get(
             config.api.url + 'api/stream/irwin',
             headers = {
                 'User-Agent': 'Irwin',

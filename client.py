@@ -48,8 +48,10 @@ def analyseGames(games: List[Game], playerId: str) -> Iterable[AnalysedGame]:
     """
     Iterate through list of games and return analysed games
     """
-    for game in games:
-        logging.warning(f'Analysing Game: {game.id}')
+
+    count = len(games)
+    for i, game in enumerate(games):
+        logging.warning(f'{playerId}: Analysing Game #{i+1} / {count}: {game.id}')
         analysedGame = env.engineTools.analyseGame(game, game.white == playerId, conf['stockfish nodes'])
         if analysedGame is not None:
             yield analysedGame

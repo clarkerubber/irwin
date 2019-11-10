@@ -19,7 +19,7 @@ import logging
 class Env:
     def __init__(self, config):
         self.config = config
-        
+
         ## Database
         self.dbManager = DBManager(self.config)
         self.db = self.dbManager.db()

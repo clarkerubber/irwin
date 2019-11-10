@@ -1,4 +1,5 @@
 from default_imports import *
+import logging
 
 from modules.game.AnalysedGame import AnalysedGameBSONHandler
 
@@ -31,9 +32,10 @@ class Api(NamedTuple('Api', [
         gameIds = {g.id for g in games}
         analysedGameIds = {g.gameId for g in analysedGames}
 
-        notAnalysedIds = gameIds - analysedGameIds
+        notAnalysedButRequiredIds = set(required) - analysedGameIds
 
-        games = [g for g in games if g.id in (notAnalysedIds | set(required))]
+        correct_length = lambda g: len(g.pgn) >= 40 and len(g.pgn) <= 120
+        games = [g for g in games if g.id in notAnalysedButRequiredIds and correct_length(g)]
 
         return games
 
